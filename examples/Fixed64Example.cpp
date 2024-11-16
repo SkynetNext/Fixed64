@@ -1,7 +1,7 @@
 #include "Fixed64.h"
 #include <iostream>
 
-using namespace Fixed64;
+using namespace Skynet;
 
 int main()
 {

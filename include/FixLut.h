@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace Fixed64
+namespace Skynet
 {
   class FixLut
   {

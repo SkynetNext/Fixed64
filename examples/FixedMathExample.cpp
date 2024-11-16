@@ -1,7 +1,7 @@
 #include "FixedMath.h"
 #include <iostream>
 
-using namespace Fixed64;
+using namespace Skynet;
 
 int main() {
     // Define some angles (using radians)

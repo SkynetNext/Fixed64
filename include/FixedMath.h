@@ -4,7 +4,7 @@
 
 #include "Fixed64.h"
 
-namespace Fixed64
+namespace Skynet
 {
   class FixedMath
   {

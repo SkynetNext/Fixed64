@@ -11,7 +11,7 @@
 
 #include "FixLut.h"
 
-namespace Fixed64
+namespace Skynet
 {
   struct Fixed64Param
   {
