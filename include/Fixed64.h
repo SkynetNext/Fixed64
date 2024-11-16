@@ -483,8 +483,8 @@ class Fixed64Const
 public:
   static inline const Fixed64 Max = Fixed64(INT64_MAX);
   static inline const Fixed64 Min = Fixed64(INT64_MIN);
-  static inline const Fixed64 UsableMax = Fixed64(2147483647LL);
-  static inline const Fixed64 UsableMin = Fixed64(-2147483648LL);
+  static inline const Fixed64 UsableMax = Fixed64(static_cast<int64_t>(2147483647LL)));
+  static inline const Fixed64 UsableMin = Fixed64(static_cast<int64_t>(-2147483648LL)));
 
   static inline const Fixed64 Zero = Fixed64(0);
   static inline const Fixed64 One = Fixed64(1);
@@ -524,16 +524,16 @@ public:
   static inline const Fixed64 ENotation4 = One / 10000;
 
   static inline const Fixed64 MinusOne = Fixed64(-1);
-  static inline const Fixed64 Pi = Fixed64(205887LL);
+  static inline const Fixed64 Pi = Fixed64(static_cast<int64_t>(205887LL));
   static inline const Fixed64 Pi2 = Pi * 2;
   static inline const Fixed64 PiOver2 = Pi / 2;
   static inline const Fixed64 PiQuarter = Pi * Point25;
   static inline const Fixed64 PiHalf = Pi * Point5;
   static inline const Fixed64 OneDivPi2 = One / Pi2;
-  static inline const Fixed64 DegToRad = Fixed64(1143LL);
-  static inline const Fixed64 RadToDeg = Fixed64(3754936LL);
-  static inline const Fixed64 Epsilon = Fixed64(1LL);
-  static inline const Fixed64 E = Fixed64(178145LL);
+  static inline const Fixed64 DegToRad = Fixed64(static_cast<int64_t>(1143LL));
+  static inline const Fixed64 RadToDeg = Fixed64(static_cast<int64_t>(3754936LL));
+  static inline const Fixed64 Epsilon = Fixed64(static_cast<int64_t>(1LL));
+  static inline const Fixed64 E = Fixed64(static_cast<int64_t>(178145LL));
 
   static inline const Fixed64 PiTimesTwo = Pi * 2;
   static inline const Fixed64 DegreeToRadian = DegToRad;
