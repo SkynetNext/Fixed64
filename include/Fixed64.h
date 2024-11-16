@@ -440,7 +440,42 @@ public:
   std::size_t GetHashCode() const { return std::hash<int64_t>()(value); }
 
   static constexpr int Size = 8;
+};
 
+inline bool operator>(const Fixed64Param &a, const Fixed64Param &b)
+{
+  return Fixed64(a) > Fixed64(b);
+}
+
+inline bool operator<=(const Fixed64Param &a, const Fixed64Param &b)
+{
+  return !(a > b);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const Fixed64 &obj)
+{
+  os << obj.toString();
+  return os;
+}
+
+inline std::ostream &operator<<(std::ostream &os, const Fixed64Param &obj)
+{
+  os << obj.isRaw;
+  if (obj.isRaw)
+  {
+    os << obj.raw;
+  }
+  else
+  {
+    os << obj.high << "," << obj.low;
+  }
+
+  return os;
+}
+
+class Fixed64Const
+{
+public:
   static inline const Fixed64 Max = Fixed64(INT64_MAX);
   static inline const Fixed64 Min = Fixed64(INT64_MIN);
   static inline const Fixed64 UsableMax(2147483647LL);
@@ -504,34 +539,3 @@ public:
   static inline const Fixed64 PositiveInfinity = Fixed64(INT64_MAX);
   static inline const Fixed64 NegativeInfinity = Fixed64(INT64_MIN + 1);
 };
-
-inline bool operator>(const Fixed64Param &a, const Fixed64Param &b)
-{
-  return Fixed64(a) > Fixed64(b);
-}
-
-inline bool operator<=(const Fixed64Param &a, const Fixed64Param &b)
-{
-  return !(a > b);
-}
-
-inline std::ostream &operator<<(std::ostream &os, const Fixed64 &obj)
-{
-  os << obj.toString();
-  return os;
-}
-
-inline std::ostream &operator<<(std::ostream &os, const Fixed64Param &obj)
-{
-  os << obj.isRaw;
-  if (obj.isRaw)
-  {
-    os << obj.raw;
-  }
-  else
-  {
-    os << obj.high << "," << obj.low;
-  }
-
-  return os;
-}
