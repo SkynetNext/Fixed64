@@ -23,10 +23,10 @@ class FixedMath {
       8, 12, 20, 28, 15, 17, 24, 7,  19, 27, 23, 6,  26, 5,  4, 31};
 
  public:
-  static inline const Fixed64 PI = Fixed64::Pi;
-  static inline Fixed64 Epsilon = Fixed64::ENotation3;
-  static inline const Fixed64 Rad2Deg = Fixed64::RadToDeg;
-  static inline const Fixed64 Deg2Rad = Fixed64::DegToRad;
+  static inline const Fixed64 PI = Fixed64Const::Pi;
+  static inline Fixed64 Epsilon = Fixed64Const::ENotation3;
+  static inline const Fixed64 Rad2Deg = Fixed64Const::RadToDeg;
+  static inline const Fixed64 Deg2Rad = Fixed64Const::DegToRad;
 
   static int BitScanReverse(uint32_t num) {
     num |= num >> 1;
@@ -43,11 +43,11 @@ class FixedMath {
 
   static Fixed64 Pow2(Fixed64 num) {
     if (num.value > 1638400) {
-      return Fixed64::Max;
+      return Fixed64Const::Max;
     }
 
     int i = static_cast<int>(num);
-    num = Fractions(num) * _pow2Number1 + Fixed64::One;
+    num = Fractions(num) * _pow2Number1 + Fixed64Const::One;
     // 进行7次平方，相当于2的(2^7)次幂
     for (int j = 0; j < 7; ++j) {
       num *= num;
@@ -66,8 +66,8 @@ class FixedMath {
   }
 
   static Fixed64 Sin(Fixed64 num) {
-    num.value %= Fixed64::Pi2.value;
-    num *= Fixed64::OneDivPi2;
+    num.value %= Fixed64Const::Pi2.value;
+    num *= Fixed64Const::OneDivPi2;
     auto raw = FixLut::sin(num.value);
     Fixed64 result;
     result.value = raw;
@@ -75,35 +75,35 @@ class FixedMath {
   }
 
   static Fixed64 Cos(Fixed64 num) {
-    num.value %= Fixed64::Pi2.value;
-    num *= Fixed64::OneDivPi2;
+    num.value %= Fixed64Const::Pi2.value;
+    num *= Fixed64Const::OneDivPi2;
     return Fixed64(FixLut::cos(num.value));
   }
 
   static Fixed64 Tan(Fixed64 num) {
-    num.value %= Fixed64::Pi2.value;
-    num *= Fixed64::OneDivPi2;
+    num.value %= Fixed64Const::Pi2.value;
+    num *= Fixed64Const::OneDivPi2;
     return Fixed64(FixLut::tan(num.value));
   }
 
   static Fixed64 Acos(Fixed64 num) {
     num.value += FixLut::ONE;
-    num *= Fixed64::Point5;
+    num *= Fixed64Const::Point5;
     return Fixed64(FixLut::acos(num.value));
   }
 
   static Fixed64 Asin(Fixed64 num) {
     num.value += FixLut::ONE;
-    num *= Fixed64::Point5;
+    num *= Fixed64Const::Point5;
     return Fixed64(FixLut::asin(num.value));
   }
 
-  static Fixed64 Atan(Fixed64 num) { return Atan2(num, Fixed64::One); }
+  static Fixed64 Atan(Fixed64 num) { return Atan2(num, Fixed64Const::One); }
 
   static Fixed64 AtanApproximated(Fixed64 num) {
     auto absX = Abs(num);
-    return Fixed64::PiQuarter * num -
-           num * (absX - Fixed64::One) *
+    return Fixed64Const::PiQuarter * num -
+           num * (absX - Fixed64Const::One) *
                (_atanApproximatedNumber1 + _atanApproximatedNumber2 * absX);
   }
 
@@ -114,7 +114,7 @@ class FixedMath {
     auto t1 = absY;
     auto t0 = Max(t3, t1);
     t1 = Min(t3, t1);
-    t3 = Fixed64::One / t0;
+    t3 = Fixed64Const::One / t0;
     t3 = t1 * t3;
     auto t4 = t3 * t3;
     t0 = _atan2Number1;
@@ -125,8 +125,8 @@ class FixedMath {
     t0 = t0 * t4 + _atan2Number6;
     t3 = t0 * t3;
     t3 = absY > absX ? _atan2Number7 - t3 : t3;
-    t3 = x < Fixed64::Zero ? _atan2Number8 - t3 : t3;
-    t3 = y < Fixed64::Zero ? -t3 : t3;
+    t3 = x < Fixed64Const::Zero ? _atan2Number8 - t3 : t3;
+    t3 = y < Fixed64Const::Zero ? -t3 : t3;
     return t3;
   }
 
@@ -220,7 +220,7 @@ class FixedMath {
 
   static Fixed64 Clamp01(Fixed64 num) {
     if (num.value < 0) {
-      return Fixed64::Zero;
+      return Fixed64Const::Zero;
     }
     if (num.value > FixLut::ONE) {
       return Fixed64(FixLut::ONE);
@@ -237,17 +237,17 @@ class FixedMath {
     if (a != b) {
       return Clamp01((value - a) / (b - a));
     }
-    return Fixed64::Zero;
+    return Fixed64Const::Zero;
   }
 
   static Fixed64 Repeat(Fixed64 value, Fixed64 length) {
-    return Clamp(value - Floor(value / length) * length, Fixed64::Zero, length);
+    return Clamp(value - Floor(value / length) * length, Fixed64Const::Zero, length);
   }
 
   static Fixed64 LerpAngle(Fixed64 from, Fixed64 to, Fixed64 t) {
-    Fixed64 num = Repeat(to - from, Fixed64::Pi2);
+    Fixed64 num = Repeat(to - from, Fixed64Const::Pi2);
     return Lerp(
-        from, from + (num > Fixed64(FixLut::PI) ? num - Fixed64::Pi2 : num), t);
+        from, from + (num > Fixed64(FixLut::PI) ? num - Fixed64Const::Pi2 : num), t);
   }
 
   static Fixed64 NormalizeRadians(Fixed64 angle) {
@@ -275,15 +275,15 @@ class FixedMath {
   static Fixed64 Pow2(int power) { return Fixed64(FixLut::ONE << power); }
 
   static Fixed64 Exp(Fixed64 num) {
-    if (num == Fixed64::Zero) return Fixed64::One;
-    if (num == Fixed64::One) return Fixed64::E;
-    if (num.value >= 2097152) return Fixed64::Max;
-    if (num.value <= -786432) return Fixed64::Zero;
+    if (num == Fixed64Const::Zero) return Fixed64Const::One;
+    if (num == Fixed64Const::One) return Fixed64Const::E;
+    if (num.value >= 2097152) return Fixed64Const::Max;
+    if (num.value <= -786432) return Fixed64Const::Zero;
 
     bool neg = num.value < 0;
     if (neg) num = -num;
 
-    Fixed64 result = num + Fixed64::One;
+    Fixed64 result = num + Fixed64Const::One;
     Fixed64 term = num;
 
     for (int i = 2; i < 30; ++i) {
@@ -293,7 +293,7 @@ class FixedMath {
       if (term.value < 500 && ((i > 15) || (term.value < 20))) break;
     }
 
-    if (neg) result = Fixed64::One / result;
+    if (neg) result = Fixed64Const::One / result;
 
     return result;
   }
