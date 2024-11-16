@@ -1,6 +1,8 @@
 #include "FixedMath.h"
 #include <iostream>
 
+using namespace Fixed64;
+
 int main() {
     // 定义一些角度（使用弧度）
     Fixed64 angleInRadians = FixedMath::Deg2Rad * Fixed64::parseLong(45); // 将45度转换为弧度

@@ -1,6 +1,8 @@
 #include "Fixed64.h"
 #include <iostream>
 
+using namespace Fixed64;
+
 int main()
 {
     // Create some Fixed64 numbers
