@@ -440,6 +440,8 @@ public:
   std::size_t GetHashCode() const { return std::hash<int64_t>()(value); }
 
   static constexpr int Size = 8;
+
+private:
   static constexpr int64_t PositiveInfinity = INT64_MAX;
   static constexpr int64_t NegativeInfinity = INT64_MIN + 1;
   static constexpr int64_t NaN = INT64_MIN;
