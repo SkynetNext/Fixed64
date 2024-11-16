@@ -18,10 +18,14 @@ Fixed64 ensures cross-platform consistency, especially through the `Fixed64::par
 
 Fixed64 supports a wide array of mathematical operations, including:
 
-- Basic arithmetic operations: addition (`+`), subtraction (`-`), multiplication (`*`), and division (`/`).
+- Basic arithmetic operations and comparison: addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), addition assignment (`+=`), subtraction assignment (`-=`), multiplication assignment (`*=`), division assignment (`/=`), greater than (`>`), less than (`<`), greater than or equal to (`>=`), less than or equal to (`<=`), and equality (`==`).
 - Advanced mathematical functions: sine (`Sin`), cosine (`Cos`), tangent (`Tan`), exponential (`Exp`), and power (`Pow2`).
 - Trigonometric functions and their inverse: including `Sin`, `Cos`, `Tan`, `Acos`, `Asin`, and `Atan`.
 - Utility functions: square root (`Sqrt`), reciprocal (`Rcp`), and more.
+
+### Header-Only Library
+
+Fixed64 is a header-only library, meaning that it consists solely of header files without the need for separate source files or precompiled binaries. This design choice simplifies integration into projects, as developers only need to include the relevant header files in their codebase to use Fixed64. It eliminates the need for linking with precompiled libraries, making the library easily portable and usable across various platforms and compilers. Being a header-only library also facilitates ease of distribution and updating, as the entire library can be updated by replacing the header files.
 
 ### Predefined Constants
 
@@ -30,10 +34,6 @@ To further enhance usability and reduce construction costs, Fixed64 includes a c
 ### Infinity and NaN Handling
 
 Fixed64 provides special constants for representing positive infinity, negative infinity, and Not a Number (NaN) scenarios. These constants allow for the handling of exceptional cases in mathematical operations, enhancing the robustness and reliability of applications using the library.
-
-## Header-Only Library
-
-Fixed64 is a header-only library, meaning that it consists solely of header files without the need for separate source files or precompiled binaries. This design choice simplifies integration into projects, as developers only need to include the relevant header files in their codebase to use Fixed64. It eliminates the need for linking with precompiled libraries, making the library easily portable and usable across various platforms and compilers. Being a header-only library also facilitates ease of distribution and updating, as the entire library can be updated by replacing the header files.
 
 ## Usage Example
 
