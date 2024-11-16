@@ -31,6 +31,10 @@ To further enhance usability and reduce construction costs, Fixed64 includes a c
 
 Fixed64 provides special constants for representing positive infinity, negative infinity, and Not a Number (NaN) scenarios. These constants allow for the handling of exceptional cases in mathematical operations, enhancing the robustness and reliability of applications using the library.
 
+## Addendum: Header-Only Library
+
+Fixed64 is a header-only library, meaning that it consists solely of header files without the need for separate source files or precompiled binaries. This design choice simplifies integration into projects, as developers only need to include the relevant header files in their codebase to use Fixed64. It eliminates the need for linking with precompiled libraries, making the library easily portable and usable across various platforms and compilers. Being a header-only library also facilitates ease of distribution and updating, as the entire library can be updated by replacing the header files.
+
 ## Usage Example
 
 ```cpp
@@ -39,8 +43,8 @@ Fixed64 provides special constants for representing positive infinity, negative 
 using namespace Skynet;
 
 int main() {
-    Fixed64 a = Fixed64::Pi;
-    Fixed64 b = Fixed64::Two;
+    Fixed64 a = Fixed64Const::Pi;
+    Fixed64 b = Fixed64(1.2345);
     Fixed64 result = a * b;
 
     std::cout << "Result: " << result << std::endl;
