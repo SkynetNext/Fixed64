@@ -8,7 +8,7 @@ int main()
     Fixed64 num2(1.25); // Represents 1.25
 
     // Using constants
-    Fixed64 one = Fixed64::One; // Represents 1.0
+    Fixed64 one = Fixed64Const::One; // Represents 1.0
     std::cout << "One: " << one << std::endl;
 
     // Addition
@@ -46,11 +46,11 @@ int main()
     // Handling division by zero
     Fixed64 zero(0);
     Fixed64 divisionByZero = num1 / zero;
-    if (divisionByZero == Fixed64::PositiveInfinity)
+    if (divisionByZero == Fixed64Const::PositiveInfinity)
     {
         std::cout << "Division by zero results in PositiveInfinity" << std::endl;
     }
-    else if (divisionByZero == Fixed64::NegativeInfinity)
+    else if (divisionByZero == Fixed64Const::NegativeInfinity)
     {
         std::cout << "Division by zero results in NegativeInfinity" << std::endl;
     }

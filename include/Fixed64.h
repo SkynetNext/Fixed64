@@ -483,8 +483,8 @@ class Fixed64Const
 public:
   static inline const Fixed64 Max = Fixed64(INT64_MAX);
   static inline const Fixed64 Min = Fixed64(INT64_MIN);
-  static inline const Fixed64 UsableMax = Fixed64(static_cast<int64_t>(2147483647LL)));
-  static inline const Fixed64 UsableMin = Fixed64(static_cast<int64_t>(-2147483648LL)));
+  static inline const Fixed64 UsableMax = Fixed64(static_cast<int64_t>(2147483647LL));
+  static inline const Fixed64 UsableMin = Fixed64(static_cast<int64_t>(-2147483648LL));
 
   static inline const Fixed64 Zero = Fixed64(0);
   static inline const Fixed64 One = Fixed64(1);
