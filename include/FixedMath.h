@@ -149,11 +149,11 @@ namespace Skynet
       return t3;
     }
 
-    static Fixed64 Rcp(Fixed64 num) { return Fixed64(static_cast<int64_t>(4294967296LL / num.value)); }
+    static Fixed64 Rcp(Fixed64 num) { return Fixed64::parseLong(4294967296LL / num.value); }
 
     static Fixed64 Rsqrt(Fixed64 num)
     {
-      return Fixed64(4294967296LL / Sqrt(num).value);
+      return Fixed64::parseLong(4294967296LL / Sqrt(num).value);
     }
 
     static Fixed64 Sqrt(Fixed64 num)
