@@ -260,7 +260,7 @@ public:
   {
     if (b.value == 0)
     {
-      return a < 0 ? Fixed64::NegativeInfinity : Fixed64::PositiveInfinity;
+      return a < 0 ? Fixed64(NegativeInfinity) : Fixed64(PositiveInfinity);
     }
     a.value = (a.value << FixLut::PRECISION) / b.value;
     return a;
@@ -270,7 +270,7 @@ public:
   {
     if (b == 0)
     {
-      return a < 0 ? Fixed64::NegativeInfinity : Fixed64::PositiveInfinity;
+      return a < 0 ? Fixed64(NegativeInfinity) : Fixed64(PositiveInfinity);
     }
     a.value /= b;
     return a;
@@ -280,7 +280,7 @@ public:
   {
     if (b.value == 0)
     {
-      return a < 0 ? Fixed64::NegativeInfinity : Fixed64::PositiveInfinity;
+      return a < 0 ? Fixed64(NegativeInfinity) : Fixed64(PositiveInfinity);
     }
     b.value = (static_cast<int64_t>(a) << FixLut::PRECISION) / b.value;
     return b;
@@ -292,8 +292,8 @@ public:
     if (rhs.value == 0)
     {
       // 处理除以0的情况
-      this->value = this->value < 0 ? Fixed64::NegativeInfinity.value
-                                    : Fixed64::PositiveInfinity.value;
+      this->value = this->value < 0 ? Fixed64::NegativeInfinity
+                                    : Fixed64::PositiveInfinity;
     }
     else
     {
@@ -308,8 +308,8 @@ public:
     if (rhs == 0)
     {
       // 处理除以0的情况
-      this->value = this->value < 0 ? Fixed64::NegativeInfinity.value
-                                    : Fixed64::PositiveInfinity.value;
+      this->value = this->value < 0 ? Fixed64::NegativeInfinity
+                                    : Fixed64::PositiveInfinity;
     }
     else
     {
@@ -414,7 +414,7 @@ public:
   // 判断是否无穷
   static bool IsInfinity(Fixed64 value)
   {
-    return value == Fixed64::NegativeInfinity || value == Fixed64::PositiveInfinity;
+    return value.value == Fixed64::NegativeInfinity || value.value == Fixed64::PositiveInfinity;
   }
 
   // 判断是否NaN
