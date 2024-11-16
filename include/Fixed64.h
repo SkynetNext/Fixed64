@@ -32,6 +32,8 @@ struct Fixed64Wrapper
   uint32_t low;
 };
 
+class Fixed64Const; // Forward declaration
+
 class Fixed64
 {
 public:
