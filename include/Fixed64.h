@@ -32,8 +32,6 @@ struct Fixed64Wrapper
   uint32_t low;
 };
 
-class Fixed64Const; // Forward declaration
-
 class Fixed64
 {
 public:
@@ -262,7 +260,7 @@ public:
   {
     if (b.value == 0)
     {
-      return a < 0 ? Fixed64Const::NegativeInfinity : Fixed64Const::PositiveInfinity;
+      return a < 0 ? Fixed64::NegativeInfinity : Fixed64::PositiveInfinity;
     }
     a.value = (a.value << FixLut::PRECISION) / b.value;
     return a;
@@ -272,7 +270,7 @@ public:
   {
     if (b == 0)
     {
-      return a < 0 ? Fixed64Const::NegativeInfinity : Fixed64Const::PositiveInfinity;
+      return a < 0 ? Fixed64::NegativeInfinity : Fixed64::PositiveInfinity;
     }
     a.value /= b;
     return a;
@@ -282,7 +280,7 @@ public:
   {
     if (b.value == 0)
     {
-      return a < 0 ? Fixed64Const::NegativeInfinity : Fixed64Const::PositiveInfinity;
+      return a < 0 ? Fixed64::NegativeInfinity : Fixed64::PositiveInfinity;
     }
     b.value = (static_cast<int64_t>(a) << FixLut::PRECISION) / b.value;
     return b;
@@ -294,8 +292,8 @@ public:
     if (rhs.value == 0)
     {
       // 处理除以0的情况
-      this->value = this->value < 0 ? Fixed64Const::NegativeInfinity.value
-                                    : Fixed64Const::PositiveInfinity.value;
+      this->value = this->value < 0 ? Fixed64::NegativeInfinity.value
+                                    : Fixed64::PositiveInfinity.value;
     }
     else
     {
@@ -310,8 +308,8 @@ public:
     if (rhs == 0)
     {
       // 处理除以0的情况
-      this->value = this->value < 0 ? Fixed64Const::NegativeInfinity.value
-                                    : Fixed64Const::PositiveInfinity.value;
+      this->value = this->value < 0 ? Fixed64::NegativeInfinity.value
+                                    : Fixed64::PositiveInfinity.value;
     }
     else
     {
@@ -416,11 +414,11 @@ public:
   // 判断是否无穷
   static bool IsInfinity(Fixed64 value)
   {
-    return value == Fixed64Const::NegativeInfinity || value == Fixed64Const::PositiveInfinity;
+    return value == Fixed64::NegativeInfinity || value == Fixed64::PositiveInfinity;
   }
 
   // 判断是否NaN
-  static bool IsNaN(Fixed64 value) { return value.value == Fixed64Const::NaN.value; }
+  static bool IsNaN(Fixed64 value) { return value.value == Fixed64::NaN; }
 
   // 比较函数
   int CompareTo(Fixed64 other) const
@@ -442,6 +440,9 @@ public:
   std::size_t GetHashCode() const { return std::hash<int64_t>()(value); }
 
   static constexpr int Size = 8;
+  static constexpr int64_t PositiveInfinity = INT64_MAX;
+  static constexpr int64_t NegativeInfinity = INT64_MIN + 1;
+  static constexpr int64_t NaN = INT64_MIN;
 };
 
 inline bool operator>(const Fixed64Param &a, const Fixed64Param &b)
@@ -538,6 +539,6 @@ public:
   static inline const Fixed64 MaxValue = Max;
   static inline const Fixed64 MinValue = Min;
   static inline const Fixed64 NaN = Min;
-  static inline const Fixed64 Fixed64Const::PositiveInfinity = Fixed64(INT64_MAX);
-  static inline const Fixed64 Fixed64Const::NegativeInfinity = Fixed64(INT64_MIN + 1);
+  static inline const Fixed64 PositiveInfinity = Fixed64(INT64_MAX);
+  static inline const Fixed64 NegativeInfinity = Fixed64(INT64_MIN + 1);
 };
