@@ -441,10 +441,10 @@ public:
 
   static constexpr int Size = 8;
 
-  static const Fixed64 Max(INT64_MAX);
-  static const Fixed64 Min(INT64_MIN);
-  static const Fixed64 UsableMax(2147483647LL);
-  static const Fixed64 UsableMin(-2147483648LL);
+  static inline const Fixed64 Max(INT64_MAX);
+  static inline const Fixed64 Min(INT64_MIN);
+  static inline const Fixed64 UsableMax(2147483647LL);
+  static inline const Fixed64 UsableMin(-2147483648LL);
 
   static const Fixed64 Zero(0);
   static const Fixed64 One(1);
