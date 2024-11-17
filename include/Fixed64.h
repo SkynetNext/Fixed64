@@ -40,13 +40,13 @@ namespace Skynet
     int64_t value;
 
     Fixed64() : value(0) {}
-    explicit Fixed64(int64_t v) : value(v) {}
+    constexpr explicit Fixed64(int64_t v) : value(v) {}
 
     // Convert int to Fixed64
-    Fixed64(int value)
+    constexpr Fixed64(int value)
         : value(static_cast<int64_t>(value) << FixLut::PRECISION) {}
 
-    static Fixed64 parseLong(int64_t value)
+    static constexpr Fixed64 parseLong(int64_t value)
     {
       return Fixed64(value << FixLut::PRECISION);
     }
@@ -483,67 +483,67 @@ namespace Skynet
   class Fixed64Const
   {
   public:
-    static inline const Fixed64 Max = Fixed64(INT64_MAX);
-    static inline const Fixed64 Min = Fixed64(INT64_MIN);
-    static inline const Fixed64 UsableMax = Fixed64(static_cast<int64_t>(2147483647LL));
-    static inline const Fixed64 UsableMin = Fixed64(static_cast<int64_t>(-2147483648LL));
+    static constexpr Fixed64 Max = Fixed64(INT64_MAX);
+    static constexpr Fixed64 Min = Fixed64(INT64_MIN);
+    static constexpr Fixed64 UsableMax = Fixed64(static_cast<int64_t>(2147483647LL));
+    static constexpr Fixed64 UsableMin = Fixed64(static_cast<int64_t>(-2147483648LL));
 
-    static inline const Fixed64 Zero = Fixed64(0);
-    static inline const Fixed64 One = Fixed64(1);
-    static inline const Fixed64 Two = Fixed64(2);
-    static inline const Fixed64 Three = Fixed64(3);
-    static inline const Fixed64 Four = Fixed64(4);
-    static inline const Fixed64 Five = Fixed64(5);
-    static inline const Fixed64 Six = Fixed64(6);
-    static inline const Fixed64 Seven = Fixed64(7);
-    static inline const Fixed64 Eight = Fixed64(8);
-    static inline const Fixed64 Nine = Fixed64(9);
-    static inline const Fixed64 Ten = Fixed64(10);
-    static inline const Fixed64 NinetyNine = Fixed64(99);
-    static inline const Fixed64 Hundred = Fixed64(100);
-    static inline const Fixed64 TwoHundred = Fixed64(200);
+    static constexpr Fixed64 Zero = Fixed64(0);
+    static constexpr Fixed64 One = Fixed64(1);
+    static constexpr Fixed64 Two = Fixed64(2);
+    static constexpr Fixed64 Three = Fixed64(3);
+    static constexpr Fixed64 Four = Fixed64(4);
+    static constexpr Fixed64 Five = Fixed64(5);
+    static constexpr Fixed64 Six = Fixed64(6);
+    static constexpr Fixed64 Seven = Fixed64(7);
+    static constexpr Fixed64 Eight = Fixed64(8);
+    static constexpr Fixed64 Nine = Fixed64(9);
+    static constexpr Fixed64 Ten = Fixed64(10);
+    static constexpr Fixed64 NinetyNine = Fixed64(99);
+    static constexpr Fixed64 Hundred = Fixed64(100);
+    static constexpr Fixed64 TwoHundred = Fixed64(200);
 
-    static inline const Fixed64 Point01 = One / Hundred;
-    static inline const Fixed64 Point02 = Point01 * 2;
-    static inline const Fixed64 Point03 = Point01 * 3;
-    static inline const Fixed64 Point04 = Point01 * 4;
-    static inline const Fixed64 Point05 = Point01 * 5;
-    static inline const Fixed64 Point1 = One / 10;
-    static inline const Fixed64 Point2 = Point1 * 2;
-    static inline const Fixed64 Point25 = One / 4;
-    static inline const Fixed64 Point33 = One / 3;
-    static inline const Fixed64 Point5 = One / 2;
-    static inline const Fixed64 Point75 = One - Point25;
-    static inline const Fixed64 Point95 = One - Point05;
-    static inline const Fixed64 Point99 = One - Point01;
-    static inline const Fixed64 OnePoint01 = One + Point01;
-    static inline const Fixed64 OnePoint1 = One + Point1;
-    static inline const Fixed64 OnePoint5 = One + Point5;
+    static constexpr Fixed64 Point01 = One / Hundred;
+    static constexpr Fixed64 Point02 = Point01 * 2;
+    static constexpr Fixed64 Point03 = Point01 * 3;
+    static constexpr Fixed64 Point04 = Point01 * 4;
+    static constexpr Fixed64 Point05 = Point01 * 5;
+    static constexpr Fixed64 Point1 = One / 10;
+    static constexpr Fixed64 Point2 = Point1 * 2;
+    static constexpr Fixed64 Point25 = One / 4;
+    static constexpr Fixed64 Point33 = One / 3;
+    static constexpr Fixed64 Point5 = One / 2;
+    static constexpr Fixed64 Point75 = One - Point25;
+    static constexpr Fixed64 Point95 = One - Point05;
+    static constexpr Fixed64 Point99 = One - Point01;
+    static constexpr Fixed64 OnePoint01 = One + Point01;
+    static constexpr Fixed64 OnePoint1 = One + Point1;
+    static constexpr Fixed64 OnePoint5 = One + Point5;
 
-    static inline const Fixed64 ENotation1 = One / 10;
-    static inline const Fixed64 ENotation2 = One / 100;
-    static inline const Fixed64 ENotation3 = One / 1000;
-    static inline const Fixed64 ENotation4 = One / 10000;
+    static constexpr Fixed64 ENotation1 = One / 10;
+    static constexpr Fixed64 ENotation2 = One / 100;
+    static constexpr Fixed64 ENotation3 = One / 1000;
+    static constexpr Fixed64 ENotation4 = One / 10000;
 
-    static inline const Fixed64 MinusOne = Fixed64(-1);
-    static inline const Fixed64 Pi = Fixed64(static_cast<int64_t>(205887LL));
-    static inline const Fixed64 Pi2 = Pi * 2;
-    static inline const Fixed64 PiOver2 = Pi / 2;
-    static inline const Fixed64 PiQuarter = Pi * Point25;
-    static inline const Fixed64 PiHalf = Pi * Point5;
-    static inline const Fixed64 OneDivPi2 = One / Pi2;
-    static inline const Fixed64 DegToRad = Fixed64(static_cast<int64_t>(1143LL));
-    static inline const Fixed64 RadToDeg = Fixed64(static_cast<int64_t>(3754936LL));
-    static inline const Fixed64 Epsilon = Fixed64(static_cast<int64_t>(1LL));
-    static inline const Fixed64 E = Fixed64(static_cast<int64_t>(178145LL));
+    static constexpr Fixed64 MinusOne = Fixed64(-1);
+    static constexpr Fixed64 Pi = Fixed64(static_cast<int64_t>(205887LL));
+    static constexpr Fixed64 Pi2 = Pi * 2;
+    static constexpr Fixed64 PiOver2 = Pi / 2;
+    static constexpr Fixed64 PiQuarter = Pi * Point25;
+    static constexpr Fixed64 PiHalf = Pi * Point5;
+    static constexpr Fixed64 OneDivPi2 = One / Pi2;
+    static constexpr Fixed64 DegToRad = Fixed64(static_cast<int64_t>(1143LL));
+    static constexpr Fixed64 RadToDeg = Fixed64(static_cast<int64_t>(3754936LL));
+    static constexpr Fixed64 Epsilon = Fixed64(static_cast<int64_t>(1LL));
+    static constexpr Fixed64 E = Fixed64(static_cast<int64_t>(178145LL));
 
-    static inline const Fixed64 PiTimesTwo = Pi * 2;
-    static inline const Fixed64 DegreeToRadian = DegToRad;
-    static inline const Fixed64 RadianToDegree = RadToDeg;
-    static inline const Fixed64 MaxValue = Max;
-    static inline const Fixed64 MinValue = Min;
-    static inline const Fixed64 NaN = Min;
-    static inline const Fixed64 PositiveInfinity = Fixed64(INT64_MAX);
-    static inline const Fixed64 NegativeInfinity = Fixed64(INT64_MIN + 1);
+    static constexpr Fixed64 PiTimesTwo = Pi * 2;
+    static constexpr Fixed64 DegreeToRadian = DegToRad;
+    static constexpr Fixed64 RadianToDegree = RadToDeg;
+    static constexpr Fixed64 MaxValue = Max;
+    static constexpr Fixed64 MinValue = Min;
+    static constexpr Fixed64 NaN = Min;
+    static constexpr Fixed64 PositiveInfinity = Fixed64(INT64_MAX);
+    static constexpr Fixed64 NegativeInfinity = Fixed64(INT64_MIN + 1);
   };
 }
