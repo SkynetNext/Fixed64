@@ -46,6 +46,7 @@ namespace Skynet
       return num == 0 ? 32 : BitScanReverse(num) ^ 31;
     }
 
+    // Calculates 2 raised to the power of the given number
     static Fixed64 Pow2(Fixed64 num)
     {
       if (num.value > 1638400)
@@ -55,7 +56,7 @@ namespace Skynet
 
       int i = static_cast<int>(num);
       num = Fractions(num) * _pow2Number1 + Fixed64Const::One;
-      // 进行7次平方，相当于2的(2^7)次幂
+      // Squaring 7 times, equivalent to raising 2 to the power of 128
       for (int j = 0; j < 7; ++j)
       {
         num *= num;

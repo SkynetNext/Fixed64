@@ -42,7 +42,7 @@ namespace Skynet
     Fixed64() : value(0) {}
     explicit Fixed64(int64_t v) : value(v) {}
 
-    // 从int到Fixed64
+    // Convert int to Fixed64
     Fixed64(int value)
         : value(static_cast<int64_t>(value) << FixLut::PRECISION) {}
 
@@ -51,7 +51,7 @@ namespace Skynet
       return Fixed64(value << FixLut::PRECISION);
     }
 
-    // 转换为字符串
+    // Convert to string
     std::string toString() const
     {
       return std::to_string(static_cast<double>(*this));
@@ -119,13 +119,13 @@ namespace Skynet
 
     explicit operator double() const { return value / 65536.0; }
 
-    // 从Fixed64到int
+    // Convert from Fixed64 to int
     explicit operator int() const
     {
       return static_cast<int>(value >> FixLut::PRECISION);
     }
 
-    // 从Fixed64到long
+    // Convert from Fixed64 to long
     explicit operator int64_t() const { return value >> FixLut::PRECISION; }
 
     operator Fixed64Param() const
@@ -163,14 +163,14 @@ namespace Skynet
     }
 
     // Addition
-    // Fixed64 与 Fixed64 的 += 操作符
+    // += operator for Fixed64 and Fixed64
     Fixed64 &operator+=(const Fixed64 &rhs)
     {
       this->value += rhs.value;
       return *this;
     }
 
-    // Fixed64 与 int 的 += 操作符
+    // += operator for Fixed64 and int
     Fixed64 &operator+=(int rhs)
     {
       this->value += static_cast<int64_t>(rhs) << FixLut::PRECISION;
@@ -288,18 +288,18 @@ namespace Skynet
       return b;
     }
 
-    // /= 操作符重载
+    // /= operator overload
     Fixed64 &operator/=(const Fixed64 &rhs)
     {
       if (rhs.value == 0)
       {
-        // 处理除以0的情况
+        // Handle division by 0 case
         this->value = this->value < 0 ? Fixed64::NegativeInfinity
                                       : Fixed64::PositiveInfinity;
       }
       else
       {
-        // 在除法操作中，通常需要先左移精度因子再进行除法，以保持精度
+        // In division, the precision factor is usually shifted left before the division to maintain precision
         this->value = (this->value << FixLut::PRECISION) / rhs.value;
       }
       return *this;
@@ -309,7 +309,7 @@ namespace Skynet
     {
       if (rhs == 0)
       {
-        // 处理除以0的情况
+        // Handle division by 0 case
         this->value = this->value < 0 ? Fixed64::NegativeInfinity
                                       : Fixed64::PositiveInfinity;
       }
@@ -322,126 +322,126 @@ namespace Skynet
 
     friend Fixed64 operator%(Fixed64 a, Fixed64 b)
     {
-      a.value %= b.value;
+      a.value %= b.value; // Modulo operation between two Fixed64 numbers
       return a;
     }
 
     friend Fixed64 operator%(Fixed64 a, int b)
     {
-      a.value %= static_cast<int64_t>(b) << FixLut::PRECISION;
+      a.value %= static_cast<int64_t>(b) << FixLut::PRECISION; // Modulo operation between Fixed64 and integer
       return a;
     }
 
     friend Fixed64 operator%(int a, Fixed64 b)
     {
-      b.value = (static_cast<int64_t>(a) << FixLut::PRECISION) % b.value;
+      b.value = (static_cast<int64_t>(a) << FixLut::PRECISION) % b.value; // Modulo operation between integer and Fixed64
       return b;
     }
 
-    // 比较运算符
-    friend bool operator<(Fixed64 a, Fixed64 b) { return a.value < b.value; }
+    // Comparison operators
+    friend bool operator<(Fixed64 a, Fixed64 b) { return a.value < b.value; } // Less than
 
     friend bool operator<(Fixed64 a, int b)
     {
-      return a.value < (static_cast<int64_t>(b) << FixLut::PRECISION);
+      return a.value < (static_cast<int64_t>(b) << FixLut::PRECISION); // Less than with integer
     }
 
     friend bool operator<(int a, Fixed64 b)
     {
-      return (static_cast<int64_t>(a) << FixLut::PRECISION) < b.value;
+      return (static_cast<int64_t>(a) << FixLut::PRECISION) < b.value; // Less than with integer
     }
 
-    friend bool operator<=(Fixed64 a, Fixed64 b) { return a.value <= b.value; }
+    friend bool operator<=(Fixed64 a, Fixed64 b) { return a.value <= b.value; } // Less than or equal to
 
     friend bool operator<=(Fixed64 a, int b)
     {
-      return a.value <= (static_cast<int64_t>(b) << FixLut::PRECISION);
+      return a.value <= (static_cast<int64_t>(b) << FixLut::PRECISION); // Less than or equal to with integer
     }
 
     friend bool operator<=(int a, Fixed64 b)
     {
-      return (static_cast<int64_t>(a) << FixLut::PRECISION) <= b.value;
+      return (static_cast<int64_t>(a) << FixLut::PRECISION) <= b.value; // Less than or equal to with integer
     }
 
-    friend bool operator>(Fixed64 a, Fixed64 b) { return a.value > b.value; }
+    friend bool operator>(Fixed64 a, Fixed64 b) { return a.value > b.value; } // Greater than
 
     friend bool operator>(Fixed64 a, int b)
     {
-      return a.value > (static_cast<int64_t>(b) << FixLut::PRECISION);
+      return a.value > (static_cast<int64_t>(b) << FixLut::PRECISION); // Greater than with integer
     }
 
     friend bool operator>(int a, Fixed64 b)
     {
-      return (static_cast<int64_t>(a) << FixLut::PRECISION) > b.value;
+      return (static_cast<int64_t>(a) << FixLut::PRECISION) > b.value; // Greater than with integer
     }
 
-    friend bool operator>=(Fixed64 a, Fixed64 b) { return a.value >= b.value; }
+    friend bool operator>=(Fixed64 a, Fixed64 b) { return a.value >= b.value; } // Greater than or equal to
 
     friend bool operator>=(Fixed64 a, int b)
     {
-      return a.value >= (static_cast<int64_t>(b) << FixLut::PRECISION);
+      return a.value >= (static_cast<int64_t>(b) << FixLut::PRECISION); // Greater than or equal to with integer
     }
 
     friend bool operator>=(int a, Fixed64 b)
     {
-      return (static_cast<int64_t>(a) << FixLut::PRECISION) >= b.value;
+      return (static_cast<int64_t>(a) << FixLut::PRECISION) >= b.value; // Greater than or equal to with integer
     }
 
-    // 等于运算符
-    friend bool operator==(Fixed64 a, Fixed64 b) { return a.value == b.value; }
+    // Equality operator
+    friend bool operator==(Fixed64 a, Fixed64 b) { return a.value == b.value; } // Equal to
 
     friend bool operator==(Fixed64 a, int b)
     {
-      return a.value == (static_cast<int64_t>(b) << FixLut::PRECISION);
+      return a.value == (static_cast<int64_t>(b) << FixLut::PRECISION); // Equal to with integer
     }
 
     friend bool operator==(int a, Fixed64 b)
     {
-      return (static_cast<int64_t>(a) << FixLut::PRECISION) == b.value;
+      return (static_cast<int64_t>(a) << FixLut::PRECISION) == b.value; // Equal to with integer
     }
 
-    // 不等于运算符
-    friend bool operator!=(Fixed64 a, Fixed64 b) { return a.value != b.value; }
+    // Inequality operator
+    friend bool operator!=(Fixed64 a, Fixed64 b) { return a.value != b.value; } // Not equal to
 
     friend bool operator!=(Fixed64 a, int b)
     {
-      return a.value != (static_cast<int64_t>(b) << FixLut::PRECISION);
+      return a.value != (static_cast<int64_t>(b) << FixLut::PRECISION); // Not equal to with integer
     }
 
     friend bool operator!=(int a, Fixed64 b)
     {
-      return (static_cast<int64_t>(a) << FixLut::PRECISION) != b.value;
+      return (static_cast<int64_t>(a) << FixLut::PRECISION) != b.value; // Not equal to with integer
     }
 
-    // 判断是否无穷
+    // Check for infinity
     static bool IsInfinity(Fixed64 value)
     {
-      return value.value == Fixed64::NegativeInfinity || value.value == Fixed64::PositiveInfinity;
+      return value.value == Fixed64::NegativeInfinity || value.value == Fixed64::PositiveInfinity; // Determines if the value is infinity
     }
 
-    // 判断是否NaN
-    static bool IsNaN(Fixed64 value) { return value.value == Fixed64::NaN; }
+    // Check for NaN
+    static bool IsNaN(Fixed64 value) { return value.value == Fixed64::NaN; } // Determines if the value is NaN
 
-    // 比较函数
+    // Comparison function
     int CompareTo(Fixed64 other) const
     {
       if (value < other.value)
-        return -1;
+        return -1; // Less than
       if (value > other.value)
-        return 1;
-      return 0;
+        return 1; // Greater than
+      return 0;   // Equal
     }
 
-    // 等于函数
-    bool Equals(Fixed64 other) const { return value == other.value; }
+    // Equality function
+    bool Equals(Fixed64 other) const { return value == other.value; } // Determines if two Fixed64 values are equal
 
-    // 重载Object的Equals方法
-    bool Equals(const Fixed64 &obj) const { return value == obj.value; }
+    // Override Object's Equals method
+    bool Equals(const Fixed64 &obj) const { return value == obj.value; } // Determines if another object is equal to this instance
 
-    // 获取哈希码
-    std::size_t GetHashCode() const { return std::hash<int64_t>()(value); }
+    // Get hash code
+    std::size_t GetHashCode() const { return std::hash<int64_t>()(value); } // Computes the hash code for the value
 
-    static constexpr int Size = 8;
+    static constexpr int Size = 8; // Size of the Fixed64 type in bytes
 
   private:
     static constexpr int64_t PositiveInfinity = INT64_MAX;
