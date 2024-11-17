@@ -156,7 +156,7 @@ namespace Skynet
     }
 
     // Unary minus
-    friend Fixed64 operator-(Fixed64 a)
+    constexpr friend Fixed64 operator-(Fixed64 a)
     {
       a.value = -a.value;
       return a;
@@ -164,101 +164,101 @@ namespace Skynet
 
     // Addition
     // += operator for Fixed64 and Fixed64
-    Fixed64 &operator+=(const Fixed64 &rhs)
+    constexpr Fixed64 &operator+=(const Fixed64 &rhs)
     {
       this->value += rhs.value;
       return *this;
     }
 
     // += operator for Fixed64 and int
-    Fixed64 &operator+=(int rhs)
+    constexpr Fixed64 &operator+=(int rhs)
     {
       this->value += static_cast<int64_t>(rhs) << FixLut::PRECISION;
       return *this;
     }
 
-    friend Fixed64 operator+(Fixed64 a, Fixed64 b)
+    constexpr friend Fixed64 operator+(Fixed64 a, Fixed64 b)
     {
       a.value += b.value;
       return a;
     }
 
-    friend Fixed64 operator+(Fixed64 a, int b)
+    constexpr friend Fixed64 operator+(Fixed64 a, int b)
     {
       a.value += static_cast<int64_t>(b) << FixLut::PRECISION;
       return a;
     }
 
-    friend Fixed64 operator+(int a, Fixed64 b)
+    constexpr friend Fixed64 operator+(int a, Fixed64 b)
     {
       b.value += static_cast<int64_t>(a) << FixLut::PRECISION;
       return b;
     }
 
     // Subtraction
-    friend Fixed64 operator-(Fixed64 a, Fixed64 b)
+    constexpr friend Fixed64 operator-(Fixed64 a, Fixed64 b)
     {
       a.value -= b.value;
       return a;
     }
 
-    friend Fixed64 operator-(Fixed64 a, int b)
+    constexpr friend Fixed64 operator-(Fixed64 a, int b)
     {
       a.value -= static_cast<int64_t>(b) << FixLut::PRECISION;
       return a;
     }
 
-    friend Fixed64 operator-(int a, Fixed64 b)
+    constexpr friend Fixed64 operator-(int a, Fixed64 b)
     {
       b.value = (static_cast<int64_t>(a) << FixLut::PRECISION) - b.value;
       return b;
     }
 
-    Fixed64 &operator-=(const Fixed64 &rhs)
+    constexpr Fixed64 &operator-=(const Fixed64 &rhs)
     {
       this->value -= rhs.value;
       return *this;
     }
 
-    Fixed64 &operator-=(int rhs)
+    constexpr Fixed64 &operator-=(int rhs)
     {
       this->value -= static_cast<int64_t>(rhs) << FixLut::PRECISION;
       return *this;
     }
 
     // Multiplication
-    friend Fixed64 operator*(Fixed64 a, Fixed64 b)
+    constexpr friend Fixed64 operator*(Fixed64 a, Fixed64 b)
     {
       a.value = (a.value * b.value) >> FixLut::PRECISION;
       return a;
     }
 
-    friend Fixed64 operator*(Fixed64 a, int b)
+    constexpr friend Fixed64 operator*(Fixed64 a, int b)
     {
       a.value *= b;
       return a;
     }
 
-    friend Fixed64 operator*(int a, Fixed64 b)
+    constexpr friend Fixed64 operator*(int a, Fixed64 b)
     {
       b.value *= a;
       return b;
     }
 
-    Fixed64 &operator*=(const Fixed64 &b)
+    constexpr Fixed64 &operator*=(const Fixed64 &b)
     {
       value = (value * b.value) >> FixLut::PRECISION;
       return *this;
     }
 
-    Fixed64 &operator*=(int b)
+    constexpr Fixed64 &operator*=(int b)
     {
       value *= b;
       return *this;
     }
 
     // Division
-    friend Fixed64 operator/(Fixed64 a, Fixed64 b)
+    constexpr friend Fixed64 operator/(Fixed64 a, Fixed64 b)
     {
       if (b.value == 0)
       {
@@ -268,7 +268,7 @@ namespace Skynet
       return a;
     }
 
-    friend Fixed64 operator/(Fixed64 a, int b)
+    constexpr friend Fixed64 operator/(Fixed64 a, int b)
     {
       if (b == 0)
       {
@@ -278,7 +278,7 @@ namespace Skynet
       return a;
     }
 
-    friend Fixed64 operator/(int a, Fixed64 b)
+    constexpr friend Fixed64 operator/(int a, Fixed64 b)
     {
       if (b.value == 0)
       {
@@ -289,7 +289,7 @@ namespace Skynet
     }
 
     // /= operator overload
-    Fixed64 &operator/=(const Fixed64 &rhs)
+    constexpr Fixed64 &operator/=(const Fixed64 &rhs)
     {
       if (rhs.value == 0)
       {
@@ -305,7 +305,7 @@ namespace Skynet
       return *this;
     }
 
-    Fixed64 &operator/=(int rhs)
+    constexpr Fixed64 &operator/=(int rhs)
     {
       if (rhs == 0)
       {
