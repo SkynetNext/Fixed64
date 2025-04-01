@@ -13,6 +13,8 @@
 #include "Primitives.h"
 #include "soft_double.h"
 
+namespace math::fixed {
+
 constexpr int kMinTrigPrecision =
     32;  // Minimum precision required for trigonometric lookup table implementation
 
@@ -406,9 +408,7 @@ class Fixed64Math {
      * @return Converted fixed-point number
      */
     template <typename ToT, typename FromT>
-        requires(std::is_arithmetic_v<FromT>
-                 || std::is_same_v<::math::softfloat::soft_double, FromT>)
-                && detail::IsFixed64<ToT>
+        requires(std::is_arithmetic_v<FromT>) && detail::IsFixed64<ToT>
     [[nodiscard]] static constexpr auto ClampedCast(FromT x) noexcept -> ToT {
         constexpr auto kMin = static_cast<FromT>(ToT::Min().value() >> ToT::kFractionBits);
         constexpr auto kMax = static_cast<FromT>(ToT::Max().value() >> ToT::kFractionBits);
@@ -634,3 +634,4 @@ inline auto round(const Fixed64<P>& x) noexcept -> Fixed64<P> {
     return Fixed64Math::Round(x);
 }
 }  // namespace std
+}  // namespace math::fixed

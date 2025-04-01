@@ -93,6 +93,7 @@ typedef unsigned __int128 UDWtype;  // Double-word unsigned type
     } while (0)
 #endif
 
+namespace math::fixed {
 /**
  * @brief Low-level fixed-point math utilities
  * Independent of any other math classes, operates solely on raw int64_t values
@@ -1056,3 +1057,4 @@ class Primitives {
         return std::bit_cast<double>(bits);
     }
 };
+}  // namespace math::fixed

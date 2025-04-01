@@ -6,7 +6,7 @@ class Fixed64;
 
 #include <type_traits>
 
-namespace math::fixed64_traits {
+namespace math::fixed::fixed64_traits {
 // region Basic type detection
 template <typename T>
 struct is_fixed64_impl : std::false_type {};
@@ -57,4 +57,4 @@ struct CompareType<Fixed64<P>, Fixed64<P>> {
 };
 
 // endregion
-}  // namespace math::fixed64_traits
+}  // namespace math::fixed::fixed64_traits
