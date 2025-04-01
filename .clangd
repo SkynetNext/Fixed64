@@ -1,0 +1,18 @@
+# Disable include-cleaner checks, as Chromium doesn't enforce them and they
+# just create noise when working with clangd.
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+CompileFlags:
+  Add:
+    - -std=c++20
+    - -ferror-limit=0
+  Remove: [-s*, -O*, -flto]
+  Compiler: clang++
+
+Index:
+  Background: Build
+  StandardLibrary: false
+
+InlayHints:
+  Enabled: false
