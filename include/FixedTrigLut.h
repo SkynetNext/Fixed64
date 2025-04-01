@@ -5,6 +5,8 @@
 #include <iostream>
 #include "Primitives.h"
 
+namespace math::fixed {
+
 class FixedTrigLut {
  public:
     // Precision definitions
@@ -30,14 +32,6 @@ class FixedTrigLut {
     static constexpr const int64_t* SinLut = g_FixedTrig_SinLut;
     static constexpr const int64_t* TanLut = g_FixedTrig_TanLut;
     static constexpr const int64_t* AcosLut = g_FixedTrig_AcosLut;
-
-    inline static const int64_t TanLut[] = {
-        // Tan table values would go here
-    };
-
-    inline static const int64_t AcosLut[] = {
-        // Acos table values would go here
-    };
 
     // NOLINTEND
 
@@ -8768,3 +8762,4 @@ inline const int64_t g_FixedTrig_AcosLut[] = {
     37962629LL,   36014501LL,   33954786LL,     31761783LL,   29405688LL,   26843589LL,
     24009628LL,   20792941LL,   16977359LL,     12004802LL,   0LL,
 };
+}  // namespace math::fixed
