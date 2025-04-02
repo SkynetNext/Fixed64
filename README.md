@@ -2,80 +2,107 @@
 
 ## Overview
 
-Fixed64 is a comprehensive fixed-point arithmetic library designed to deliver high computational efficiency and consistency across different hardware and software platforms. Built on the solid foundation of the `int64_t` data type, Fixed64 enables precise mathematical operations with the added benefit of deterministic behavior, making it an ideal choice for applications requiring consistent results across various environments.
+Fixed64 is a fixed-point arithmetic library delivering high computational efficiency and consistency across platforms. Built on `int64_t`, it enables precise, deterministic mathematical operations ideal for applications requiring consistent results in various environments.
 
 ## Key Features
 
 ### Efficient Computational Model
 
-At the heart of the Fixed64 library is its use of `int64_t` for representing fixed-point numbers. This choice ensures that operations are both fast and efficient, leveraging the native integer arithmetic capabilities of the underlying hardware. The use of a 64-bit integer as the base type allows for a wide range of values and high precision, making Fixed64 suitable for a variety of computational needs.
+Fixed64 uses `int64_t` for representing fixed-point numbers, ensuring fast and efficient operations by leveraging native integer arithmetic. This 64-bit base type provides both wide range and high precision.
 
 ### Cross-Platform Consistency
 
-Fixed64 ensures cross-platform consistency, especially through the `Fixed64::parseFloat` function. This function accurately converts floating-point numbers into Fixed64's fixed-point representation, ensuring consistent results across different platforms. This is crucial for applications requiring deterministic outcomes across various hardware and software environments.
+Through bit-precise implementation, Fixed64 ensures consistent results across different platforms - crucial for applications requiring deterministic outcomes. Unlike many fixed-point libraries that rely on simple multiplication/division for float/double conversions (which can introduce platform-specific variations), Fixed64 directly manipulates the bits according to IEEE 754 floating-point standard.
+
+The carefully crafted bit-manipulation techniques in `Primitives.h` fundamentally solve cross-platform consistency issues by:
+- Performing deterministic bit-level operations for all conversions
+- Precisely controlling rounding behavior
+- Eliminating compiler and hardware-specific floating-point optimizations
+- Ensuring identical binary representation of values across any platform
+
+This approach guarantees bit-exact matching results between different operating systems, compilers, and CPU architectures - essential for networked applications, deterministic simulations, and reproducible scientific computing.
+
+### Performance Optimizations
+
+Fixed64 is a C++ port of [FixedMath.Net](https://github.com/asik/FixedMath.Net), with significant performance improvements:
+
+- **Optimized Arithmetic**: Multiplication and division operations use industry-best practices from GCC, ARM CMSIS-DSP, and SoftFloat libraries
+- **Efficient Square Root**: Optimized for both accuracy and speed
+- **Bit-Level Conversions**: Precise bit manipulation ensures cross-platform consistency
+- **Performance Gains**: 3-5x faster than the original C# implementation
 
 ### Comprehensive Operation Support
 
-Fixed64 supports a wide array of mathematical operations, including:
+- Basic arithmetic and comparison operations
+- Advanced mathematical functions (Sin, Cos, Tan, Exp, Pow2)
+- Trigonometric functions and their inverse
+- Utility functions including square root
 
-- Basic arithmetic operations and comparison: addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), addition assignment (`+=`), subtraction assignment (`-=`), multiplication assignment (`*=`), division assignment (`/=`), greater than (`>`), less than (`<`), greater than or equal to (`>=`), less than or equal to (`<=`), and equality (`==`).
-- Advanced mathematical functions: sine (`Sin`), cosine (`Cos`), tangent (`Tan`), exponential (`Exp`), and power (`Pow2`).
-- Trigonometric functions and their inverse: including `Sin`, `Cos`, `Tan`, `Acos`, `Asin`, and `Atan`.
-- Utility functions: square root (`Sqrt`), reciprocal (`Rcp`), and more.
+### System Requirements
+
+- C++20 or later (uses `std::bit_cast`)
+- Tested with: Clang 10.0+, GCC 10.0+
+
+### Template-Based Precision Control
+
+Implemented as `Fixed64<P>` where P specifies fractional bits. Predefined types:
+- `Fixed64_16`: 16 fractional bits (Q47.16)
+- `Fixed64_32`: 32 fractional bits (Q31.32)
+- `Fixed64_48`: 48 fractional bits (Q15.48)
 
 ### Header-Only Library
 
-Fixed64 is a header-only library, meaning that it consists solely of header files without the need for separate source files or precompiled binaries. This design choice simplifies integration into projects, as developers only need to include the relevant header files in their codebase to use Fixed64. It eliminates the need for linking with precompiled libraries, making the library easily portable and usable across various platforms and compilers. Being a header-only library also facilitates ease of distribution and updating, as the entire library can be updated by replacing the header files.
+Consists solely of header files, simplifying integration and eliminating the need for linking with precompiled libraries.
 
-### Predefined Constants
+### Predefined Constants and Special Values
 
-To further enhance usability and reduce construction costs, Fixed64 includes a collection of predefined constants within the `Fixed64Const` class. These constants represent commonly used values such as `Zero`, `One`, `Pi`, and many others, facilitating easy and efficient usage within applications.
+Includes commonly used constants (`Zero()`, `One()`, `Pi()`) and special values (Infinity, NegInfinity, NaN) for handling exceptional cases.
 
-### Infinity and NaN Handling
+## Usage Examples
 
-Fixed64 provides special constants for representing positive infinity, negative infinity, and Not a Number (NaN) scenarios. These constants allow for the handling of exceptional cases in mathematical operations, enhancing the robustness and reliability of applications using the library.
-
-## Usage Example
+### Basic Operations
 
 ```cpp
 #include "Fixed64.h"
 
-using namespace Skynet;
+using math::fp::Fixed64_16;
 
 int main() {
-    Fixed64 a = Fixed64Const::Pi;
-    Fixed64 b = Fixed64(1.2345);
-    Fixed64 result = a * b;
+    Fixed64_16 a = Fixed64_16::Pi();
+    Fixed64_16 b(1.2345);
+    Fixed64_16 result = a * b;
 
-    std::cout << "Result: " << result << std::endl;
-
+    std::cout << "Result: " << result.ToString() << std::endl;
     return 0;
 }
 ```
 
-This simple example demonstrates how to use Fixed64 to perform a multiplication operation and output the result.
+### Trigonometric Functions
 
 ```cpp
 #include "Fixed64.h"
+#include "Fixed64Math.h"
 
-using namespace Skynet;
+using math::fp::Fixed64_32;
+using math::fp::Fixed64Math;
 
 int main() {
-    Fixed64 angle = Fixed64Const::PiOver2; // Approximately PI/2
-    Fixed64 sinValue = FixedMath::Sin(angle);
-    Fixed64 cosValue = FixedMath::Cos(angle);
-    Fixed64 tanValue = FixedMath::Tan(angle);
-
-    std::cout << "Sin: " << sinValue << std::endl;
-    std::cout << "Cos: " << cosValue << std::endl;
-    std::cout << "Tan: " << tanValue << std::endl;
-
+    // Calculate trigonometric functions at π/4
+    Fixed64_32 angle = Fixed64_32::Pi() / Fixed64_32(4);
+    
+    std::cout << "Sin(π/4): " << Fixed64Math::Sin(angle).ToString() << std::endl;
+    std::cout << "Cos(π/4): " << Fixed64Math::Cos(angle).ToString() << std::endl;
+    std::cout << "Tan(π/4): " << Fixed64Math::Tan(angle).ToString() << std::endl;
+    
+    // Angle conversion example
+    Fixed64_32 degrees = Fixed64_32(45);
+    Fixed64_32 radians = degrees * Fixed64_32::Deg2Rad();
+    std::cout << "45° in radians: " << radians.ToString() << std::endl;
+    
     return 0;
 }
 ```
-
-This example demonstrates how to use Fixed64 to compute the sine, cosine, and tangent of an angle. These functions are crucial for applications involving trigonometric calculations, providing high precision and performance.
 
 ## Conclusion
 
-Fixed64 is designed to meet the needs of developers looking for a high-performance, cross-platform consistent library for fixed-point arithmetic. With its efficient computational model, comprehensive operation support, and a wide range of predefined constants, Fixed64 is well-suited for applications demanding high precision and consistency.
+Fixed64 meets the needs of developers requiring high-performance, cross-platform consistent fixed-point arithmetic. Its efficient computational model, comprehensive operation support, and predefined constants make it well-suited for applications demanding high precision and consistency.
