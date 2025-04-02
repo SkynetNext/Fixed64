@@ -14,13 +14,13 @@ Fixed64 uses `int64_t` for representing fixed-point numbers, ensuring fast and e
 
 Through bit-precise implementation, Fixed64 ensures consistent results across different platforms - crucial for applications requiring deterministic outcomes. Unlike many fixed-point libraries that rely on simple multiplication/division for float/double conversions (which can introduce platform-specific variations), Fixed64 directly manipulates the bits according to IEEE 754 floating-point standard.
 
-The carefully crafted bit-manipulation techniques in `Primitives.h` fundamentally solve cross-platform consistency issues by:
+The bit-manipulation techniques in `Primitives.h` fundamentally solve cross-platform consistency issues by:
 - Performing deterministic bit-level operations for all conversions
 - Precisely controlling rounding behavior
 - Eliminating compiler and hardware-specific floating-point optimizations
 - Ensuring identical binary representation of values across any platform
 
-This approach guarantees bit-exact matching results between different operating systems, compilers, and CPU architectures - essential for networked applications, deterministic simulations, and reproducible scientific computing.
+This approach guarantees bit-exact matching results between different operating systems, compilers, and CPU architectures.
 
 ### Performance Optimizations
 
@@ -28,15 +28,22 @@ Fixed64 is a C++ port of [FixedMath.Net](https://github.com/asik/FixedMath.Net),
 
 - **Optimized Arithmetic**: Multiplication and division operations use industry-best practices from GCC, ARM CMSIS-DSP, and SoftFloat libraries
 - **Efficient Square Root**: Optimized for both accuracy and speed
-- **Bit-Level Conversions**: Precise bit manipulation ensures cross-platform consistency
 - **Performance Gains**: 3-5x faster than the original C# implementation
 
 ### Comprehensive Operation Support
 
-- Basic arithmetic and comparison operations
-- Advanced mathematical functions (Sin, Cos, Tan, Exp, Pow2)
-- Trigonometric functions and their inverse
-- Utility functions including square root
+Fixed64 supports a wide array of mathematical operations:
+
+- **Basic Arithmetic**: Addition, subtraction, multiplication, division and their assignment variants
+- **Comparison Operations**: Greater than, less than, equality, etc.
+- **Trigonometric Functions**: Basic (`Sin`, `Cos`, `Tan`) and inverse (`Asin`, `Acos`, `Atan`, `Atan2`)
+- **Exponential Functions**: `Exp`, `Pow2`
+- **Rounding Operations**: `Floor`, `Ceil`, `Round`, `Trunc`
+- **Value Manipulation**: `Abs`, `Min`, `Max`, `Clamp`, `Sign`
+- **Interpolation Functions**: `Lerp`, `InverseLerp`, `LerpAngle`
+- **Angle Utilities**: `NormalizeAngle`, `Repeat`
+
+All mathematical functions are also available through the standard C++ `std` namespace.
 
 ### System Requirements
 
@@ -90,9 +97,13 @@ int main() {
     // Calculate trigonometric functions at π/4
     Fixed64_32 angle = Fixed64_32::Pi() / Fixed64_32(4);
     
-    std::cout << "Sin(π/4): " << Fixed64Math::Sin(angle).ToString() << std::endl;
-    std::cout << "Cos(π/4): " << Fixed64Math::Cos(angle).ToString() << std::endl;
-    std::cout << "Tan(π/4): " << Fixed64Math::Tan(angle).ToString() << std::endl;
+    Fixed64_32 sinValue = Fixed64Math::Sin(angle);
+    Fixed64_32 cosValue = Fixed64Math::Cos(angle);
+    Fixed64_32 tanValue = Fixed64Math::Tan(angle);
+    
+    std::cout << "Sin(π/4): " << sinValue.ToString() << std::endl;
+    std::cout << "Cos(π/4): " << cosValue.ToString() << std::endl;
+    std::cout << "Tan(π/4): " << tanValue.ToString() << std::endl;
     
     // Angle conversion example
     Fixed64_32 degrees = Fixed64_32(45);
