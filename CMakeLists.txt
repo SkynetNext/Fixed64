@@ -13,7 +13,6 @@ set(CMAKE_CXX_COMPILER clang++)
 # Add include directory
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
-# 修改：只添加头文件库，不需要源文件
 add_library(Fixed64 INTERFACE)
 target_include_directories(Fixed64 INTERFACE ${PROJECT_SOURCE_DIR}/include)
 
@@ -26,7 +25,6 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/examples")
         add_executable(${example_name} ${example_source})
         target_link_libraries(${example_name} Fixed64)
         
-        # 为每个示例程序添加编译选项
         target_compile_options(${example_name} PRIVATE 
             -Wall 
             -Wextra 
