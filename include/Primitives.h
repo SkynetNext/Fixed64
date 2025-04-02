@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+
 #ifdef __SIZEOF_INT128__
 using int128_t = __int128;
 #else
@@ -62,7 +63,12 @@ typedef unsigned __int128 UDWtype;  // Double-word unsigned type
         (r) = __r0;                                                             \
     } while (0)
 #endif
+
+/* udiv_qrnnd: Computes quotient and remainder of double-word by single-word division
+   (q, r) = (n1,n0) / d */
+#if !defined(udiv_qrnnd)
 #define udiv_qrnnd __udiv_qrnnd_c
+#endif
 
 /* umul_ppmm: Calculates the double-word product of two single-word operands
    (w1, w0) = u * v */
@@ -93,7 +99,7 @@ typedef unsigned __int128 UDWtype;  // Double-word unsigned type
     } while (0)
 #endif
 
-namespace math::fixed {
+namespace math::fp {
 /**
  * @brief Low-level fixed-point math utilities
  * Independent of any other math classes, operates solely on raw int64_t values
@@ -218,6 +224,41 @@ class Primitives {
         }
     }
 
+    // Lookup table for reciprocal square root approximation
+    static constexpr std::array<uint16_t, 16> softfloat_approxRecipSqrt_1k0s = {0xB4C9,
+                                                                                0xFFAB,
+                                                                                0xAA7D,
+                                                                                0xF11C,
+                                                                                0xA1C5,
+                                                                                0xE4C7,
+                                                                                0x9A43,
+                                                                                0xDA29,
+                                                                                0x93B5,
+                                                                                0xD0E5,
+                                                                                0x8DED,
+                                                                                0xC8B7,
+                                                                                0x88C6,
+                                                                                0xC16D,
+                                                                                0x8424,
+                                                                                0xBAE1};
+
+    static constexpr std::array<uint16_t, 16> softfloat_approxRecipSqrt_1k1s = {0xA5A5,
+                                                                                0xEA42,
+                                                                                0x8C21,
+                                                                                0xC62D,
+                                                                                0x788F,
+                                                                                0xAA7F,
+                                                                                0x6928,
+                                                                                0x94B6,
+                                                                                0x5CC7,
+                                                                                0x8335,
+                                                                                0x52A6,
+                                                                                0x74E2,
+                                                                                0x4A3E,
+                                                                                0x68FE,
+                                                                                0x432B,
+                                                                                0x5EFD};
+
     /**
      * @brief Precise reciprocal square root approximation, directly referenced from SoftFloat
      * library
@@ -225,41 +266,6 @@ class Primitives {
     [[nodiscard]] static constexpr auto softfloat_approxRecipSqrt32_1(uint32_t oddExpA,
                                                                       uint32_t a) noexcept
         -> uint32_t {
-        // Lookup table for reciprocal square root approximation
-        static constexpr std::array<uint16_t, 16> softfloat_approxRecipSqrt_1k0s = {0xB4C9,
-                                                                                    0xFFAB,
-                                                                                    0xAA7D,
-                                                                                    0xF11C,
-                                                                                    0xA1C5,
-                                                                                    0xE4C7,
-                                                                                    0x9A43,
-                                                                                    0xDA29,
-                                                                                    0x93B5,
-                                                                                    0xD0E5,
-                                                                                    0x8DED,
-                                                                                    0xC8B7,
-                                                                                    0x88C6,
-                                                                                    0xC16D,
-                                                                                    0x8424,
-                                                                                    0xBAE1};
-
-        static constexpr std::array<uint16_t, 16> softfloat_approxRecipSqrt_1k1s = {0xA5A5,
-                                                                                    0xEA42,
-                                                                                    0x8C21,
-                                                                                    0xC62D,
-                                                                                    0x788F,
-                                                                                    0xAA7F,
-                                                                                    0x6928,
-                                                                                    0x94B6,
-                                                                                    0x5CC7,
-                                                                                    0x8335,
-                                                                                    0x52A6,
-                                                                                    0x74E2,
-                                                                                    0x4A3E,
-                                                                                    0x68FE,
-                                                                                    0x432B,
-                                                                                    0x5EFD};
-
         // Calculate lookup table index
         int index = ((a >> 27) & 0xE) + oddExpA;
 
@@ -1057,4 +1063,4 @@ class Primitives {
         return std::bit_cast<double>(bits);
     }
 };
-}  // namespace math::fixed
+}  // namespace math::fp

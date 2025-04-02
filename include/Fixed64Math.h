@@ -7,13 +7,10 @@
 #include <type_traits>
 
 #include "Fixed64.h"
-#include "Fixed64CastTraits.h"
 #include "FixedTrigLut.h"
-#include "Numeric.h"
 #include "Primitives.h"
-#include "soft_double.h"
 
-namespace math::fixed {
+namespace math::fp {
 
 constexpr int kMinTrigPrecision =
     32;  // Minimum precision required for trigonometric lookup table implementation
@@ -408,12 +405,12 @@ class Fixed64Math {
      * @return Converted fixed-point number
      */
     template <typename ToT, typename FromT>
-        requires(std::is_arithmetic_v<FromT>) && detail::IsFixed64<ToT>
+        requires(::std::is_arithmetic_v<FromT>) && detail::IsFixed64<ToT>
     [[nodiscard]] static constexpr auto ClampedCast(FromT x) noexcept -> ToT {
         constexpr auto kMin = static_cast<FromT>(ToT::Min().value() >> ToT::kFractionBits);
         constexpr auto kMax = static_cast<FromT>(ToT::Max().value() >> ToT::kFractionBits);
 
-        return static_cast<ToT>(std::clamp(x, kMin, kMax));
+        return static_cast<ToT>(::std::clamp(x, kMin, kMax));
     }
 
     /**
@@ -548,90 +545,91 @@ class Fixed64Math {
         return Fixed64<P>(raw, detail::nothing{});
     }
 };
+}  // namespace math::fp
 
 namespace std {
 // Trigonometric function support (requires P >= kMinTrigPrecision)
 template <int P>
-    requires(P >= kMinTrigPrecision)
-inline auto sin(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Sin(x);
+    requires(P >= ::math::fp::kMinTrigPrecision)
+inline auto sin(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Sin(x);
 }
 
 template <int P>
-    requires(P >= kMinTrigPrecision)
-inline auto cos(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Cos(x);
+    requires(P >= ::math::fp::kMinTrigPrecision)
+inline auto cos(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Cos(x);
 }
 
 template <int P>
-    requires(P >= kMinTrigPrecision)
-inline auto tan(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Tan(x);
+    requires(P >= ::math::fp::kMinTrigPrecision)
+inline auto tan(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Tan(x);
 }
 
 template <int P>
-    requires(P >= kMinTrigPrecision)
-inline auto asin(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Asin(x);
+    requires(P >= ::math::fp::kMinTrigPrecision)
+inline auto asin(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Asin(x);
 }
 
 template <int P>
-    requires(P >= kMinTrigPrecision)
-inline auto acos(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Acos(x);
+    requires(P >= ::math::fp::kMinTrigPrecision)
+inline auto acos(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Acos(x);
 }
 
 template <int P>
-inline auto atan(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Atan(x);
+inline auto atan(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Atan(x);
 }
 
 template <int P>
-inline auto atan2(const Fixed64<P>& y, const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Atan2(y, x);
+inline auto atan2(const ::math::fp::Fixed64<P>& y, const ::math::fp::Fixed64<P>& x) noexcept
+    -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Atan2(y, x);
 }
 
 // Exponential and logarithmic functions
 template <int P>
-inline auto exp(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Exp(x);
+inline auto exp(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Exp(x);
 }
 
 template <int P>
-inline auto sqrt(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Sqrt(x);
+inline auto sqrt(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Sqrt(x);
 }
 
 // Absolute value
 template <int P>
-inline auto abs(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Abs(x);
+inline auto abs(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Abs(x);
 }
 
 template <int P>
-inline auto fabs(const Fixed64<P>& x) noexcept -> Fixed64<P> {
+inline auto fabs(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
     return abs(x);
 }
 
 // Rounding functions
 template <int P>
-inline auto floor(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Floor(x);
+inline auto floor(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Floor(x);
 }
 
 template <int P>
-inline auto trunc(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Trunc(x);
+inline auto trunc(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Trunc(x);
 }
 
 template <int P>
-inline auto ceil(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Ceil(x);
+inline auto ceil(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Ceil(x);
 }
 
 template <int P>
-inline auto round(const Fixed64<P>& x) noexcept -> Fixed64<P> {
-    return Fixed64Math::Round(x);
+inline auto round(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
+    return ::math::fp::Fixed64Math::Round(x);
 }
 }  // namespace std
-}  // namespace math::fixed

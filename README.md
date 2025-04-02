@@ -12,7 +12,7 @@ At the heart of the Fixed64 library is its use of `int64_t` for representing fix
 
 ### Cross-Platform Consistency
 
-Fixed64 ensures cross-platform consistency, especially through the `Fixed64::parseFloat` function. This function accurately converts floating-point numbers into Fixed64's fixed-point representation, ensuring consistent results across different platforms. This is crucial for applications requiring deterministic outcomes across various hardware and software environments.
+Fixed64 ensures cross-platform consistency through its bit-precise implementation. The library accurately converts floating-point numbers into Fixed64's fixed-point representation, ensuring consistent results across different platforms. This is crucial for applications requiring deterministic outcomes across various hardware and software environments.
 
 ### Comprehensive Operation Support
 
@@ -21,15 +21,29 @@ Fixed64 supports a wide array of mathematical operations, including:
 - Basic arithmetic operations and comparison: addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`), addition assignment (`+=`), subtraction assignment (`-=`), multiplication assignment (`*=`), division assignment (`/=`), greater than (`>`), less than (`<`), greater than or equal to (`>=`), less than or equal to (`<=`), and equality (`==`).
 - Advanced mathematical functions: sine (`Sin`), cosine (`Cos`), tangent (`Tan`), exponential (`Exp`), and power (`Pow2`).
 - Trigonometric functions and their inverse: including `Sin`, `Cos`, `Tan`, `Acos`, `Asin`, and `Atan`.
-- Utility functions: square root (`Sqrt`), reciprocal (`Rcp`), and more.
+- Utility functions: square root (`Sqrt`), and more.
+
+### System Requirements
+
+Fixed64 requires C++20 or later due to its use of modern C++ features such as `std::bit_cast`. The library has been tested with the following compilers:
+- Clang 10.0 or later
+- GCC 10.0 or later
+
+### Template-Based Precision Control
+
+Fixed64 is implemented as a template class `Fixed64<P>` where `P` specifies the number of fractional bits. This allows for flexible precision control based on application requirements. Common precision types are predefined:
+
+- `Fixed64_16`: 16 fractional bits (Q47.16)
+- `Fixed64_32`: 32 fractional bits (Q31.32)
+- `Fixed64_48`: 48 fractional bits (Q15.48)
 
 ### Header-Only Library
 
-Fixed64 is a header-only library, meaning that it consists solely of header files without the need for separate source files or precompiled binaries. This design choice simplifies integration into projects, as developers only need to include the relevant header files in their codebase to use Fixed64. It eliminates the need for linking with precompiled libraries, making the library easily portable and usable across various platforms and compilers. Being a header-only library also facilitates ease of distribution and updating, as the entire library can be updated by replacing the header files.
+Fixed64 is a header-only library, meaning that it consists solely of header files without the need for separate source files or precompiled binaries. This design choice simplifies integration into projects, as developers only need to include the relevant header files in their codebase to use Fixed64. It eliminates the need for linking with precompiled libraries, making the library easily portable and usable across various platforms and compilers.
 
 ### Predefined Constants
 
-To further enhance usability and reduce construction costs, Fixed64 includes a collection of predefined constants within the `Fixed64Const` class. These constants represent commonly used values such as `Zero`, `One`, `Pi`, and many others, facilitating easy and efficient usage within applications.
+To further enhance usability and reduce construction costs, Fixed64 includes a collection of predefined constants accessible as static methods. These constants represent commonly used values such as `Zero()`, `One()`, `Pi()`, and many others, facilitating easy and efficient usage within applications.
 
 ### Infinity and NaN Handling
 
@@ -40,14 +54,15 @@ Fixed64 provides special constants for representing positive infinity, negative 
 ```cpp
 #include "Fixed64.h"
 
-using namespace Skynet;
+using math::fp::Fixed64;
+using math::fp::Fixed64_16;
 
 int main() {
-    Fixed64 a = Fixed64Const::Pi;
-    Fixed64 b = Fixed64(1.2345);
-    Fixed64 result = a * b;
+    Fixed64<16> a = Fixed64<16>::Pi();
+    Fixed64<16> b(1.2345);
+    Fixed64<16> result = a * b;
 
-    std::cout << "Result: " << result << std::endl;
+    std::cout << "Result: " << result.ToString() << std::endl;
 
     return 0;
 }
@@ -57,24 +72,61 @@ This simple example demonstrates how to use Fixed64 to perform a multiplication 
 
 ```cpp
 #include "Fixed64.h"
+#include "Fixed64Math.h"
 
-using namespace Skynet;
+using math::fp::Fixed64_32;
+using math::fp::Fixed64Math;
 
 int main() {
-    Fixed64 angle = Fixed64Const::PiOver2; // Approximately PI/2
-    Fixed64 sinValue = FixedMath::Sin(angle);
-    Fixed64 cosValue = FixedMath::Cos(angle);
-    Fixed64 tanValue = FixedMath::Tan(angle);
+    Fixed64_32 angle = Fixed64_32::PiOver2(); // Approximately PI/2
+    Fixed64_32 sinValue = Fixed64Math::Sin(angle);
+    Fixed64_32 cosValue = Fixed64Math::Cos(angle);
+    Fixed64_32 tanValue = Fixed64Math::Tan(angle);
 
-    std::cout << "Sin: " << sinValue << std::endl;
-    std::cout << "Cos: " << cosValue << std::endl;
-    std::cout << "Tan: " << tanValue << std::endl;
+    std::cout << "Sin: " << sinValue.ToString() << std::endl;
+    std::cout << "Cos: " << cosValue.ToString() << std::endl;
+    std::cout << "Tan: " << tanValue.ToString() << std::endl;
 
     return 0;
 }
 ```
 
 This example demonstrates how to use Fixed64 to compute the sine, cosine, and tangent of an angle. These functions are crucial for applications involving trigonometric calculations, providing high precision and performance.
+
+## Advanced Example
+
+```cpp
+#include "Fixed64.h"
+#include "Fixed64Math.h"
+
+using math::fp::Fixed64_16;
+using math::fp::Fixed64_32;
+using math::fp::Fixed64Math;
+
+int main() {
+    // Define some angles (using radians)
+    Fixed64_32 angleInRadians = Fixed64_32::Deg2Rad() * Fixed64_32(45); // Convert 45 degrees to radians
+
+    // Calculate and output the values of sin, cos, tan
+    Fixed64_32 sinValue = Fixed64Math::Sin(angleInRadians);
+    Fixed64_32 cosValue = Fixed64Math::Cos(angleInRadians);
+    Fixed64_32 tanValue = Fixed64Math::Tan(angleInRadians);
+
+    std::cout << "Sin(45 degrees): " << sinValue.ToString() << std::endl;
+    std::cout << "Cos(45 degrees): " << cosValue.ToString() << std::endl;
+    std::cout << "Tan(45 degrees): " << tanValue.ToString() << std::endl;
+
+    // Use atan2 to calculate an angle, and convert the result back to degrees
+    Fixed64_32 y = Fixed64_32::One();
+    Fixed64_32 x = Fixed64_32::One();
+    Fixed64_32 atan2Value = Fixed64Math::Atan2(y, x);
+    Fixed64_32 angleInDegrees = atan2Value * Fixed64_32::Rad2Deg();
+
+    std::cout << "Atan2(1,1) in degrees: " << angleInDegrees.ToString() << std::endl;
+
+    return 0;
+}
+```
 
 ## Conclusion
 

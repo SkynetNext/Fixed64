@@ -38,12 +38,12 @@
  * - Compile-time constant computation support
  *
  */
-namespace math::fixed {
+namespace math::fp {
 template <typename T>
 struct Fixed64CastTraits;
 
 namespace detail {
-using namespace math::fixed::fixed64_traits;  // Import type traits
+using namespace math::fp::fixed64_traits;  // Import type traits
 
 struct nothing {};
 }  // namespace detail
@@ -901,107 +901,6 @@ constexpr auto operator%(const T& a, const Fixed64<P>& b) noexcept -> Fixed64<P>
     return Fixed64<P>(a) % b;
 }
 
-// Standard library support
-namespace std {
-// 1. Numeric limits
-template <int P>
-struct ::std::numeric_limits<Fixed64<P>> {
-    static constexpr bool is_specialized = true;
-    static constexpr bool is_signed = true;
-    static constexpr bool is_integer = false;
-    static constexpr bool is_exact = true;
-    static constexpr bool has_infinity = true;
-    static constexpr bool has_quiet_NaN = true;
-
-    static constexpr auto min() noexcept -> Fixed64<P> {
-        return Fixed64<P>::Min();
-    }
-
-    static constexpr auto max() noexcept -> Fixed64<P> {
-        return Fixed64<P>::Max();
-    }
-
-    static constexpr auto lowest() noexcept -> Fixed64<P> {
-        return Fixed64<P>::Min();
-    }
-
-    static constexpr auto epsilon() noexcept -> Fixed64<P> {
-        return Fixed64<P>::Epsilon();
-    }
-
-    static constexpr auto infinity() noexcept -> Fixed64<P> {
-        return Fixed64<P>::Infinity();
-    }
-
-    static constexpr auto quiet_NaN() noexcept -> Fixed64<P> {
-        return Fixed64<P>::NaN();
-    }
-};
-
-// 2. Hash support
-template <int P>
-struct hash<Fixed64<P>> {
-    auto operator()(const Fixed64<P>& x) const noexcept -> size_t {
-        return hash<int64_t>{}(x.value());
-    }
-};
-
-// 3. Special value checks
-template <int P>
-inline auto isnan(const Fixed64<P>& x) noexcept -> bool {
-    return x == Fixed64<P>::NaN();
-}
-
-template <int P>
-inline auto isinf(const Fixed64<P>& x) noexcept -> bool {
-    return x == Fixed64<P>::Infinity() || x == Fixed64<P>::NegInfinity();
-}
-
-template <int P>
-inline auto isfinite(const Fixed64<P>& x) noexcept -> bool {
-    return !isnan(x) && !isinf(x);
-}
-
-template <int P>
-inline auto signbit(const Fixed64<P>& x) noexcept -> bool {
-    return x.value() < 0;
-}
-
-template <int P>
-inline auto copysign(const Fixed64<P>& mag, const Fixed64<P>& sgn) noexcept -> Fixed64<P> {
-    return signbit(mag) == signbit(sgn) ? mag : -mag;
-}
-
-// 4. Basic math functions
-template <int P>
-inline auto fmod(const Fixed64<P>& x, const Fixed64<P>& y) noexcept -> Fixed64<P> {
-    return x % y;
-}
-
-// 5. String conversion
-template <int P>
-string to_string(const Fixed64<P>& num) {
-    return num.ToString();
-}
-
-template <int P>
-Fixed64<P> stof64(const string& str) {
-    return Fixed64<P>::FromString(str);
-}
-
-// 6. Formatting support (C++20)
-#if __cplusplus >= 202002L
-template <int P>
-struct formatter<Fixed64<P>> : formatter<string> {
-    template <typename FormatContext>
-    auto format(const Fixed64<P>& x, FormatContext& ctx) const {
-        return formatter<string>::format(x.ToString(), ctx);
-    }
-};
-#endif
-
-}  // namespace std
-
 /**
  * @brief Q47.16 fixed-point number, suitable for general game calculations
  * @details Range and precision:
@@ -1034,4 +933,95 @@ using Fixed64_32 = Fixed64<32>;
  *
  */
 using Fixed64_40 = Fixed64<40>;
-}  // namespace math::fixed
+}  // namespace math::fp
+
+// Standard library support
+namespace std {
+// 1. Numeric limits
+template <int P>
+struct numeric_limits<::math::fp::Fixed64<P>> {
+    static constexpr bool is_specialized = true;
+    static constexpr bool is_signed = true;
+    static constexpr bool is_integer = false;
+    static constexpr bool is_exact = true;
+    static constexpr bool has_infinity = true;
+    static constexpr bool has_quiet_NaN = true;
+
+    static constexpr auto min() noexcept -> ::math::fp::Fixed64<P> {
+        return ::math::fp::Fixed64<P>::Min();
+    }
+
+    static constexpr auto max() noexcept -> ::math::fp::Fixed64<P> {
+        return ::math::fp::Fixed64<P>::Max();
+    }
+
+    static constexpr auto lowest() noexcept -> ::math::fp::Fixed64<P> {
+        return ::math::fp::Fixed64<P>::Min();
+    }
+
+    static constexpr auto epsilon() noexcept -> ::math::fp::Fixed64<P> {
+        return ::math::fp::Fixed64<P>::Epsilon();
+    }
+
+    static constexpr auto infinity() noexcept -> ::math::fp::Fixed64<P> {
+        return ::math::fp::Fixed64<P>::Infinity();
+    }
+
+    static constexpr auto quiet_NaN() noexcept -> ::math::fp::Fixed64<P> {
+        return ::math::fp::Fixed64<P>::NaN();
+    }
+};
+
+// 2. Hash support
+template <int P>
+struct hash<::math::fp::Fixed64<P>> {
+    auto operator()(const ::math::fp::Fixed64<P>& x) const noexcept -> size_t {
+        return hash<int64_t>{}(x.value());
+    }
+};
+
+// 3. Special value checks
+template <int P>
+inline auto isnan(const ::math::fp::Fixed64<P>& x) noexcept -> bool {
+    return x == ::math::fp::Fixed64<P>::NaN();
+}
+
+template <int P>
+inline auto isinf(const ::math::fp::Fixed64<P>& x) noexcept -> bool {
+    return x == ::math::fp::Fixed64<P>::Infinity() || x == ::math::fp::Fixed64<P>::NegInfinity();
+}
+
+template <int P>
+inline auto isfinite(const ::math::fp::Fixed64<P>& x) noexcept -> bool {
+    return !isnan(x) && !isinf(x);
+}
+
+template <int P>
+inline auto signbit(const ::math::fp::Fixed64<P>& x) noexcept -> bool {
+    return x.value() < 0;
+}
+
+template <int P>
+inline auto copysign(const ::math::fp::Fixed64<P>& mag, const ::math::fp::Fixed64<P>& sgn) noexcept
+    -> ::math::fp::Fixed64<P> {
+    return signbit(mag) == signbit(sgn) ? mag : -mag;
+}
+
+// 4. Basic math functions
+template <int P>
+inline auto fmod(const ::math::fp::Fixed64<P>& x, const ::math::fp::Fixed64<P>& y) noexcept
+    -> ::math::fp::Fixed64<P> {
+    return x % y;
+}
+
+// 5. String conversion
+template <int P>
+string to_string(const ::math::fp::Fixed64<P>& num) {
+    return num.ToString();
+}
+
+template <int P>
+::math::fp::Fixed64<P> stof64(const string& str) {
+    return ::math::fp::Fixed64<P>::FromString(str);
+}
+}  // namespace std

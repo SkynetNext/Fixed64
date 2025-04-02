@@ -5,7 +5,11 @@
 #include <iostream>
 #include "Primitives.h"
 
-namespace math::fixed {
+namespace math::fp {
+
+extern const int64_t g_FixedTrig_SinLut[];
+extern const int64_t g_FixedTrig_TanLut[];
+extern const int64_t g_FixedTrig_AcosLut[];
 
 class FixedTrigLut {
  public:
@@ -223,8 +227,6 @@ class FixedTrigLut {
         return Primitives::Fixed64SqrtFast(x, FRACTION_BITS);
     }
 };
-
-#include "FixedTrigLut.h"
 
 // Sin lookup table [0, 2π]
 inline const int64_t g_FixedTrig_SinLut[] = {
@@ -8762,4 +8764,4 @@ inline const int64_t g_FixedTrig_AcosLut[] = {
     37962629LL,   36014501LL,   33954786LL,     31761783LL,   29405688LL,   26843589LL,
     24009628LL,   20792941LL,   16977359LL,     12004802LL,   0LL,
 };
-}  // namespace math::fixed
+}  // namespace math::fp
