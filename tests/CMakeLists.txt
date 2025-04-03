@@ -23,6 +23,11 @@ target_compile_options(fixed64_tests PRIVATE
     -Wextra
 )
 
+# Enable console output during test execution
+target_compile_definitions(fixed64_tests PRIVATE 
+    GTEST_COUT_OUTPUT
+)
+
 # Use Google Test for test discovery
 include(GoogleTest)
-gtest_discover_tests(fixed64_tests)
+gtest_discover_tests(fixed64_tests PROPERTIES TIMEOUT 120)

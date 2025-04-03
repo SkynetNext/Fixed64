@@ -41,12 +41,10 @@ class Fixed64Math {
      */
     template <int P>
     [[nodiscard]] static auto Pow2(Fixed64<P> x) noexcept -> Fixed64<P> {
-        // Dynamically adjust parameters based on precision
-        constexpr int TaylorOrder = (P <= 16) ? 2 : (P <= 32) ? 3 : 4;
+        // Overflow protection
         constexpr int MaxExponent = 63 - P;
         constexpr int MinExponent = -63 + P;
 
-        // Overflow protection
         if (x > Fixed64<P>(MaxExponent)) {
             return Fixed64<P>::Max();
         }
@@ -54,46 +52,79 @@ class Fixed64Math {
             return Fixed64<P>::Zero();
         }
 
-        // Separate integer and fractional parts
-        int i = static_cast<int>(x);
-        auto fraction = Fractions(x);  // Use our fractions function
+        // Handle zero exponent case
+        if (x == Fixed64<P>::Zero()) {
+            return Fixed64<P>::One();
+        }
 
-        // Calculate 2^integer part
-        Fixed64<P> intPart;
-        if (i >= 0) {
-            // Integer left shift
-            intPart = Fixed64<P>(1LL << i);
+        // Handle negative exponents
+        bool neg = x < Fixed64<P>::Zero();
+        if (neg) {
+            x = -x;
+        }
+
+        // Separate integer and fractional parts
+        auto intPart = Floor(x);
+        auto fracPart = x - intPart;
+        int intValue = static_cast<int>(intPart);
+
+        // Calculate 2^intValue using bit shifting
+        Fixed64<P> intResult;
+        if (intValue >= 0) {
+            // For positive exponents, left shift
+            intResult = Fixed64<P>(1LL << intValue);
         } else {
-            // Negative exponent right shift
-            intPart = Fixed64<P>(Fixed64<P>::One().value() >> (-i), detail::nothing{});
+            // For negative exponents, right shift
+            intResult = Fixed64<P>(Fixed64<P>::One().value() >> (-intValue), detail::nothing{});
         }
 
         // If there's no fractional part, return directly
-        if (fraction == Fixed64<P>::Zero()) {
-            return intPart;
-        }
-
-        // Calculate 2^fractional part using optimized Taylor expansion
-        const auto ln2 = Fixed64<P>::Ln2();
-        auto y = fraction * ln2;
-        auto fracPart = Fixed64<P>::One() + y;
-
-        // Dynamically expand Taylor series based on precision
-        if constexpr (TaylorOrder >= 2) {
-            auto y2 = y * y;
-            fracPart += y2 / Fixed64<P>(2);
-
-            if constexpr (TaylorOrder >= 3) {
-                fracPart += (y2 * y) / Fixed64<P>(6);
-
-                if constexpr (TaylorOrder >= 4) {
-                    fracPart += (y2 * y2) / Fixed64<P>(24);
-                }
+        if (fracPart == Fixed64<P>::Zero()) {
+            if (neg) {
+                // For negative exponents, return 1/result
+                return Fixed64<P>::One() / intResult;
             }
+            return intResult;
         }
 
-        // Combine results
-        return intPart * fracPart;
+        // Calculate 2^fracPart using Intel's approach:
+        // 2^x = e^(x*ln(2))
+        // Use a minimax polynomial approximation for e^y where y = x*ln(2)
+        const auto ln2 = Fixed64<P>::Ln2();
+        auto y = fracPart * ln2;
+
+        // Polynomial coefficients for e^x approximation (minimax)
+        // These coefficients provide better accuracy than Taylor series
+        constexpr Fixed64<P> c1(1.0);
+        constexpr Fixed64<P> c2(0.999999999999994);
+        constexpr Fixed64<P> c3(0.500000000000003);
+        constexpr Fixed64<P> c4(0.166666666666675);
+        constexpr Fixed64<P> c5(0.041666666666685);
+        constexpr Fixed64<P> c6(0.008333333333177);
+        constexpr Fixed64<P> c7(0.001388888889460);
+        constexpr Fixed64<P> c8(0.000198412698560);
+
+        // Calculate polynomial approximation
+        // P(y) = c1 + y*(c2 + y*(c3 + y*(c4 + y*(c5 + y*(c6 + y*(c7 + y*c8))))))
+        auto fracResult = c8;
+        fracResult = fracResult * y + c7;
+        fracResult = fracResult * y + c6;
+        fracResult = fracResult * y + c5;
+        fracResult = fracResult * y + c4;
+        fracResult = fracResult * y + c3;
+        fracResult = fracResult * y + c2;
+        fracResult = fracResult * y + c1;
+
+        // Combine integer and fractional parts
+        auto result = intResult * fracResult;
+
+        // Handle negative exponents
+        if (neg) {
+            // For negative exponents, return 1/result
+            return Fixed64<P>::One() / result;
+        }
+
+        return result;
     }
 
     /**

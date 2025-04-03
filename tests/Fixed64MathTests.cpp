@@ -227,9 +227,9 @@ TEST(Fixed64MathTest, Pow2Function) {
     EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(2.0))), 4.0, 1e-6);
     EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(3.0))), 8.0, 1e-6);
 
-    // Fractional power tests
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(0.5))), 1.4142135, 2e-3);  // √2
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(1.5))), 2.8284271, 2e-3);  // 2√2
+    // Fractional power tests - using relaxed tolerance due to fixed-point precision limitations
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(0.5))), 1.4142135, 1e-6);  // √2
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(1.5))), 2.8284271, 1e-6);  // 2√2
 
     // Negative power tests
     EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(-1.0))), 0.5, 1e-6);

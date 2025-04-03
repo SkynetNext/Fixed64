@@ -15,8 +15,13 @@ target_include_directories(Fixed64 INTERFACE ${PROJECT_SOURCE_DIR}/include)
 # Enable testing
 enable_testing()
 
+set(gtest_force_shared_crt ON CACHE BOOL "Use shared (DLL) run-time lib even when Google Test is built as static lib" FORCE)
+
 # Add Google Test
 add_subdirectory(third_party/googletest)
+
+# Configure CTest to show output from all tests
+set(CMAKE_CTEST_ARGUMENTS "--output-on-failure" "--verbose")
 
 # Add tests directory
 add_subdirectory(tests)
@@ -38,5 +43,3 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/examples")
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
