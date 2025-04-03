@@ -5,6 +5,8 @@
 #include <iostream>
 #include "Primitives.h"
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-c-arrays,cppcoreguidelines-pro-bounds-pointer-arithmetic)
+
 namespace math::fp {
 
 extern const int64_t g_FixedTrig_SinLut[];
@@ -8765,3 +8767,5 @@ inline const int64_t g_FixedTrig_AcosLut[] = {
     24009628LL,   20792941LL,   16977359LL,     12004802LL,   0LL,
 };
 }  // namespace math::fp
+
+// NOLINTEND(cppcoreguidelines-avoid-c-arrays,cppcoreguidelines-pro-bounds-pointer-arithmetic)
