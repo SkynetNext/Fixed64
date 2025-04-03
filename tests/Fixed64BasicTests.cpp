@@ -232,7 +232,7 @@ TEST(Fixed64BasicTest, StdFunctions) {
 
     // trunc
     EXPECT_EQ(std::trunc(Fixed(5.7)), Fixed(5.0));
-    EXPECT_EQ(std::trunc(Fixed(-5.7)), Fixed(-6.0));
+    EXPECT_EQ(std::trunc(Fixed(-5.7)), Fixed(-5.0));
 
     // fmod
     EXPECT_NEAR(static_cast<double>(std::fmod(Fixed(10.5), Fixed(3.0))), 1.5, 1e-4);

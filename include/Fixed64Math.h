@@ -329,7 +329,19 @@ class Fixed64Math {
      */
     template <int P>
     [[nodiscard]] constexpr static auto Trunc(Fixed64<P> x) noexcept -> Fixed64<P> {
-        return Fixed64<P>(x.value() & ~((1LL << P) - 1), detail::nothing{});
+        int64_t value = x.value();
+        int64_t fractionalMask = (1LL << P) - 1;
+
+        if (value >= 0) {
+            return Fixed64<P>(value & ~fractionalMask, detail::nothing{});
+        } else {
+            int64_t fractionalPart = value & fractionalMask;
+            if (fractionalPart != 0) {
+                return Fixed64<P>((value & ~fractionalMask) + (1LL << P), detail::nothing{});
+            } else {
+                return x;
+            }
+        }
     }
 
     /**
