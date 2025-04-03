@@ -57,7 +57,7 @@ All mathematical functions are also available through the standard C++ `std` nam
 Implemented as `Fixed64<P>` where P specifies fractional bits. Predefined types:
 - `Fixed64_16`: 16 fractional bits (Q47.16)
 - `Fixed64_32`: 32 fractional bits (Q31.32)
-- `Fixed64_48`: 48 fractional bits (Q15.48)
+- `Fixed64_40`: 40 fractional bits (Q23.40)
 
 ### Header-Only Library
 
