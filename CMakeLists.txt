@@ -15,6 +15,11 @@ target_include_directories(Fixed64 INTERFACE ${PROJECT_SOURCE_DIR}/include)
 # Enable testing
 enable_testing()
 
+# Add CTest support, this will generate DartConfiguration.tcl
+include(CTest)
+set(CTEST_PROJECT_NAME "Fixed64")
+set(CTEST_NIGHTLY_START_TIME "00:00:00 UTC")
+
 set(gtest_force_shared_crt ON CACHE BOOL "Use shared (DLL) run-time lib even when Google Test is built as static lib" FORCE)
 
 # Add Google Test
