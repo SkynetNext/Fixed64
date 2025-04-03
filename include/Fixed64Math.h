@@ -481,10 +481,53 @@ class Fixed64Math {
      * @brief Calculate arc tangent value
      * @param x Input value
      * @return Angle (in radians) [-π/2,π/2]
+     * @note Uses optimized polynomial approximation for better performance and accuracy
      */
     template <int P>
     [[nodiscard]] static auto Atan(Fixed64<P> x) noexcept -> Fixed64<P> {
-        return Atan2(x, Fixed64<P>::One());
+        // Handle special cases
+        if (x == Fixed64<P>::Zero()) {
+            return Fixed64<P>::Zero();
+        }
+
+        // Handle negative input: atan(-x) = -atan(x)
+        if (x < Fixed64<P>::Zero()) {
+            return -Atan(-x);
+        }
+
+        // For x > 1, use the identity: atan(x) = π/2 - atan(1/x)
+        if (x > Fixed64<P>::One()) {
+            return Fixed64<P>::HalfPi() - Atan(Fixed64<P>::One() / x);
+        }
+
+        // For values in [0.5, 1], use the identity: atan(x) = π/6 + atan((x*sqrt(3)-1)/(x+sqrt(3)))
+        // This transformation improves accuracy by reducing the approximation interval
+        if (x > Fixed64<P>(0.5)) {
+            constexpr auto sqrt3 = Fixed64<P>(1.732050807568877);
+            return Fixed64<P>::Pi() / Fixed64<P>(6)
+                   + Atan((x * sqrt3 - Fixed64<P>::One()) / (x + sqrt3));
+        }
+
+        // For small values in [0, 0.5], use polynomial approximation
+        // Polynomial coefficients optimized for this range
+        auto x2 = x * x;
+
+        // Optimized coefficients for polynomial approximation
+        constexpr Fixed64<P> a1(0.9998660);
+        constexpr Fixed64<P> a3(-0.3302995);
+        constexpr Fixed64<P> a5(0.1801410);
+        constexpr Fixed64<P> a7(-0.0851330);
+        constexpr Fixed64<P> a9(0.0208351);
+
+        // Calculate polynomial using Horner's method
+        auto result = a9;
+        result = result * x2 + a7;
+        result = result * x2 + a5;
+        result = result * x2 + a3;
+        result = result * x2 + a1;
+        result = result * x;
+
+        return result;
     }
 
     /**

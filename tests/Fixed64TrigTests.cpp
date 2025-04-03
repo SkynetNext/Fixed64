@@ -126,6 +126,6 @@ TEST(Fixed64TrigTest, StdNamespaceOverloads) {
     EXPECT_NEAR(static_cast<double>(std::asin(Fixed(0.5))), std::asin(0.5), 1e-5);
     EXPECT_NEAR(static_cast<double>(std::acos(Fixed(0.5))), std::acos(0.5), 1e-5);
 
-    EXPECT_NEAR(static_cast<double>(std::atan(Fixed(1.0))), M_PI / 4, 5e-5);
-    EXPECT_NEAR(static_cast<double>(std::atan2(Fixed(1.0), Fixed(1.0))), M_PI / 4, 5e-5);
+    EXPECT_NEAR(static_cast<double>(std::atan(Fixed(1.0))), M_PI / 4, 1e-6);
+    EXPECT_NEAR(static_cast<double>(std::atan2(Fixed(1.0), Fixed(1.0))), M_PI / 4, 2e-5);
 }
