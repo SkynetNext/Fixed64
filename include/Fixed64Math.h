@@ -407,10 +407,14 @@ class Fixed64Math {
     template <typename ToT, typename FromT>
         requires(::std::is_arithmetic_v<FromT>) && detail::IsFixed64<ToT>
     [[nodiscard]] static constexpr auto ClampedCast(FromT x) noexcept -> ToT {
-        constexpr auto kMin = static_cast<FromT>(ToT::Min().value() >> ToT::kFractionBits);
-        constexpr auto kMax = static_cast<FromT>(ToT::Max().value() >> ToT::kFractionBits);
+        if (x >= static_cast<FromT>(ToT::Max())) {
+            return ToT::Max();
+        }
+        if (x <= static_cast<FromT>(ToT::Min())) {
+            return ToT::Min();
+        }
 
-        return static_cast<ToT>(::std::clamp(x, kMin, kMax));
+        return static_cast<ToT>(x);
     }
 
     /**

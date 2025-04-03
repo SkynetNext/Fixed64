@@ -6,16 +6,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Use Clang compiler
-set(CMAKE_C_COMPILER clang)
-set(CMAKE_CXX_COMPILER clang++)
-
 # Add include directory
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_library(Fixed64 INTERFACE)
 target_include_directories(Fixed64 INTERFACE ${PROJECT_SOURCE_DIR}/include)
 
+# Enable testing
+enable_testing()
+
+# Add Google Test
+add_subdirectory(third_party/googletest)
+
+# Add tests directory
+add_subdirectory(tests)
 
 # Create example programs (if example code exists)
 if(EXISTS "${PROJECT_SOURCE_DIR}/examples")
@@ -32,3 +36,7 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/examples")
         )
     endforeach()
 endif()
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)

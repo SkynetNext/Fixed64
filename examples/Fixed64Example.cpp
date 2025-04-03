@@ -19,12 +19,15 @@ int main() {
     Fixed64<16> num2(1.25);
     Fixed64<16> num3 = num1 + num2;
 
+    std::cout << "num3: " << num3 << std::endl;
+
     // Alternatively, use the type alias
     Fixed64_16 num4(5.5);
+    std::cout << "num4: " << num4 << std::endl;
 
     // Using constants
     math::fp::Fixed64<16> one = math::fp::Fixed64<16>::One();  // Represents 1.0
-    std::cout << "One: " << one.ToString() << std::endl;
+    std::cout << "One: " << one << std::endl;
 
     // Addition
     math::fp::Fixed64<16> sum = num1 + num2;
