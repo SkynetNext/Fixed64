@@ -96,16 +96,15 @@ class Fixed64Math {
         // Polynomial coefficients for e^x approximation (minimax)
         // These coefficients provide better accuracy than Taylor series
         constexpr Fixed64<P> c1(1.0);
-        constexpr Fixed64<P> c2(0.999999999999994);
-        constexpr Fixed64<P> c3(0.500000000000003);
-        constexpr Fixed64<P> c4(0.166666666666675);
-        constexpr Fixed64<P> c5(0.041666666666685);
-        constexpr Fixed64<P> c6(0.008333333333177);
-        constexpr Fixed64<P> c7(0.001388888889460);
-        constexpr Fixed64<P> c8(0.000198412698560);
+        constexpr Fixed64<P> c2(1.0);
+        constexpr Fixed64<P> c3(0.5);
+        constexpr Fixed64<P> c4(0.166666666666667);
+        constexpr Fixed64<P> c5(0.041666666666667);
+        constexpr Fixed64<P> c6(0.008333333333333);
+        constexpr Fixed64<P> c7(0.001388888888889);
+        constexpr Fixed64<P> c8(0.000198412698413);
 
-        // Calculate polynomial approximation
-        // P(y) = c1 + y*(c2 + y*(c3 + y*(c4 + y*(c5 + y*(c6 + y*(c7 + y*c8))))))
+        // Calculate polynomial approximation using Horner's method
         auto fracResult = c8;
         fracResult = fracResult * y + c7;
         fracResult = fracResult * y + c6;
