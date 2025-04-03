@@ -37,11 +37,13 @@ Fixed64 supports a wide array of mathematical operations:
 - **Basic Arithmetic**: Addition, subtraction, multiplication, division and their assignment variants
 - **Comparison Operations**: Greater than, less than, equality, etc.
 - **Trigonometric Functions**: Basic (`Sin`, `Cos`, `Tan`) and inverse (`Asin`, `Acos`, `Atan`, `Atan2`)
-- **Exponential Functions**: `Exp`, `Pow2`
+- **Logarithmic Functions**: Natural logarithm (`Log`)
+- **Exponential Functions**: `Exp`, `Pow`, `Pow2`
 - **Rounding Operations**: `Floor`, `Ceil`, `Round`, `Trunc`
-- **Value Manipulation**: `Abs`, `Min`, `Max`, `Clamp`, `Sign`
-- **Interpolation Functions**: `Lerp`, `InverseLerp`, `LerpAngle`
+- **Value Manipulation**: `Abs`, `Min`, `Max`, `Clamp`, `Clamp01`, `Sign`, `IsNearlyEqual`
+- **Interpolation Functions**: `Lerp`, `LerpUnclamped`, `InverseLerp`, `LerpAngle`
 - **Angle Utilities**: `NormalizeAngle`, `Repeat`
+- **Fractional Operations**: `Fractions` (extract fractional part)
 
 All mathematical functions are also available through the standard C++ `std` namespace.
 
