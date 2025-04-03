@@ -191,20 +191,30 @@ TEST(Fixed64MathTest, AngleInterpolation) {
         static_cast<double>(Fixed64Math::LerpAngle(Fixed(M_PI * 1.5), Fixed(M_PI * 2), Fixed(0.5))),
         M_PI * 1.75,
         1e-6);
-    /*
-        // Test reverse shortest path
-        // When angles are far apart, LerpAngle chooses the shortest path around the circle
-        // For angles 0.1 and M_PI*1.9, the shortest path is to go backwards
-        // So instead of going from 0.1 to ~5.97, it goes from 0.1 to ~-0.1
-        double result =
-            static_cast<double>(Fixed64Math::LerpAngle(Fixed(0.1), Fixed(M_PI * 1.9), Fixed(0.5)));
-        double expected = -0.1;  // Approximate expected value when taking shortest path
 
-        // Check that result is close to expected or equivalent angle
-        bool isNearExpected = std::abs(result - expected) < 1e-5
-                              || std::abs(result - (expected + 2 * M_PI)) < 1e-5
-                              || std::abs((result + 2 * M_PI) - expected) < 1e-5;
-         EXPECT_TRUE(isNearExpected);*/
+    // Test reverse shortest path
+    // When angles are far apart, LerpAngle chooses the shortest path around the circle
+    // For angles 0.1 and M_PI*1.9, the shortest path is to go backwards
+    // So instead of going from 0.1 to ~5.97, it goes from 0.1 to ~-0.1
+    auto resultFixed = Fixed64Math::LerpAngle(Fixed(0.1), Fixed::Pi() * 1.9, Fixed::Half());
+    double result = static_cast<double>(resultFixed);
+
+    // Compare directly in fixed-point domain
+    double start = 0.1;
+    double end = M_PI * 1.9;
+    double diff = end - start;
+    if (diff > M_PI)
+        diff -= 2 * M_PI;
+    double expectedDouble = start + diff * 0.5;
+    Fixed expectedFixed = Fixed(expectedDouble);
+
+    bool isNearExpected =
+        Fixed64Math::IsNearlyEqual(resultFixed, expectedFixed, Fixed(1e-6))
+        || Fixed64Math::IsNearlyEqual(resultFixed, expectedFixed + Fixed::TwoPi(), Fixed(1e-6))
+        || Fixed64Math::IsNearlyEqual(resultFixed + Fixed::TwoPi(), expectedFixed, Fixed(1e-6));
+
+    EXPECT_TRUE(isNearExpected) << "Result: " << result
+                                << ", Expected: " << static_cast<double>(expectedFixed);
 }
 
 TEST(Fixed64MathTest, Pow2Function) {
