@@ -95,14 +95,14 @@ class Fixed64Math {
 
         // Polynomial coefficients for e^x approximation (minimax)
         // These coefficients provide better accuracy than Taylor series
-        constexpr Fixed64<P> c1(1.0);
-        constexpr Fixed64<P> c2(1.0);
-        constexpr Fixed64<P> c3(0.5);
-        constexpr Fixed64<P> c4(0.166666666666667);
-        constexpr Fixed64<P> c5(0.041666666666667);
-        constexpr Fixed64<P> c6(0.008333333333333);
-        constexpr Fixed64<P> c7(0.001388888888889);
-        constexpr Fixed64<P> c8(0.000198412698413);
+        constexpr Fixed64<P> c1(1.0);                // x^0 coefficient
+        constexpr Fixed64<P> c2(1.0);                // x^1 coefficient
+        constexpr Fixed64<P> c3(0.5);                // x^2 coefficient
+        constexpr Fixed64<P> c4(0.166666666666667);  // x^3 coefficient
+        constexpr Fixed64<P> c5(0.041666666666667);  // x^4 coefficient
+        constexpr Fixed64<P> c6(0.008333333333333);  // x^5 coefficient
+        constexpr Fixed64<P> c7(0.001388888888889);  // x^6 coefficient
+        constexpr Fixed64<P> c8(0.000198412698413);  // x^7 coefficient
 
         // Calculate polynomial approximation using Horner's method
         auto fracResult = c8;
@@ -127,18 +127,239 @@ class Fixed64Math {
     }
 
     /**
-     * @brief Calculate power of e (e^x)
+     * @brief Calculate natural logarithm (ln)
+     * @param x Input value (must be positive)
+     * @return Natural logarithm value
+     */
+    template <int P>
+    [[nodiscard]] static auto Log(Fixed64<P> x) noexcept -> Fixed64<P> {
+        // Handle special cases
+        if (x <= Fixed64<P>::Zero()) {
+            return Fixed64<P>::Min();  // Return minimum value to indicate error
+        }
+
+        if (x == Fixed64<P>::One()) {
+            return Fixed64<P>::Zero();
+        }
+
+        // Scale x to [1,2) range
+        int n = 0;
+        auto scaled_x = x;
+
+        if (x > Fixed64<P>::One()) {
+            // If x > 1, divide by 2 until x is in [1,2) range
+            while (scaled_x >= Fixed64<P>(2)) {
+                scaled_x = scaled_x / Fixed64<P>(2);
+                n++;
+            }
+        } else {
+            // If x < 1, multiply by 2 until x is in [1,2) range
+            while (scaled_x < Fixed64<P>::One()) {
+                scaled_x = scaled_x * Fixed64<P>(2);
+                n--;
+            }
+        }
+
+        // Calculate z = (a-1)/(a+1), where a is the scaled value
+        auto z = (scaled_x - Fixed64<P>::One()) / (scaled_x + Fixed64<P>::One());
+        auto z2 = z * z;
+
+        // Use polynomial approximation for ln(x), based on Padé approximation
+        // ln(x) ≈ 2z(1 + z²/3 + z⁴/5 + z⁶/7 + ...)
+        constexpr Fixed64<P> c1(2);
+        constexpr Fixed64<P> c3 = Fixed64<P>(2) / 3;
+        constexpr Fixed64<P> c5 = Fixed64<P>(2) / 5;
+        constexpr Fixed64<P> c7 = Fixed64<P>(2) / 7;
+        constexpr Fixed64<P> c9 = Fixed64<P>(2) / 9;
+
+        auto result = c9;
+        result = result * z2 + c7;
+        result = result * z2 + c5;
+        result = result * z2 + c3;
+        result = result * z2 + c1;
+        result = result * z;
+
+        // Add n*ln(2)
+        result = result + Fixed64<P>(n) * Fixed64<P>::Ln2();
+
+        return result;
+    }
+
+    /**
+     * @brief Calculate power function (x^y)
+     * @param x Base value (must be positive for non-integer exponents)
+     * @param y Exponent value
+     * @return x raised to the power of y
+     */
+    template <int P>
+    [[nodiscard]] static auto Pow(Fixed64<P> x, Fixed64<P> y) noexcept -> Fixed64<P> {
+        // Handle special cases
+        if (x <= Fixed64<P>::Zero()) {
+            // Only calculate when y is an integer and x is negative
+            if (y == Floor(y)) {
+                // If y is even, result is |x|^y
+                // If y is odd, result is -|x|^y
+                bool isYEven = (static_cast<int>(y) % 2 == 0);
+                auto absX = Abs(x);
+                auto result = Exp(y * Log(absX));
+                return isYEven ? result : -result;
+            }
+            return Fixed64<P>::Zero();  // Undefined for negative base with non-integer exponent
+        }
+
+        if (x == Fixed64<P>::One()) {
+            return Fixed64<P>::One();
+        }
+
+        if (y == Fixed64<P>::Zero()) {
+            return Fixed64<P>::One();
+        }
+
+        if (y == Fixed64<P>::One()) {
+            return x;
+        }
+
+        // Use logarithm: x^y = e^(y*ln(x))
+        return Exp(y * Log(x));
+    }
+
+    /**
+     * @brief Calculate power function with unsigned integer exponent (x^u)
+     * @param x Base value
+     * @param u Unsigned integer exponent
+     * @return x^u
+     * @note Uses binary exponentiation algorithm for efficient computation
+     */
+    template <int P, typename UnsignedIntegralType>
+        requires std::unsigned_integral<UnsignedIntegralType>
+    [[nodiscard]] static auto Pow(Fixed64<P> x, UnsignedIntegralType u) noexcept -> Fixed64<P> {
+        // Handle special cases
+        if (u == static_cast<UnsignedIntegralType>(0)) {
+            return Fixed64<P>::One();
+        } else if (u == static_cast<UnsignedIntegralType>(1)) {
+            return x;
+        } else if (u == static_cast<UnsignedIntegralType>(2)) {
+            return x * x;
+        } else {
+            Fixed64<P> result = Fixed64<P>::One();
+            Fixed64<P> base = x;
+
+            // Use binary exponentiation algorithm
+            for (auto p_local = static_cast<std::uint32_t>(u);
+                 p_local != static_cast<std::uint32_t>(0);
+                 p_local = static_cast<std::uint32_t>(p_local >> 1)) {
+                if ((p_local & 1) != 0) {
+                    result *= base;
+                }
+
+                base *= base;
+            }
+
+            return result;
+        }
+    }
+
+    /**
+     * @brief Calculate power function with signed integer exponent (x^n)
+     * @param x Base value
+     * @param n Signed integer exponent
+     * @return x^n
+     * @note Handles negative exponents by computing reciprocal of positive exponent result
+     */
+    template <int P, typename SignedIntegralType>
+        requires std::signed_integral<SignedIntegralType>
+    [[nodiscard]] static auto Pow(Fixed64<P> x, SignedIntegralType n) noexcept -> Fixed64<P> {
+        // Handle special cases
+        if (n < static_cast<SignedIntegralType>(0)) {
+            return Fixed64<P>::One()
+                   / Pow(x, static_cast<typename std::make_unsigned<SignedIntegralType>::type>(-n));
+        } else if (n == static_cast<SignedIntegralType>(0)) {
+            return Fixed64<P>::One();
+        } else if (n == static_cast<SignedIntegralType>(1)) {
+            return x;
+        } else if (n == static_cast<SignedIntegralType>(2)) {
+            return x * x;
+        } else {
+            Fixed64<P> result = Fixed64<P>::One();
+            Fixed64<P> base = x;
+
+            // Use binary exponentiation algorithm
+            for (auto p_local = static_cast<std::uint32_t>(n);
+                 p_local != static_cast<std::uint32_t>(0);
+                 p_local = static_cast<std::uint32_t>(p_local >> 1)) {
+                if ((p_local & 1) != 0) {
+                    result *= base;
+                }
+
+                base *= base;
+            }
+
+            return result;
+        }
+    }
+
+    /**
+     * @brief Calculate power of e (e^x) using improved algorithm
      * @param x Exponent
      * @return e^x
-     *
-     * Uses formula: e^x = 2^(x * log2(e))
-     * where log2(e) ≈ 1.4426950408889634
      */
     template <int P>
     [[nodiscard]] static auto Exp(Fixed64<P> x) noexcept -> Fixed64<P> {
-        // Approximate value of log2(e) for Exp function
-        static const auto kLog2E = Fixed64<P>::Log2E();
-        return Fixed64Math::Pow2(x * kLog2E);
+        // Handle overflow cases
+        if (x > Fixed64<P>(30)) {
+            return Fixed64<P>::Max();
+        }
+
+        if (x < Fixed64<P>(-30)) {
+            return Fixed64<P>::Zero();
+        }
+
+        // Split x into integer and fractional parts
+        auto intPart = Floor(x);
+        auto fracPart = x - intPart;
+        int n = static_cast<int>(intPart);
+
+        // Use Padé approximation to calculate e^fracPart
+        // Using (6,6) Padé approximation: e^x ≈ (1 + x/2 + x²/10 + x³/120) / (1 - x/2 + x²/10 -
+        // x³/120)
+        auto x2 = fracPart * fracPart;
+        auto x3 = x2 * fracPart;
+
+        constexpr Fixed64<P> c1(1);
+        constexpr Fixed64<P> c2(0.5);
+        constexpr Fixed64<P> c3(0.1);
+        constexpr Fixed64<P> c4 = Fixed64<P>::One() / 120;
+
+        auto num = c1 + fracPart * c2 + x2 * c3 + x3 * c4;
+        auto den = c1 - fracPart * c2 + x2 * c3 - x3 * c4;
+
+        auto fracResult = num / den;
+
+        // Calculate e^n
+        Fixed64<P> intResult = Fixed64<P>::One();
+        Fixed64<P> e = Fixed64<P>::E();
+
+        // Use binary exponentiation algorithm to calculate e^n
+        if (n >= 0) {
+            while (n > 0) {
+                if (n & 1) {
+                    intResult = intResult * e;
+                }
+                e = e * e;
+                n >>= 1;
+            }
+        } else {
+            n = -n;
+            while (n > 0) {
+                if (n & 1) {
+                    intResult = intResult / e;
+                }
+                e = e * e;
+                n >>= 1;
+            }
+        }
+
+        return intResult * fracResult;
     }
 
     /**

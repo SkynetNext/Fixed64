@@ -129,14 +129,22 @@ TEST(Fixed64MathTest, SpecialMathFunctions) {
     using math::fp::Fixed64Math;
 
     // Square root tests
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Sqrt(Fixed16(25.0))), 5.0, 1e-4);
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Sqrt(Fixed16(2.0))), std::sqrt(2.0), 1e-4);
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Sqrt(Fixed16(0.0))), 0.0, 1e-6);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Sqrt(Fixed16(25.0))), 5.0, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Sqrt(Fixed16(2.0))),
+                std::sqrt(2.0),
+                static_cast<double>(Fixed16::Epsilon()));
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Sqrt(Fixed16(0.0))), 0.0, 1e-9);
 
     // Exponential function tests
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Exp(Fixed32(1.0))), std::exp(1.0), 0.01);
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Exp(Fixed32(0.0))), 1.0, 1e-6);
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Exp(Fixed32(2.0))), std::exp(2.0), 0.03);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Exp(Fixed32(1.0))), std::exp(1.0), 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Exp(Fixed32(0.0))), 1.0, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Exp(Fixed32(2.0))), std::exp(2.0), 1e-9);
+
+    // Logarithm function tests
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Log(Fixed32(1.0))), 0.0, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Log(Fixed32(2.0))), std::log(2.0), 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Log(Fixed32(10.0))), std::log(10.0), 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Log(Fixed32(std::exp(1.0)))), 1.0, 1e-9);
 
     // Nearly equal tests
     EXPECT_TRUE(Fixed64Math::IsNearlyEqual(Fixed16(1.0), Fixed16(1.0001), Fixed16(0.001)));
@@ -232,14 +240,43 @@ TEST(Fixed64MathTest, Pow2Function) {
     EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(1.5))), 2.8284271, 1e-6);  // 2√2
 
     // Negative power tests
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(-1.0))), 0.5, 1e-6);
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(-2.0))), 0.25, 1e-6);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(-1.0))), 0.5, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(-2.0))), 0.25, 1e-9);
 
     // Edge case tests
     EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow2(Fixed(-30.0))), std::pow(2.0, -30.0), 1e-6);
     // Test overflow protection
     EXPECT_EQ(Fixed64Math::Pow2(Fixed(100.0)), Fixed::Max());
     EXPECT_EQ(Fixed64Math::Pow2(Fixed(-100.0)), Fixed::Zero());
+
+    // Power function tests with various bases and exponents
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(2), Fixed(-1.0))), 0.5, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(2), Fixed(-2.0))), 0.25, 1e-7);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(2), Fixed(0.5))), std::sqrt(2.0), 1e-6);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(3), Fixed(2.0))), 9.0, 1e-6);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(4), Fixed(0.5))), 2.0, 2e-6);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(10), 3)), 1000.0, 1e-6);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(0.5), Fixed(2.0))), 0.25, 1e-7);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(0.1), Fixed(3.0))), 0.001, 1e-7);
+
+    // Integer power tests - signed and unsigned versions
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(2), 3)), 8.0, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(2), -3)), 0.125, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(3), 4)), 81.0, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(3), -2)), 0.111111, 1e-6);
+
+    // Unsigned integer power tests
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(2), 3u)), 8.0, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(3), 4u)), 81.0, 1e-9);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Pow(Fixed(1.5), 5u)), 7.59375, 1e-6);
+
+    // Edge cases for integer powers
+    EXPECT_EQ(Fixed64Math::Pow(Fixed(5), 0), Fixed::One());
+    EXPECT_EQ(Fixed64Math::Pow(Fixed(5), 0u), Fixed::One());
+    EXPECT_EQ(Fixed64Math::Pow(Fixed(0), 5), Fixed::Zero());
+    EXPECT_EQ(Fixed64Math::Pow(Fixed(0), 5u), Fixed::Zero());
+    EXPECT_EQ(Fixed64Math::Pow(Fixed(1), 100), Fixed::One());
+    EXPECT_EQ(Fixed64Math::Pow(Fixed(1), 100u), Fixed::One());
 }
 
 TEST(Fixed64MathTest, ClampedCast) {
