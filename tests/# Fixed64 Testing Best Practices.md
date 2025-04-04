@@ -7,8 +7,13 @@ All comments in test code should be written in English for better international 
 When comparing floating-point results, always use `Fixed::Epsilon()` as the error margin:
 
 ```cpp
+constexpr double epsilon8 = static_cast<double>(math::fp::Fixed64<8>::Epsilon());
+constexpr double epsilon16 = static_cast<double>(math::fp::Fixed64<16>::Epsilon());
+constexpr double epsilon32 = static_cast<double>(math::fp::Fixed64<32>::Epsilon());
+constexpr double epsilon40 = static_cast<double>(math::fp::Fixed64<40>::Epsilon());
+
 // Good practice
-EXPECT_NEAR(static_cast<double>(value), expected, static_cast<double>(Fixed::Epsilon()));
+EXPECT_NEAR(static_cast<double>(value), expected, epsilon16);
 
 // Avoid using arbitrary values
 // EXPECT_NEAR(static_cast<double>(value), expected, 1e-6); // Not recommended

@@ -74,7 +74,8 @@ TEST(Fixed64MathTest, RoundingFunctions) {
     EXPECT_EQ(static_cast<double>(Fixed64Math::Round(Fixed(-2.6))), -3.0);
     EXPECT_EQ(static_cast<double>(Fixed64Math::Round(Fixed(-2.4))), -2.0);
     EXPECT_EQ(static_cast<double>(Fixed64Math::Round(Fixed(2.5))), 3.0);
-    EXPECT_EQ(static_cast<double>(Fixed64Math::Round(Fixed(-2.5))), -2.0);
+    EXPECT_EQ(static_cast<double>(Fixed64Math::Round(Fixed(-2.5))), -3.0)
+        << "Fixed(-2.5).value()=" << Fixed(-2.5).value() << " HalfValue=" << Fixed::Half().value();
 
     // Truncation tests
     EXPECT_EQ(static_cast<double>(Fixed64Math::Trunc(Fixed(2.999))), 2.0);

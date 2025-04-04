@@ -658,20 +658,45 @@ class Fixed64Math {
     }
 
     /**
-     * @brief Round to nearest integer
+     * @brief Round to nearest integer (round-half-away-from-zero)
      * @param x Input value
-     * @return Integer closest to the input
+     * @return Integer closest to the input, with ties rounded away from zero
+     * @note This matches the behavior of C++11's std::round
      */
     template <int P>
     [[nodiscard]] constexpr static auto Round(Fixed64<P> x) noexcept -> Fixed64<P> {
-        int64_t fraction = x.value() & ((1LL << P) - 1);
-        int64_t half = 1LL << (P - 1);
+        constexpr int64_t kHalf = 1LL << (P - 1);
+        constexpr int64_t kFractionMask = (1LL << P) - 1;
 
-        if (fraction >= half) {
-            return Fixed64<P>((x.value() >> P) + 1 << P, detail::nothing{});
+        // Get sign and absolute value
+        int64_t value = x.value();
+        bool is_negative = value < 0;
+
+        // Use bit operations to get absolute value, avoiding INT64_MIN issue
+        uint64_t abs_value;
+        if (is_negative) {
+            abs_value = ~static_cast<uint64_t>(value) + 1;  // Two's complement
+        } else {
+            abs_value = static_cast<uint64_t>(value);
         }
 
-        return Fixed64<P>(x.value() >> P << P, detail::nothing{});
+        // Process absolute value
+        uint64_t fraction = abs_value & kFractionMask;
+
+        // Round half away from zero
+        uint64_t result_value;
+        if (fraction >= kHalf) {
+            result_value = ((abs_value >> P) + 1) << P;
+        } else {
+            result_value = abs_value >> P << P;
+        }
+
+        // Restore sign
+        if (is_negative) {
+            return Fixed64<P>(~result_value + 1, detail::nothing{});
+        } else {
+            return Fixed64<P>(result_value, detail::nothing{});
+        }
     }
 
     /**
