@@ -363,18 +363,40 @@ class Fixed64Math {
     }
 
     /**
-     * @brief Check if two fixed-point numbers are approximately equal
-     * @param a First number
-     * @param b Second number
-     * @param tolerance Tolerance value
-     * @return true if the difference between the two numbers is less than or equal to the tolerance
+     * @brief Determines if two values are nearly equal within a tolerance
+     * @param a First value
+     * @param b Second value
+     * @param tolerance Maximum allowed difference (defaults to a small multiple of epsilon)
+     * @return True if the values are considered equal within tolerance
+     *
+     * Industry standard approach using both absolute and relative error metrics.
+     * This handles both large and small values appropriately.
      */
     template <int P>
-    [[nodiscard]] static constexpr auto IsNearlyEqual(
-        Fixed64<P> a,
-        Fixed64<P> b,
-        Fixed64<P> tolerance = Fixed64<P>::ENotation3()) noexcept -> bool {
-        return Abs(a - b) <= tolerance;
+    [[nodiscard]] static bool IsNearlyEqual(Fixed64<P> a,
+                                            Fixed64<P> b,
+                                            Fixed64<P> tolerance = Fixed64<P>::Epsilon() * 4) {
+        // Get absolute difference
+        auto abs_diff = Abs(a - b);
+
+        // Direct comparison for exact equality
+        if (abs_diff == Fixed64<P>::Zero()) {
+            return true;
+        }
+
+        // For very small values or values close to zero, use absolute tolerance
+        auto abs_a = Abs(a);
+        auto abs_b = Abs(b);
+        auto max_magnitude = Max(abs_a, abs_b);
+
+        if (max_magnitude < Fixed64<P>::One()) {
+            // For small values, use absolute comparison
+            return abs_diff <= tolerance;
+        } else {
+            // For larger values, use relative comparison
+            // This scales the tolerance with the magnitude of the values
+            return abs_diff <= max_magnitude * tolerance;
+        }
     }
 
     // === Basic trigonometric functions (supports Q31.32 format and above) ===
@@ -811,15 +833,24 @@ class Fixed64Math {
      * @param a Range start value
      * @param b Range end value
      * @param x Current value
-     * @return Position of current value within range [0,1]
+     * @return Position of current value within range [0,1] if x is between a and b,
+     *         or proportional value outside this range if x is outside [a,b]
+     *
+     * This function calculates the relative position of `x` between `a` and `b`.
+     * If `x` equals `a`, the result is 0.
+     * If `x` equals `b`, the result is 1.
+     * If `x` is between `a` and `b`, the result is between 0 and 1.
+     * If `x` is less than `a`, the result will be less than 0.
+     * If `x` is greater than `b`, the result will be greater than 1.
+     * If `a` equals `b`, the function returns 0.5 to avoid division by zero.
      */
     template <int P>
     [[nodiscard]] static auto InverseLerp(Fixed64<P> a, Fixed64<P> b, Fixed64<P> x) noexcept
         -> Fixed64<P> {
-        if (a != b) {
-            return Clamp01((x - a) / (b - a));
+        if (IsNearlyEqual(a, b)) {
+            return Fixed64<P>::Half();  // Avoid division by zero
         }
-        return Fixed64<P>::Zero();
+        return (x - a) / (b - a);
     }
 
     /**
@@ -854,30 +885,72 @@ class Fixed64Math {
         return start + diff * Clamp01(t);
     }
 
+    /**
+     * @brief Returns the sign of a value
+     * @param x Input value
+     * @return -1 if negative, 0 if zero, 1 if positive
+     */
     template <int P>
     [[nodiscard]] constexpr static auto Sign(Fixed64<P> x) noexcept -> int {
-        return x.value() < 0 ? -1 : 1;
+        if (x.value() < 0)
+            return -1;
+        if (x.value() > 0)
+            return 1;
+        return 0;  // x is exactly zero
     }
 
     /**
      * @brief Normalize angle to [0, 2π) range
      * @param angle Input angle (radians)
      * @return Normalized angle in [0, 2π) range
+     *
+     * Implementation follows game industry best practices for efficient and accurate angle
+     * normalization.
      */
     template <int P>
     static auto NormalizeAngle(Fixed64<P> angle) noexcept -> Fixed64<P> {
-        const auto twoPi = Fixed64<P>::TwoPi();
-        auto raw = angle.value();
+        constexpr auto kTwoPi = Fixed64<P>::TwoPi();
 
-        // Handle negative angles
-        while (raw < 0) {
-            raw += twoPi.value();
+        // Fast path for common case - already in range
+        if (angle >= Fixed64<P>::Zero() && angle < kTwoPi) {
+            return angle;
         }
 
-        // Restrict to [0, 2π) range
-        raw %= twoPi.value();
+        // Optimized implementation to handle both positive and negative angles
+        // Avoid division when possible, use incremental adjustment for small values
+        if (angle >= -kTwoPi && angle < kTwoPi) {
+            // For angles close to range, simple addition is more precise
+            if (angle < Fixed64<P>::Zero()) {
+                return angle + kTwoPi;
+            }
+            return angle;  // Already in range
+        }
 
-        return Fixed64<P>(raw, detail::nothing{});
+        // For larger out-of-range values, use modulo approach
+        // But implement it in a more numerically stable way
+
+        // Get the fractional part (this is more precise than division+multiplication)
+        // Use repeated subtraction or addition for better precision
+        auto result = angle;
+
+        if (result >= kTwoPi) {
+            // Optimize for common case of small multiples of 2π
+            while (result >= kTwoPi) {
+                result -= kTwoPi;
+            }
+        } else if (result < Fixed64<P>::Zero()) {
+            // Optimize for common case of small negative angles
+            while (result < Fixed64<P>::Zero()) {
+                result += kTwoPi;
+            }
+        }
+
+        // Final range check to guarantee [0, 2π) range due to potential precision issues
+        if (result >= kTwoPi) {
+            result = Fixed64<P>::Zero();  // Handle precision edge case
+        }
+
+        return result;
     }
 };
 }  // namespace math::fp

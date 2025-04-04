@@ -140,7 +140,7 @@ TEST(Fixed64MinMaxTest, SignFunction) {
 
     // Test with zero
     Fixed zero = Fixed::Zero();
-    EXPECT_EQ(Fixed64Math::Sign(zero), 1);
+    EXPECT_EQ(Fixed64Math::Sign(zero), 0);
 
     // Test with very small values
     Fixed tiny = Fixed::Epsilon();

@@ -118,13 +118,10 @@ TEST(Fixed64MathTest, InterpolationFunctions) {
 
     // Inverse linear interpolation
     EXPECT_NEAR(
-        static_cast<double>(Fixed64Math::InverseLerp(Fixed(2), Fixed(4), Fixed(3))), 0.5, 1e-6)
-        << "Expected 0.5, got " << Fixed64Math::InverseLerp(Fixed(2), Fixed(4), Fixed(3))
-        << "x - a = " << Fixed(3) - Fixed(2) << " b - a = " << Fixed(4) - Fixed(2)
-        << " (x - a) / (b - a) = " << (Fixed(3) - Fixed(2)) / (Fixed(4) - Fixed(2));
-    EXPECT_EQ(Fixed64Math::InverseLerp(Fixed(2), Fixed(2), Fixed(3)), Fixed::Zero());
-    EXPECT_EQ(Fixed64Math::InverseLerp(Fixed(2), Fixed(4), Fixed(1)), Fixed::Zero());
-    EXPECT_EQ(Fixed64Math::InverseLerp(Fixed(2), Fixed(4), Fixed(5)), Fixed::One());
+        static_cast<double>(Fixed64Math::InverseLerp(Fixed(2), Fixed(4), Fixed(3))), 0.5, 1e-6);
+    EXPECT_EQ(Fixed64Math::InverseLerp(Fixed(2), Fixed(2), Fixed(3)), Fixed::Half());
+    EXPECT_EQ(Fixed64Math::InverseLerp(Fixed(2), Fixed(4), Fixed(1)), -Fixed::Half());
+    EXPECT_EQ(Fixed64Math::InverseLerp(Fixed(2), Fixed(4), Fixed(5)), Fixed(1.5));
 }
 
 TEST(Fixed64MathTest, SpecialMathFunctions) {

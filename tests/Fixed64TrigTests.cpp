@@ -10,7 +10,7 @@
 #include "gtest/gtest.h"
 
 // Trigonometric function tests
-TEST(Fixed64TrigTest, SinCosOperations) {
+TEST(Fixed64TrigSimpleTest, SinCosOperations) {
     using Fixed = math::fp::Fixed64<32>;
     using math::fp::Fixed64Math;
 
@@ -33,7 +33,7 @@ TEST(Fixed64TrigTest, SinCosOperations) {
     }
 }
 
-TEST(Fixed64TrigTest, TanOperation) {
+TEST(Fixed64TrigSimpleTest, TanOperation) {
     using Fixed = math::fp::Fixed64<32>;
     using math::fp::Fixed64Math;
 
@@ -54,7 +54,7 @@ TEST(Fixed64TrigTest, TanOperation) {
     }
 }
 
-TEST(Fixed64TrigTest, ArcSinArcCosOperations) {
+TEST(Fixed64TrigSimpleTest, ArcSinArcCosOperations) {
     using Fixed = math::fp::Fixed64<32>;
     using math::fp::Fixed64Math;
 
@@ -80,7 +80,7 @@ TEST(Fixed64TrigTest, ArcSinArcCosOperations) {
     EXPECT_EQ(Fixed64Math::Acos(Fixed(2.0)), Fixed::Zero());
 }
 
-TEST(Fixed64TrigTest, AtanAtan2Operations) {
+TEST(Fixed64TrigSimpleTest, AtanAtan2Operations) {
     using Fixed = math::fp::Fixed64<32>;
     using math::fp::Fixed64Math;
 
@@ -116,7 +116,7 @@ TEST(Fixed64TrigTest, AtanAtan2Operations) {
 }
 
 // Test std namespace trigonometric function overloads
-TEST(Fixed64TrigTest, StdNamespaceOverloads) {
+TEST(Fixed64TrigSimpleTest, StdNamespaceOverloads) {
     using Fixed = math::fp::Fixed64<32>;
 
     // Test std namespace trigonometric function overloads

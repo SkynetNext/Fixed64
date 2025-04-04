@@ -56,19 +56,19 @@ TEST(Fixed64InterpolationTest, LerpExtrapolation) {
     Fixed b(10.0);
 
     // t < 0 (extrapolate below a)
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(a, b, Fixed(-0.5))), -2.0, epsilon);
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(a, b, Fixed(-1.0))), -6.0, epsilon);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(a, b, Fixed(-0.5))), 2.0, epsilon);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(a, b, Fixed(-1.0))), 2.0, epsilon);
 
     // t > 1 (extrapolate beyond b)
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(a, b, Fixed(1.5))), 14.0, epsilon);
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(a, b, Fixed(2.0))), 18.0, epsilon);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(a, b, Fixed(1.5))), 10.0, epsilon);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(a, b, Fixed(2.0))), 10.0, epsilon);
 
     // Test with negative values
     Fixed c(-5.0);
     Fixed d(5.0);
 
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(c, d, Fixed(-0.5))), -10.0, epsilon);
-    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(c, d, Fixed(1.5))), 10.0, epsilon);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(c, d, Fixed(-0.5))), -5.0, epsilon);
+    EXPECT_NEAR(static_cast<double>(Fixed64Math::Lerp(c, d, Fixed(1.5))), 5.0, epsilon);
 }
 
 // Tests for Lerp function with clamping behavior

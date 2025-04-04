@@ -50,3 +50,36 @@ EXPECT_NEAR(static_cast<double>(huge), 1e10, static_cast<double>(Fixed::Epsilon(
 Fixed tiny(1e-10);
 EXPECT_NEAR(static_cast<double>(tiny), 0.0, static_cast<double>(Fixed::Epsilon()));
 ```
+
+## 5. Comprehensive Test Coverage
+Each function should be tested across its entire valid numerical range to ensure reliability:
+
+- Test with zero, small positive, small negative, large positive, and large negative values
+- Test with values near the limits of the representable range
+- Test with edge cases specific to the function (e.g., division by near-zero values)
+- For trigonometric functions, test with angles in different quadrants
+
+## 6. Test File Organization
+Organize test files with a granular approach:
+
+- Each function or related group of functions should have its own test file
+- Follow the existing directory structure in the math directory
+- Name test files clearly to indicate what functionality they test
+- Group related tests into logical test suites
+Example file organization:
+
+```plaintext
+tests/
+├── basic/
+│   ├── ConstructionTests.cpp
+│   ├── ConversionTests.cpp
+│   ├── ArithmeticTests.cpp
+│   └── ...
+├── math/
+│   ├── TrigTests.cpp
+│   ├── RoundingTests.cpp
+│   ├── InterpolationTests.cpp
+│   ├── ExponentialTests.cpp
+│   └── ...
+└── # Fixed64 Testing Best Practices.md
+```
