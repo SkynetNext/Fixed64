@@ -456,13 +456,16 @@ class Fixed64Math {
      * @brief Calculate arc cosine value
      * @param x Input value [-1,1]
      * @return Angle (in radians) [0,π]
-     * @note Returns 0 if input is outside the [-1,1] range
+     * @note For values outside [-1,1]: returns 0 if x>1, returns π if x<-1
      */
     template <int P>
         requires(P >= kMinTrigPrecision)
     [[nodiscard]] static auto Acos(Fixed64<P> x) noexcept -> Fixed64<P> {
-        if (x > Fixed64<P>::One() || x < -Fixed64<P>::One()) {
+        if (x > Fixed64<P>::One()) {
             return Fixed64<P>::Zero();
+        }
+        if (x < -Fixed64<P>::One()) {
+            return Fixed64<P>::Pi();
         }
 
         if constexpr (P == kMinTrigPrecision) {
