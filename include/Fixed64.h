@@ -542,11 +542,17 @@ class Fixed64 {
         // representation
         int64_t result = 0;
 
-        // Check if shift is safe
-        if (mantissa > (INT64_MAX >> P)) {
-            // Integer part too large, possible overflow
-            return is_negative ? Fixed64<P>(INT64_MIN, detail::nothing{})
-                               : Fixed64<P>(INT64_MAX, detail::nothing{});
+        while (mantissa > (INT64_MAX >> P)) {
+            // Due to MIN_SAFE_DECIMAL_EXPONENT, mantissa can exceed the safe range by multiple
+            // digits
+            // We need to divide by 10 repeatedly until it fits, adjusting decimal_exponent
+            // accordingly
+            int64_t remainder = mantissa % 10;
+            mantissa /= 10;
+            if (remainder >= 5) {
+                mantissa += 1;  // Round up if remainder is 5 or greater
+            }
+            decimal_exponent += 1;
         }
 
         result = mantissa << P;
