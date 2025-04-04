@@ -1,3 +1,6 @@
 [submodule "third_party/googletest"]
 	path = third_party/googletest
 	url = https://github.com/google/googletest.git
+[submodule "third_party/berkeley-softfloat-3"]
+	path = third_party/berkeley-softfloat-3
+	url = https://github.com/ucb-bar/berkeley-softfloat-3.git
