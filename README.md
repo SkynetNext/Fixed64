@@ -34,8 +34,8 @@ Fixed64 is a C++ port of [FixedMath.Net](https://github.com/asik/FixedMath.Net),
 
 Fixed64 supports a wide array of mathematical operations:
 
-- **Basic Arithmetic**: Addition, subtraction, multiplication, division and their assignment variants
-- **Comparison Operations**: Greater than, less than, equality, etc.
+- **Basic Arithmetic**: Addition (`+`), subtraction (`-`), multiplication (`*`), division (`/`) and their assignment variants (`+=`, `-=`, `*=`, `/=`)
+- **Comparison Operations**: Greater than (`>`), less than (`<`), equality (`==`), etc.
 - **Trigonometric Functions**: Basic (`Sin`, `Cos`, `Tan`) and inverse (`Asin`, `Acos`, `Atan`, `Atan2`)
 - **Logarithmic Functions**: Natural logarithm (`Log`)
 - **Exponential Functions**: `Exp`, `Pow`, `Pow2`
