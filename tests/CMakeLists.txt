@@ -1,5 +1,9 @@
 # Collect all test source files
-file(GLOB TEST_SOURCES "*.cpp")
+file(GLOB TEST_SOURCES 
+    "*.cpp"
+    "basic/*.cpp"
+    "math/*.cpp"
+)
 
 # Create test executable
 add_executable(fixed64_tests ${TEST_SOURCES})

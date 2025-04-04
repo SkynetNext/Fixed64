@@ -638,36 +638,23 @@ class Primitives {
     [[nodiscard]] static constexpr auto Fixed64DivBitStyle(int64_t n,
                                                            int64_t d,
                                                            int fractionBits) noexcept -> int64_t {
-        int64_t n1 = n >> fractionBits;
-        uint64_t n0 = static_cast<uint64_t>(n) << (64 - fractionBits);
-        int64_t d0 = d;
-
         // Extract sign bits
-        int64_t s_n = n1 >> 63;  // s_n = n < 0 ? -1 : 0
-        int64_t s_d = d0 >> 63;  // s_d = d < 0 ? -1 : 0
+        int64_t s_n = n >> 63;  // s_n = n < 0 ? -1 : 0
+        int64_t s_d = d >> 63;  // s_d = d < 0 ? -1 : 0
 
         // Convert signed numbers to unsigned
-        uint64_t n1_abs =
-            (static_cast<uint64_t>(n1 ^ s_n)) - s_n;  // If s_n is -1, invert and add 1
-        uint64_t n0_abs = n0;
-        // Handle 128-bit negative case
-        if (s_n) {
-            if (n0 == 0) {
-                n1_abs = ~static_cast<uint64_t>(n1) + 1;
-            } else {
-                n1_abs = ~static_cast<uint64_t>(n1);
-                n0_abs = ~n0 + 1;
-            }
-        }
+        uint64_t n_abs = (static_cast<uint64_t>(n ^ s_n)) - s_n;  // If s_n is -1, invert and add 1
+        uint64_t d_abs = (static_cast<uint64_t>(d ^ s_d)) - s_d;  // If s_d is -1, invert and add 1
 
-        uint64_t d0_abs =
-            (static_cast<uint64_t>(d0 ^ s_d)) - s_d;  // If s_d is -1, invert and add 1
+        // Prepare 128-bit dividend: n_abs << fractionBits
+        uint64_t n_lo = n_abs << fractionBits;
+        uint64_t n_hi = n_abs >> (64 - fractionBits);
 
         // Calculate result sign: XOR operation
         int64_t s_result = s_n ^ s_d;  // Result sign
 
         // Call unsigned division
-        uint64_t result_abs = DivU128ToU64(n1_abs, n0_abs, d0_abs);
+        uint64_t result_abs = DivU128ToU64(n_hi, n_lo, d_abs);
 
         // Apply sign: If s_result is -1, invert and add 1
         return (static_cast<int64_t>(result_abs ^ s_result)) - s_result;
