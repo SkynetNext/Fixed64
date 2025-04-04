@@ -443,13 +443,7 @@ class Fixed64Math {
     template <int P>
         requires(P >= kMinTrigPrecision)
     [[nodiscard]] static auto Tan(Fixed64<P> x) noexcept -> Fixed64<P> {
-        if constexpr (P == kMinTrigPrecision) {
-            return Fixed64<P>(FixedTrigLut::Tan(x.value()), detail::nothing{});
-        } else {
-            return Fixed64<P>(FixedTrigLut::Tan(x.value() >> (P - kMinTrigPrecision))
-                                  << (P - kMinTrigPrecision),
-                              detail::nothing{});
-        }
+        return Sin(x) / Cos(x);
     }
 
     /**

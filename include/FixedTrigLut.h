@@ -32,7 +32,6 @@ class FixedTrigLut {
     // Lookup table array declarations
     // To properly define arrays in a header file, use 'inline' keyword (C++17 and later)
     static constexpr const int64_t* SinLut = g_FixedTrig_SinLut;
-    static constexpr const int64_t* TanLut = g_FixedTrig_TanLut;
     static constexpr const int64_t* AcosLut = g_FixedTrig_AcosLut;
 
     /**
@@ -70,32 +69,6 @@ class FixedTrigLut {
     static int64_t Cos(int64_t angle) noexcept {
         // cos(x) = sin(x + π/2)
         return Sin(angle + HALF_PI);
-    }
-
-    /**
-     * @brief Calculate tangent of angle
-     * @param x Angle in fixed-point radians
-     * @return Fixed-point tangent value
-     */
-    static int64_t Tan(int64_t x) noexcept {
-        // 1. Normalize angle to [0, 2π)
-        x %= TWO_PI;
-        x = Primitives::Fixed64Mul(x, INV_TWO_PI, FRACTION_BITS);
-
-        int sign = 1;
-        if (x < 0) {
-            x = -x;
-            sign = -1;
-        }
-
-        // 2. Calculate lookup table index (12-bit precision)
-        int index = (int)(x >> INDEX_SHIFT);
-        int64_t fraction = (x & ((1LL << INDEX_SHIFT) - 1)) << TABLE_PRECISION;
-
-        // 3. Linear interpolation (32-bit precision calculation)
-        int64_t a = TanLut[index];
-        int64_t b = TanLut[index + 1];
-        return (a + (((b - a) * fraction) >> FRACTION_BITS)) * sign;
     }
 
     /**
