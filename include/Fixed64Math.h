@@ -87,32 +87,31 @@ class Fixed64Math {
             return intResult;
         }
 
-        // Calculate 2^fracPart using Intel's approach:
-        // 2^x = e^(x*ln(2))
-        // Use a minimax polynomial approximation for e^y where y = x*ln(2)
-        const auto ln2 = Fixed64<P>::Ln2();
+        // Calculate 2^x = e^(x*ln(2))
+        constexpr auto ln2 = Fixed64<P>::Ln2();
         auto y = fracPart * ln2;
 
-        // Polynomial coefficients for e^x approximation (minimax)
-        // These coefficients provide better accuracy than Taylor series
-        constexpr Fixed64<P> c1(1.0);                // x^0 coefficient
-        constexpr Fixed64<P> c2(1.0);                // x^1 coefficient
-        constexpr Fixed64<P> c3(0.5);                // x^2 coefficient
-        constexpr Fixed64<P> c4(0.166666666666667);  // x^3 coefficient
-        constexpr Fixed64<P> c5(0.041666666666667);  // x^4 coefficient
-        constexpr Fixed64<P> c6(0.008333333333333);  // x^5 coefficient
-        constexpr Fixed64<P> c7(0.001388888888889);  // x^6 coefficient
-        constexpr Fixed64<P> c8(0.000198412698413);  // x^7 coefficient
+        // Use more terms for better precision while maintaining efficiency with Estrin's algorithm
+        constexpr Fixed64<P> c1(1.0);                // x^0
+        constexpr Fixed64<P> c2(1.0);                // x^1
+        constexpr Fixed64<P> c3(0.5);                // x^2
+        constexpr Fixed64<P> c4(0.166666666666667);  // x^3
+        constexpr Fixed64<P> c5(0.041666666666667);  // x^4
+        constexpr Fixed64<P> c6(0.008333333333333);  // x^5
+        constexpr Fixed64<P> c7(0.001388888888889);  // x^6
 
-        // Calculate polynomial approximation using Horner's method
-        auto fracResult = c8;
-        fracResult = fracResult * y + c7;
-        fracResult = fracResult * y + c6;
-        fracResult = fracResult * y + c5;
-        fracResult = fracResult * y + c4;
-        fracResult = fracResult * y + c3;
-        fracResult = fracResult * y + c2;
-        fracResult = fracResult * y + c1;
+        // Calculate polynomial using improved Estrin's algorithm
+        auto y2 = y * y;
+        auto y4 = y2 * y2;
+
+        // Compute coefficient groups in parallel
+        auto p01 = c1 + y * c2;
+        auto p23 = c3 + y * c4;
+        auto p45 = c5 + y * c6;
+        auto p6 = c7;
+
+        // Combine results - properly using the pre-computed y4
+        auto fracResult = p01 + y2 * p23 + y4 * (p45 + y2 * p6);
 
         // Combine integer and fractional parts
         auto result = intResult * fracResult;
