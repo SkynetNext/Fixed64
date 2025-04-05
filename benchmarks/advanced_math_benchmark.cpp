@@ -60,6 +60,31 @@ MathTestData generateMathTestData(int count) {
         data.atan2_pairs_double.emplace_back(y_val, x_val);
     }
 
+    // Generate test data pairs (base, exponent) for Pow function
+    data.pow_pairs.reserve(count);
+    data.pow_pairs_float.reserve(count);
+    data.pow_pairs_double.reserve(count);
+
+    // Random generator for power test data
+    uniform_real_distribution<> base_dist(0.1, 4.0);  // Positive bases to avoid complex results
+    uniform_real_distribution<> exp_dist(-2.0, 2.0);  // Mix of negative and positive exponents
+
+    for (int i = 0; i < count; ++i) {
+        // Generate random base and exponent values
+        double base_val = base_dist(gen);
+        double exp_val = exp_dist(gen);
+
+        // Create Fixed64 pair
+        auto base_fixed = math::fp::Fixed64<32>(base_val);
+        auto exp_fixed = math::fp::Fixed64<32>(exp_val);
+        data.pow_pairs.emplace_back(base_fixed, exp_fixed);
+
+        // Create equivalent float and double pairs
+        data.pow_pairs_float.emplace_back(static_cast<float>(base_val),
+                                          static_cast<float>(exp_val));
+        data.pow_pairs_double.emplace_back(base_val, exp_val);
+    }
+
     return data;
 }
 
@@ -360,6 +385,54 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
     atan2Result.times["float"] = atan2FloatTime;
     atan2Result.times["double"] = atan2DoubleTime;
     results.push_back(atan2Result);
+
+    // Power function benchmark
+    BenchmarkResult powResult;
+    powResult.operation = "Pow";
+
+    double fixedPowTime = runBenchmark(
+        "Fixed Power",
+        [&](int n) -> double {
+            int64_t sum = 0;
+            for (int k = 0; k < n; k++) {
+                auto result =
+                    math::fp::Fixed64Math::Pow(data.pow_pairs[k].first, data.pow_pairs[k].second);
+                sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double floatPowTime = runBenchmark(
+        "Float Power",
+        [&](int n) -> double {
+            float sum = 0;
+            for (int k = 0; k < n; k++) {
+                float result =
+                    std::powf(data.pow_pairs_float[k].first, data.pow_pairs_float[k].second);
+                sum += result;
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double doublePowTime = runBenchmark(
+        "Double Power",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result =
+                    std::pow(data.pow_pairs_double[k].first, data.pow_pairs_double[k].second);
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
+    powResult.times["Fixed64"] = fixedPowTime;
+    powResult.times["float"] = floatPowTime;
+    powResult.times["double"] = doublePowTime;
+    results.push_back(powResult);
 
     return results;
 }

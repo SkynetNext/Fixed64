@@ -145,10 +145,9 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
     double fixedAddTime = runBenchmark(
         "Fixed Addition",
         [&](int n) -> double {
-            int64_t sum = 0;
+            math::fp::Fixed64<32> sum(0);
             for (int k = 0; k < n; k++) {
-                auto result = data.fixed_values[k] + data.fixed_values[(k + 1) % n];
-                sum += result.value();
+                sum += data.fixed_values[k];
             }
             return static_cast<double>(sum);
         },
@@ -157,12 +156,11 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
     double softAddTime = runBenchmark(
         "SoftFloat Addition",
         [&](int n) -> double {
-            uint64_t sum = 0;
+            float64_t sum(0);
             for (int k = 0; k < n; k++) {
-                auto result = f64_add(data.sf_values[k], data.sf_values[(k + 1) % n]);
-                sum += result.v;
+                sum = f64_add(sum, data.sf_values[k]);
             }
-            return static_cast<double>(sum);
+            return static_cast<double>(sum.v);
         },
         iterations);
 
@@ -172,8 +170,7 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         [&](int n) -> double {
             float sum = 0;
             for (int k = 0; k < n; k++) {
-                float result = data.float_values[k] + data.float_values[(k + 1) % n];
-                sum += result;
+                sum += data.float_values[k];
             }
             return static_cast<double>(sum);
         },
@@ -185,8 +182,7 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         [&](int n) -> double {
             double sum = 0;
             for (int k = 0; k < n; k++) {
-                double result = data.double_values[k] + data.double_values[(k + 1) % n];
-                sum += result;
+                sum += data.double_values[k];
             }
             return sum;
         },
@@ -205,10 +201,9 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
     double fixedSubTime = runBenchmark(
         "Fixed Subtraction",
         [&](int n) -> double {
-            int64_t sum = 0;
+            math::fp::Fixed64<32> sum(0);
             for (int k = 0; k < n; k++) {
-                auto result = data.fixed_values[k] - data.fixed_values[(k + 1) % n];
-                sum += result.value();
+                sum -= data.fixed_values[k];
             }
             return static_cast<double>(sum);
         },
@@ -217,12 +212,11 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
     double softSubTime = runBenchmark(
         "SoftFloat Subtraction",
         [&](int n) -> double {
-            uint64_t sum = 0;
+            float64_t sum(0);
             for (int k = 0; k < n; k++) {
-                auto result = f64_sub(data.sf_values[k], data.sf_values[(k + 1) % n]);
-                sum += result.v;
+                sum = f64_sub(sum, data.sf_values[k]);
             }
-            return static_cast<double>(sum);
+            return static_cast<double>(sum.v);
         },
         iterations);
 
@@ -232,8 +226,7 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         [&](int n) -> double {
             float sum = 0;
             for (int k = 0; k < n; k++) {
-                float result = data.float_values[k] - data.float_values[(k + 1) % n];
-                sum += result;
+                sum += data.float_values[k];
             }
             return static_cast<double>(sum);
         },
@@ -245,8 +238,7 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         [&](int n) -> double {
             double sum = 0;
             for (int k = 0; k < n; k++) {
-                double result = data.double_values[k] - data.double_values[(k + 1) % n];
-                sum += result;
+                sum -= data.double_values[k];
             }
             return sum;
         },

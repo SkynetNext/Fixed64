@@ -190,44 +190,47 @@ int main() {
 
 ## Performance Benchmarks
 
-Benchmarks comparing Fixed64 to Berkeley SoftFloat (both software implementations) show significant performance advantages for most operations:
+Comprehensive benchmarks comparing Fixed64 with Berkeley SoftFloat (software floating point) and hardware floating point (double) reveal the following performance characteristics:
 
-| Operation      | Fixed64 (ms) | SoftFloat (ms) | Speedup (x) |
-|----------------|--------------|----------------|-------------|
-| Addition       | 8.24         | 173.23         | 21.02       |
-| Subtraction    | 6.29         | 165.67         | 26.34       |
-| Multiplication | 19.93        | 111.91         | 5.62        |
-| Division       | 215.24       | 223.19         | 1.04        |
-| Square Root    | 186.29       | 165.73         | 0.89        |
-| **Average**    |              |                | **10.98**   |
+### Basic Arithmetic Operations
 
-These benchmarks were run on Windows with LLVM Clang, using 10,000,000 operations per test. The results show:
+| Operation      | Fixed64 (ms) | SoftFloat (ms) | Speedup vs SoftFloat | double (ms) | Speedup vs double |
+|----------------|--------------|----------------|-----------------------|-------------|-------------------|
+| Addition       | 8.26         | 127.89         | 15.49x                | 13.56       | 1.64x             |
+| Subtraction    | 5.23         | 130.74         | 25.02x                | 14.79       | 2.83x             |
+| Multiplication | 20.71        | 112.54         | 5.43x                 | 12.43       | 0.60x             |
+| Division       | 214.01       | 232.83         | 1.09x                 | 14.67       | 0.07x             |
+| Square Root    | 200.75       | 166.43         | 0.83x                 | 19.33       | 0.10x             |
 
-- Fixed64 addition and subtraction are dramatically faster (21-26x) than software floating point
-- Fixed64 multiplication offers significant performance gains (5.6x)
-- Fixed64 division performs essentially the same as SoftFloat's optimized implementation
-- SoftFloat's square root is slightly faster (about 11%) than Fixed64's implementation
-- Overall, Fixed64 provides approximately 11x better performance on average for basic operations
+These benchmarks were run using 10,000,000 operations per test. The results show that:
 
-### Advanced Math Function Performance
+- Fixed64 outperforms SoftFloat by significant margins on addition (15.5x) and subtraction (25x)
+- Fixed64 multiplication is over 5x faster than SoftFloat
+- Division performance is comparable between the implementations
+- SoftFloat's square root implementation is approximately 20% faster than Fixed64's
+- Hardware floating-point division and square root operations are substantially faster than both software implementations
 
-Fixed64 also implements a variety of advanced mathematical functions with excellent performance:
+### Advanced Mathematical Functions
 
-| Function | Time (ms) for 10M operations |
-|----------|------------------------------|
-| Sin      | 41.37                        |
-| Acos     | 73.69                        |
-| Pow2     | 212.95                       |
-| Exp      | 334.90                       |
-| Log      | 461.82                       |
-| Atan2    | 462.57                       |
+| Function | Fixed64 (ms) | double (ms) | Fixed64 vs double |
+|----------|--------------|-------------|-------------------|
+| Pow2     | 176.15       | 504.36      | 2.86x faster      |
+| Sin      | 45.58        | 114.07      | 2.50x faster      |
+| Acos     | 68.65        | 137.26      | 2.00x faster      |
 
-These advanced functions use optimized algorithms that balance accuracy and performance, with the trigonometric functions being particularly efficient.
+Interestingly, for more complex functions like trigonometric and exponential operations, Fixed64's implementations outperform even hardware floating-point operations. This advantage stems from:
 
-The verification phase of the benchmark confirms that both implementations produce numerically equivalent results (within expected precision limits), with relative differences typically in the range of 10^-10 to 10^-13.
+1. Optimized algorithms specifically designed for the fixed-point representation
+2. Lookup table usage for function evaluation acceleration
+3. Elimination of floating-point pipeline stalls and precision management overhead
 
-For applications where consistent cross-platform behavior and performance are critical, Fixed64 offers an excellent alternative to floating-point arithmetic with deterministic results across all platforms.
+### Hardware Floating Point Comparison
 
-## Conclusion
+Compared to hardware floating point operations (when available):
+- Basic arithmetic operations (especially division and square root) are faster with hardware floating point
+- However, Fixed64 maintains deterministic cross-platform behavior that hardware floating point cannot guarantee
+- For advanced functions, Fixed64 implementations are 2.0-2.9x faster than equivalent floating point operations
 
-Fixed64 meets the needs of developers requiring high-performance, cross-platform consistent fixed-point arithmetic. Its efficient computational model, comprehensive operation support, and predefined constants make it well-suited for applications demanding high precision and consistency.
+### Conclusion
+
+Fixed64 offers excellent performance for deterministic cross-platform arithmetic. When hardware floating point is available, basic operations like division and square root will be faster using hardware. However, Fixed64's advanced function implementations outperform even hardware floating point, making it an excellent choice for applications where both performance and determinism are required.
