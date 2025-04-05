@@ -744,7 +744,10 @@ class Fixed64Math {
     template <int P>
     [[nodiscard]] constexpr static auto Abs(Fixed64<P> x) noexcept -> Fixed64<P> {
         if (x.value() < 0) {
-            return Fixed64<P>(~x.value() + 1, detail::nothing{});
+            // Cast to unsigned, perform negation (well-defined wrap-around),
+            // then cast back to signed for the constructor.
+            return Fixed64<P>(static_cast<int64_t>(~static_cast<uint64_t>(x.value()) + 1),
+                              detail::nothing{});
         }
         return x;
     }

@@ -9,6 +9,14 @@
 using namespace std;
 using namespace benchmark;
 
+// Helper function to center text in a field of specified width
+string center_text(const string& text, int width) {
+    int padding = width - text.length();
+    int left_padding = padding / 2;
+    int right_padding = padding - left_padding;
+    return string(left_padding, ' ') + text + string(right_padding, ' ');
+}
+
 // Format and display results as a table
 void printResultsTable(const vector<BenchmarkResult>& results) {
     // Get unique implementations
@@ -23,28 +31,29 @@ void printResultsTable(const vector<BenchmarkResult>& results) {
     cout << "\n========= FIXED64 PERFORMANCE BENCHMARK =========\n" << endl;
 
     // Calculate column width
-    const int OP_COL_WIDTH = 15;
-    const int TIME_COL_WIDTH = 21;
+    const int OP_COL_WIDTH = 20;
+    const int TIME_COL_WIDTH = 24;  // Increased to accommodate longer values
 
-    // Print header row
+    // Print header row - center-aligned headers
     cout << left << setw(OP_COL_WIDTH) << "Test Scenario";
     for (const auto& impl : implementations) {
-        cout << " | " << setw(TIME_COL_WIDTH) << impl;
+        cout << " | " << center_text(impl, TIME_COL_WIDTH - 2);
     }
-    cout << " | " << endl;
+    cout << " |" << endl;
 
     // Print separator
     cout << string(OP_COL_WIDTH, '-');
     for (size_t i = 0; i < implementations.size(); i++) {
-        cout << "-+-" << string(TIME_COL_WIDTH, '-');
+        cout << "-+-" << string(TIME_COL_WIDTH - 2, '-');
     }
-    cout << "-+" << endl;
+    cout << "-|" << endl;
 
-    // Find base implementation for relative speedup (we'll use the first one)
+    // Find base implementation for relative speedup
     string baseImpl = *implementations.begin();
 
     // Print each operation row
     for (const auto& result : results) {
+        // Left-align operation names (row headers)
         cout << left << setw(OP_COL_WIDTH) << result.operation;
 
         double baseTime = 0;
@@ -56,20 +65,31 @@ void printResultsTable(const vector<BenchmarkResult>& results) {
             cout << " | ";
             if (result.times.count(impl)) {
                 double time = result.times.at(impl);
-                cout << setw(8) << fixed << setprecision(2) << time << "ms";
 
-                // If this isn't the base implementation, show speedup
+                // Format time with right alignment
+                stringstream timeStr;
+                timeStr << right << setw(9) << fixed << setprecision(2) << time << " ms";
+
+                // If this isn't the base implementation, add speedup ratio
+                string fullStr;
                 if (impl != baseImpl && baseTime > 0) {
-                    double speedup = time / baseTime;
-                    cout << " (" << setw(5) << fixed << setprecision(2) << speedup << "x)";
+                    double ratio = time / baseTime;
+                    stringstream ratioStr;
+                    ratioStr << " (" << right << setw(6) << fixed << setprecision(2) << ratio
+                             << "x)";
+                    fullStr = timeStr.str() + ratioStr.str();
                 } else {
-                    cout << setw(12) << " ";
+                    fullStr =
+                        timeStr.str() + "          ";  // Add spaces to align with ratio format
                 }
+
+                // Right-align the full string in its column
+                cout << right << setw(TIME_COL_WIDTH - 2) << fullStr;
             } else {
-                cout << setw(TIME_COL_WIDTH) << "N/A";
+                cout << right << setw(TIME_COL_WIDTH - 2) << "N/A";
             }
         }
-        cout << " | " << endl;
+        cout << " |" << endl;
     }
 
     cout << "\n" << endl;

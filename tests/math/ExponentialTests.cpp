@@ -228,7 +228,7 @@ TEST(Fixed64ExponentialTest, ExpFunction) {
         double dbl_value = static_cast<double>(value);
         Fixed logValue = Fixed64Math::Log(value);
         Fixed expLogValue = Fixed64Math::Exp(logValue);
-        EXPECT_RELATIVE_ERROR(static_cast<double>(expLogValue), dbl_value, 0.0005);
+        EXPECT_RELATIVE_ERROR(static_cast<double>(expLogValue), dbl_value, 0.00033);
     }
 }
 

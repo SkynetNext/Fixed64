@@ -9,6 +9,8 @@ TestData generateTestData(int count) {
     int allocSize = count + 1;
     data.fixed_values.reserve(allocSize);
     data.sf_values.reserve(allocSize);
+    data.float_values.reserve(allocSize);
+    data.double_values.reserve(allocSize);
     data.indices.reserve(allocSize);
 
     random_device rd;
@@ -16,7 +18,7 @@ TestData generateTestData(int count) {
     uniform_real_distribution<> dist(-100.0, 100.0);  // More reasonable range
     uniform_int_distribution<> idx_dist(0, allocSize - 1);
 
-    // Generate values with the same pattern for both implementations
+    // Generate values with the same pattern for all implementations
     for (int i = 0; i < allocSize; i++) {
         double val = dist(gen);
 
@@ -32,6 +34,10 @@ TestData generateTestData(int count) {
         conv.d = val;
         data.sf_values.push_back(float64_t{conv.u});
 
+        // Create float and double values for standard library operations
+        data.float_values.push_back(static_cast<float>(val));
+        data.double_values.push_back(val);
+
         // Generate random index for access pattern
         data.indices.push_back(idx_dist(gen));
     }
@@ -46,6 +52,8 @@ MultiplyDivideTestData generateMulDivTestData(int count) {
     int allocSize = count + 1;
     data.fixed_pairs.reserve(allocSize);
     data.sf_pairs.reserve(allocSize);
+    data.float_pairs.reserve(allocSize);
+    data.double_pairs.reserve(allocSize);
 
     random_device rd;
     mt19937 gen(rd());
@@ -73,6 +81,10 @@ MultiplyDivideTestData generateMulDivTestData(int count) {
         conv_b.d = b;
 
         data.sf_pairs.emplace_back(float64_t{conv_a.u}, float64_t{conv_b.u});
+
+        // Create float and double pairs for standard library operations
+        data.float_pairs.emplace_back(static_cast<float>(a), static_cast<float>(b));
+        data.double_pairs.emplace_back(a, b);
     }
 
     return data;
@@ -85,6 +97,8 @@ SqrtTestData generateSqrtTestData(int count) {
     int allocSize = count + 1;
     data.fixed_values.reserve(allocSize);
     data.sf_values.reserve(allocSize);
+    data.float_values.reserve(allocSize);
+    data.double_values.reserve(allocSize);
 
     random_device rd;
     mt19937 gen(rd());
@@ -105,6 +119,10 @@ SqrtTestData generateSqrtTestData(int count) {
 
         conv.d = val;
         data.sf_values.push_back(float64_t{conv.u});
+
+        // Create float and double values for standard library operations
+        data.float_values.push_back(static_cast<float>(val));
+        data.double_values.push_back(val);
     }
 
     return data;
@@ -148,8 +166,36 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         },
         iterations);
 
+    // Addition benchmark for float
+    double floatAddTime = runBenchmark(
+        "Float Addition",
+        [&](int n) -> double {
+            float sum = 0;
+            for (int k = 0; k < n; k++) {
+                float result = data.float_values[k] + data.float_values[(k + 1) % n];
+                sum += result;
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    // Addition benchmark for double
+    double doubleAddTime = runBenchmark(
+        "Double Addition",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result = data.double_values[k] + data.double_values[(k + 1) % n];
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
     addResult.times["Fixed64"] = fixedAddTime;
     addResult.times["SoftFloat"] = softAddTime;
+    addResult.times["float"] = floatAddTime;
+    addResult.times["double"] = doubleAddTime;
     results.push_back(addResult);
 
     // Subtraction benchmark
@@ -180,8 +226,36 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         },
         iterations);
 
+    // Subtraction benchmark for float
+    double floatSubTime = runBenchmark(
+        "Float Subtraction",
+        [&](int n) -> double {
+            float sum = 0;
+            for (int k = 0; k < n; k++) {
+                float result = data.float_values[k] - data.float_values[(k + 1) % n];
+                sum += result;
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    // Subtraction benchmark for double
+    double doubleSubTime = runBenchmark(
+        "Double Subtraction",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result = data.double_values[k] - data.double_values[(k + 1) % n];
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
     subResult.times["Fixed64"] = fixedSubTime;
     subResult.times["SoftFloat"] = softSubTime;
+    subResult.times["float"] = floatSubTime;
+    subResult.times["double"] = doubleSubTime;
     results.push_back(subResult);
 
     // Multiplication benchmark
@@ -212,8 +286,37 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         },
         iterations);
 
+    // Multiplication benchmark for float
+    double floatMulTime = runBenchmark(
+        "Float Multiplication",
+        [&](int n) -> double {
+            float sum = 0;
+            for (int k = 0; k < n; k++) {
+                float result = mulDivData.float_pairs[k].first * mulDivData.float_pairs[k].second;
+                sum += result;
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    // Multiplication benchmark for double
+    double doubleMulTime = runBenchmark(
+        "Double Multiplication",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result =
+                    mulDivData.double_pairs[k].first * mulDivData.double_pairs[k].second;
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
     mulResult.times["Fixed64"] = fixedMulTime;
     mulResult.times["SoftFloat"] = softMulTime;
+    mulResult.times["float"] = floatMulTime;
+    mulResult.times["double"] = doubleMulTime;
     results.push_back(mulResult);
 
     // Division benchmark
@@ -244,8 +347,37 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         },
         iterations);
 
+    // Division benchmark for float
+    double floatDivTime = runBenchmark(
+        "Float Division",
+        [&](int n) -> double {
+            float sum = 0;
+            for (int k = 0; k < n; k++) {
+                float result = mulDivData.float_pairs[k].first / mulDivData.float_pairs[k].second;
+                sum += result;
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    // Division benchmark for double
+    double doubleDivTime = runBenchmark(
+        "Double Division",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result =
+                    mulDivData.double_pairs[k].first / mulDivData.double_pairs[k].second;
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
     divResult.times["Fixed64"] = fixedDivTime;
     divResult.times["SoftFloat"] = softDivTime;
+    divResult.times["float"] = floatDivTime;
+    divResult.times["double"] = doubleDivTime;
     results.push_back(divResult);
 
     // Square Root benchmark
@@ -276,8 +408,36 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         },
         iterations);
 
+    // Square Root benchmark for float
+    double floatSqrtTime = runBenchmark(
+        "Float Square Root",
+        [&](int n) -> double {
+            float sum = 0;
+            for (int k = 0; k < n; k++) {
+                float result = std::sqrtf(sqrtData.float_values[k]);
+                sum += result;
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    // Square Root benchmark for double
+    double doubleSqrtTime = runBenchmark(
+        "Double Square Root",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result = std::sqrt(sqrtData.double_values[k]);
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
     sqrtResult.times["Fixed64"] = fixedSqrtTime;
     sqrtResult.times["SoftFloat"] = softSqrtTime;
+    sqrtResult.times["float"] = floatSqrtTime;
+    sqrtResult.times["double"] = doubleSqrtTime;
     results.push_back(sqrtResult);
 
     return results;

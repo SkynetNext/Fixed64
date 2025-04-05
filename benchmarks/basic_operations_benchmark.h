@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cmath>  // For std::sqrt
 #include "Fixed64.h"
 #include "Fixed64Math.h"
 #include "benchmark_utils.h"
+
 extern "C" {
 #include "softfloat.h"
 }
@@ -17,6 +19,10 @@ struct TestData {
     std::vector<math::fp::Fixed64<32>> fixed_values;
     // For SoftFloat
     std::vector<float64_t> sf_values;
+    // For float standard operations
+    std::vector<float> float_values;
+    // For double standard operations
+    std::vector<double> double_values;
     // Additional indices for random access patterns
     std::vector<int> indices;
 };
@@ -26,6 +32,10 @@ struct MultiplyDivideTestData {
     std::vector<std::pair<math::fp::Fixed64<32>, math::fp::Fixed64<32>>> fixed_pairs;
     // For SoftFloat
     std::vector<std::pair<float64_t, float64_t>> sf_pairs;
+    // For float standard operations
+    std::vector<std::pair<float, float>> float_pairs;
+    // For double standard operations
+    std::vector<std::pair<double, double>> double_pairs;
 };
 
 struct SqrtTestData {
@@ -33,6 +43,10 @@ struct SqrtTestData {
     std::vector<math::fp::Fixed64<32>> fixed_values;
     // For SoftFloat
     std::vector<float64_t> sf_values;
+    // For float standard operations
+    std::vector<float> float_values;
+    // For double standard operations
+    std::vector<double> double_values;
 };
 
 // Generate test data

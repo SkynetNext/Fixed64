@@ -31,37 +31,35 @@ int main() {
 
     // Addition
     math::fp::Fixed64<16> sum = num1 + num2;
-    std::cout << "Sum: " << sum.ToString() << std::endl;  // Should print 5.0
+    std::cout << "Sum: " << sum << std::endl;  // Should print 5.0
 
     // Using the += operator
     sum += one;
-    std::cout << "Sum after += One: " << sum.ToString() << std::endl;  // Should print 6.0
+    std::cout << "Sum after += One: " << sum << std::endl;  // Should print 6.0
 
     // Subtraction
     math::fp::Fixed64<16> difference = num1 - num2;
-    std::cout << "Difference: " << difference.ToString() << std::endl;  // Should print 2.5
+    std::cout << "Difference: " << difference << std::endl;  // Should print 2.5
 
     // Using the -= operator
     difference -= one;
-    std::cout << "Difference after -= One: " << difference.ToString()
-              << std::endl;  // Should print 1.5
+    std::cout << "Difference after -= One: " << difference << std::endl;  // Should print 1.5
 
     // Multiplication
     math::fp::Fixed64<16> product = num1 * num2;
-    std::cout << "Product: " << product.ToString() << std::endl;  // Should print 4.6875
+    std::cout << "Product: " << product << std::endl;  // Should print 4.6875
 
     // Using the *= operator
     product *= one;
-    std::cout << "Product after *= One: " << product.ToString()
-              << std::endl;  // Should print 4.6875
+    std::cout << "Product after *= One: " << product << std::endl;  // Should print 4.6875
 
     // Division
     math::fp::Fixed64<16> quotient = num1 / num2;
-    std::cout << "Quotient: " << quotient.ToString() << std::endl;  // Should print 3.0
+    std::cout << "Quotient: " << quotient << std::endl;  // Should print 3.0
 
     // Using the /= operator
     quotient /= one;
-    std::cout << "Quotient after /= One: " << quotient.ToString() << std::endl;  // Should print 3.0
+    std::cout << "Quotient after /= One: " << quotient << std::endl;  // Should print 3.0
 
     // Handling division by zero
     math::fp::Fixed64<16> zero(0);
@@ -75,16 +73,16 @@ int main() {
     // Add some math function examples
     std::cout << "\n--- Math Functions ---" << std::endl;
     math::fp::Fixed64<16> angle = math::fp::Fixed64<16>::Pi() / math::fp::Fixed64<16>(4);  // π/4
-    std::cout << "Angle (π/4): " << angle.ToString() << std::endl;
+    std::cout << "Angle (Pi/4): " << angle << std::endl;
 
     // Use Fixed64Math for trigonometric calculations
     Fixed64_32 angle32(angle);  // Convert to 32-bit precision for trigonometric functions
-    std::cout << "Sin(π/4): " << Fixed64Math::Sin(angle32).ToString() << std::endl;
-    std::cout << "Cos(π/4): " << Fixed64Math::Cos(angle32).ToString() << std::endl;
+    std::cout << "Sin(Pi/4): " << Fixed64Math::Sin(angle32) << std::endl;
+    std::cout << "Cos(Pi/4): " << Fixed64Math::Cos(angle32) << std::endl;
 
     // Square root
     math::fp::Fixed64<16> value(16);
-    std::cout << "Sqrt(16): " << Fixed64Math::Sqrt(value).ToString() << std::endl;
+    std::cout << "Sqrt(16): " << Fixed64Math::Sqrt(value) << std::endl;
 
     return 0;
 }
