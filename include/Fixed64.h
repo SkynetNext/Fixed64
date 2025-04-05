@@ -694,14 +694,14 @@ constexpr auto operator==(T a, const Fixed64<P>& b) noexcept -> bool {
 }
 
 // 1. Fixed64 += Fixed64 operation (handles all precisions)
-template <int P, int Q>
-constexpr auto operator+=(Fixed64<P>& a, const Fixed64<Q>& b) noexcept -> Fixed64<P>& {
-    if constexpr (P == Q) {
+template <int Q, int R>
+constexpr auto operator+=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed64<Q>& {
+    if constexpr (Q == R) {
         a.value_ += b.value_;
-    } else if constexpr (P > Q) {
-        a.value_ += b.value_ << (P - Q);
+    } else if constexpr (Q > R) {
+        a.value_ += b.value_ << (Q - R);
     } else {
-        a.value_ += b.value_ >> (Q - P);
+        a.value_ += b.value_ >> (R - Q);
     }
     return a;
 }
@@ -727,14 +727,14 @@ constexpr auto operator+(const T& a, const Fixed64<P>& b) noexcept -> Fixed64<P>
 }
 
 // Subtraction operators
-template <int P, int Q>
-constexpr auto operator-=(Fixed64<P>& a, const Fixed64<Q>& b) noexcept -> Fixed64<P>& {
-    if constexpr (P == Q) {
+template <int Q, int R>
+constexpr auto operator-=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed64<Q>& {
+    if constexpr (Q == R) {
         a.value_ -= b.value_;
-    } else if constexpr (P > Q) {
-        a.value_ -= b.value_ << (P - Q);
+    } else if constexpr (Q > R) {
+        a.value_ -= b.value_ << (Q - R);
     } else {
-        a.value_ -= b.value_ >> (Q - P);
+        a.value_ -= b.value_ >> (R - Q);
     }
     return a;
 }
@@ -782,9 +782,9 @@ constexpr auto operator*=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed6
     return a;
 }
 
-template <int P, typename IntType>
+template <int Q, typename IntType>
     requires std::is_integral_v<IntType>
-constexpr auto operator*=(Fixed64<P>& a, const IntType& b) noexcept -> Fixed64<P>& {
+constexpr auto operator*=(Fixed64<Q>& a, const IntType& b) noexcept -> Fixed64<Q>& {
     a.value_ *= b;
     return a;
 }
@@ -845,9 +845,9 @@ constexpr auto operator/=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed6
 }
 
 // Division operator - integer specialization
-template <int P, typename IntType>
+template <int Q, typename IntType>
     requires std::is_integral_v<IntType>
-constexpr auto operator/=(Fixed64<P>& a, const IntType& b) noexcept -> Fixed64<P>& {
+constexpr auto operator/=(Fixed64<Q>& a, const IntType& b) noexcept -> Fixed64<Q>& {
     a.value_ /= b;
     return a;
 }

@@ -22,10 +22,7 @@ target_link_libraries(fixed64_tests
 )
 
 # Add compilation options
-target_compile_options(fixed64_tests PRIVATE 
-    -Wall 
-    -Wextra
-)
+target_compile_options(fixed64_tests PRIVATE ${COMPILER_WARNINGS})
 
 # Enable console output during test execution
 target_compile_definitions(fixed64_tests PRIVATE 

@@ -39,11 +39,25 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/examples")
         add_executable(${example_name} ${example_source})
         target_link_libraries(${example_name} Fixed64)
         
-        target_compile_options(${example_name} PRIVATE 
-            -Wall 
-            -Wextra 
-            -O3
-        )
+        # Set compiler-specific warning flags
+        if(MSVC)
+            # MSVC compiler flags
+            set(COMPILER_WARNINGS
+                /W4
+                /WX
+                /wd4996  # Disable specific warnings, e.g., deprecated function warnings
+            )
+        else()
+            # GCC/Clang compiler flags
+            set(COMPILER_WARNINGS
+                -Wall
+                -Wextra
+                -O3
+            )
+        endif()
+        
+        # Apply conditional compiler flags
+        target_compile_options(${example_name} PRIVATE ${COMPILER_WARNINGS})
     endforeach()
 endif()
 
