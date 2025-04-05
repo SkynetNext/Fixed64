@@ -194,18 +194,35 @@ Benchmarks comparing Fixed64 to Berkeley SoftFloat (both software implementation
 
 | Operation      | Fixed64 (ms) | SoftFloat (ms) | Speedup (x) |
 |----------------|--------------|----------------|-------------|
-| Addition       | 7.277        | 178.518        | 24.47       |
-| Subtraction    | 7.226        | 164.017        | 23.95       |
-| Multiplication | 20.820       | 116.010        | 5.57        |
-| Division       | 213.291      | 212.461        | 1.00        |
-| **Average**    |              |                | **13.75**   |
+| Addition       | 8.24         | 173.23         | 21.02       |
+| Subtraction    | 6.29         | 165.67         | 26.34       |
+| Multiplication | 19.93        | 111.91         | 5.62        |
+| Division       | 215.24       | 223.19         | 1.04        |
+| Square Root    | 186.29       | 165.73         | 0.89        |
+| **Average**    |              |                | **10.98**   |
 
-These benchmarks were run on Windows with MinGW GCC, using 10,000,000 operations per test. Results show that:
+These benchmarks were run on Windows with LLVM Clang, using 10,000,000 operations per test. The results show:
 
-- Fixed64 addition and subtraction are dramatically faster (24-25x) than software floating point
+- Fixed64 addition and subtraction are dramatically faster (21-26x) than software floating point
 - Fixed64 multiplication offers significant performance gains (5.6x)
 - Fixed64 division performs essentially the same as SoftFloat's optimized implementation
-- Overall, Fixed64 provides approximately 13.8x better performance on average
+- SoftFloat's square root is slightly faster (about 11%) than Fixed64's implementation
+- Overall, Fixed64 provides approximately 11x better performance on average for basic operations
+
+### Advanced Math Function Performance
+
+Fixed64 also implements a variety of advanced mathematical functions with excellent performance:
+
+| Function | Time (ms) for 10M operations |
+|----------|------------------------------|
+| Sin      | 41.37                        |
+| Acos     | 73.69                        |
+| Pow2     | 212.95                       |
+| Exp      | 334.90                       |
+| Log      | 461.82                       |
+| Atan2    | 462.57                       |
+
+These advanced functions use optimized algorithms that balance accuracy and performance, with the trigonometric functions being particularly efficient.
 
 The verification phase of the benchmark confirms that both implementations produce numerically equivalent results (within expected precision limits), with relative differences typically in the range of 10^-10 to 10^-13.
 
