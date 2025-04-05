@@ -122,7 +122,9 @@ TEST(Fixed64MinMaxTest, AbsFunction) {
     EXPECT_EQ(Fixed64Math::Abs(max), max);
     // Note: Abs(Min) might overflow since |Min| > Max in two's complement
     // This test depends on implementation details
-    EXPECT_EQ(Fixed64Math::Abs(min), min);
+    EXPECT_EQ(Fixed64Math::Abs(min).value(), min.value())
+        << "Abs(min) = " << Fixed64Math::Abs(min) << ", min = " << min
+        << ", ~min.value() = " << ~min.value() << ", ~min.value() + 1 = " << (~min.value() + 1);
 }
 
 // Tests for Sign function

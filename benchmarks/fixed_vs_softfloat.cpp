@@ -54,8 +54,8 @@ double runBenchmark(const string& name, Func func, int iterations) {
 struct TestData {
     // For fixed-point
     std::vector<math::fp::Fixed64<32>> fixed_values;
-    // For SoftFloat
-    std::vector<float32_t> sf_values;
+    // For SoftFloat - now using float64_t instead of float32_t
+    std::vector<float64_t> sf_values;
     // Common random pattern for both
     std::vector<int> indices;
 };
@@ -63,30 +63,32 @@ struct TestData {
 // Generate test data with consistent patterns for fair comparison
 TestData generateTestData(int count) {
     TestData data;
-    data.fixed_values.reserve(count);
-    data.sf_values.reserve(count);
-    data.indices.reserve(count);
+    // Add +1 to prevent out-of-bounds access when using k+1 index
+    int allocSize = count + 1;
+    data.fixed_values.reserve(allocSize);
+    data.sf_values.reserve(allocSize);
+    data.indices.reserve(allocSize);
 
     random_device rd;
     mt19937 gen(rd());
     uniform_real_distribution<> dist(-100.0, 100.0);  // More reasonable range
-    uniform_int_distribution<> idx_dist(0, count - 1);
+    uniform_int_distribution<> idx_dist(0, allocSize - 1);
 
     // Generate values with the same pattern for both implementations
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < allocSize; i++) {
         double val = dist(gen);
 
         // Create fixed-point value
         data.fixed_values.emplace_back(val);
 
-        // Create equivalent SoftFloat value
+        // Create equivalent SoftFloat value - now using float64_t
         union {
-            float f;
-            uint32_t u;
+            double d;
+            uint64_t u;
         } conv;
 
-        conv.f = static_cast<float>(val);
-        data.sf_values.push_back(float32_t{conv.u});
+        conv.d = val;
+        data.sf_values.push_back(float64_t{conv.u});
 
         // Random index for pseudo-random access pattern
         data.indices.push_back(idx_dist(gen));
@@ -95,44 +97,182 @@ TestData generateTestData(int count) {
     return data;
 }
 
-// Verify that both implementations produce equivalent results
-void verifyImplementations(const TestData& data) {
+// New structure for multiplication and division tests
+struct MultiplyDivideTestData {
+    // For fixed-point
+    std::vector<std::pair<math::fp::Fixed64<32>, math::fp::Fixed64<32>>> fixed_pairs;
+    // For SoftFloat - now using float64_t
+    std::vector<std::pair<float64_t, float64_t>> sf_pairs;
+};
+
+// Generate paired test data specifically for multiplication and division
+MultiplyDivideTestData generateMulDivTestData(int count) {
+    MultiplyDivideTestData data;
+    // Add +1 to prevent any potential out-of-bounds access
+    int allocSize = count + 1;
+    data.fixed_pairs.reserve(allocSize);
+    data.sf_pairs.reserve(allocSize);
+
+    random_device rd;
+    mt19937 gen(rd());
+
+    // Generate values far from zero for better multiplication testing
+    uniform_real_distribution<> dist_pos(1.0, 1000.0);    // Positive range
+    uniform_real_distribution<> dist_neg(-1000.0, -1.0);  // Negative range
+    uniform_int_distribution<> sign_dist(0, 1);           // To choose positive or negative
+
+    // Generate pairs of values
+    for (int i = 0; i < allocSize; i++) {
+        // Generate a and b with balanced positive/negative values
+        double a = sign_dist(gen) ? dist_pos(gen) : dist_neg(gen);
+        double b = sign_dist(gen) ? dist_pos(gen) : dist_neg(gen);
+
+        // Create fixed-point pair
+        math::fp::Fixed64<32> fixed_a(a);
+        math::fp::Fixed64<32> fixed_b(b);
+        data.fixed_pairs.emplace_back(fixed_a, fixed_b);
+
+        // Create equivalent SoftFloat pair
+        union {
+            double d;
+            uint64_t u;
+        } conv_a, conv_b;
+
+        conv_a.d = a;
+        conv_b.d = b;
+
+        data.sf_pairs.emplace_back(float64_t{conv_a.u}, float64_t{conv_b.u});
+    }
+
+    return data;
+}
+
+// Verify that both implementations produce equivalent results for all operations
+void verifyImplementations(const TestData& data, const MultiplyDivideTestData& mulDivData) {
     std::cout << "Verifying implementations with sample operations..." << std::endl;
 
-    // Sample a few random elements - fix narrowing conversion with static_cast
+    // Sample a few random elements for addition/subtraction
     vector<int> samples = {0,
                            static_cast<int>(data.fixed_values.size() / 3),
                            static_cast<int>(data.fixed_values.size() / 2),
                            static_cast<int>(data.fixed_values.size() - 1)};
 
+    std::cout << "\n=== Addition/Subtraction Verification ===" << std::endl;
     for (int i : samples) {
         int j = (i + 1) % data.fixed_values.size();
 
-        // Use proper conversion method instead of toFloat()
-        float fixed_add = static_cast<float>(data.fixed_values[i] + data.fixed_values[j]);
+        // Addition verification
+        double fixed_add = static_cast<double>(data.fixed_values[i] + data.fixed_values[j]);
 
-        float32_t sf_add = f32_add(data.sf_values[i], data.sf_values[j]);
+        float64_t sf_add = f64_add(data.sf_values[i], data.sf_values[j]);
 
         union {
-            uint32_t u;
-            float f;
-        } conv;
+            uint64_t u;
+            double d;
+        } add_conv;
 
-        conv.u = sf_add.v;
-        float sf_add_f = conv.f;
+        add_conv.u = sf_add.v;
+        double sf_add_d = add_conv.d;
 
-        cout << "Sample [" << i << "," << j << "] - Fixed: " << fixed_add
-             << ", SoftFloat: " << sf_add_f << ", Diff: " << abs(fixed_add - sf_add_f) << endl;
+        cout << "Addition [" << i << "," << j << "] - Fixed: " << fixed_add
+             << ", SoftFloat: " << sf_add_d << ", Diff: " << abs(fixed_add - sf_add_d) << endl;
+
+        // Subtraction verification
+        double fixed_sub = static_cast<double>(data.fixed_values[i] - data.fixed_values[j]);
+
+        float64_t sf_sub = f64_sub(data.sf_values[i], data.sf_values[j]);
+
+        union {
+            uint64_t u;
+            double d;
+        } sub_conv;
+
+        sub_conv.u = sf_sub.v;
+        double sf_sub_d = sub_conv.d;
+
+        cout << "Subtraction [" << i << "," << j << "] - Fixed: " << fixed_sub
+             << ", SoftFloat: " << sf_sub_d << ", Diff: " << abs(fixed_sub - sf_sub_d) << endl;
     }
 
-    std::cout << "Verification complete." << std::endl << std::endl;
+    // Sample multiplication and division from the specialized test data
+    std::cout << "\n=== Multiplication/Division Verification ===" << std::endl;
+    samples = {0,
+               static_cast<int>(mulDivData.fixed_pairs.size() / 3),
+               static_cast<int>(mulDivData.fixed_pairs.size() / 2),
+               static_cast<int>(mulDivData.fixed_pairs.size() - 1)};
+
+    for (int i : samples) {
+        // Get the test values
+        auto fixed_a = mulDivData.fixed_pairs[i].first;
+        auto fixed_b = mulDivData.fixed_pairs[i].second;
+        auto sf_a = mulDivData.sf_pairs[i].first;
+        auto sf_b = mulDivData.sf_pairs[i].second;
+
+        // Convert to double for display
+        union {
+            uint64_t u;
+            double d;
+        } a_conv, b_conv;
+
+        a_conv.u = sf_a.v;
+        b_conv.u = sf_b.v;
+
+        // Display test values
+        cout << "Test values [" << i << "]: a=" << static_cast<double>(fixed_a) << " (" << a_conv.d
+             << "), b=" << static_cast<double>(fixed_b) << " (" << b_conv.d << ")" << endl;
+
+        // Multiplication verification
+        double fixed_mul = static_cast<double>(fixed_a * fixed_b);
+
+        float64_t sf_mul = f64_mul(sf_a, sf_b);
+
+        union {
+            uint64_t u;
+            double d;
+        } mul_conv;
+
+        mul_conv.u = sf_mul.v;
+        double sf_mul_d = mul_conv.d;
+
+        cout << "Multiplication - Fixed: " << fixed_mul << ", SoftFloat: " << sf_mul_d
+             << ", Diff: " << abs(fixed_mul - sf_mul_d)
+             << ", Rel Diff: " << (abs(fixed_mul - sf_mul_d) / (abs(sf_mul_d) + 1e-10)) << endl;
+
+        // Division verification
+        double fixed_div = static_cast<double>(fixed_a / fixed_b);
+
+        float64_t sf_div = f64_div(sf_a, sf_b);
+
+        union {
+            uint64_t u;
+            double d;
+        } div_conv;
+
+        div_conv.u = sf_div.v;
+        double sf_div_d = div_conv.d;
+
+        cout << "Division - Fixed: " << fixed_div << ", SoftFloat: " << sf_div_d
+             << ", Diff: " << abs(fixed_div - sf_div_d)
+             << ", Rel Diff: " << (abs(fixed_div - sf_div_d) / (abs(sf_div_d) + 1e-10)) << endl;
+    }
+
+    std::cout << "\nVerification complete." << std::endl << std::endl;
 }
 
 int main() {
-    const int ITERATIONS = 1000000;
+    std::cout << "==== Build Information ====" << std::endl;
+    std::cout << "Size of void*: " << sizeof(void*) << " bytes" << std::endl;
+    std::cout << "Size of size_t: " << sizeof(size_t) << " bytes" << std::endl;
+    std::cout << "Size of int64_t: " << sizeof(int64_t) << " bytes" << std::endl;
+
+    // Increased iterations for more accurate timing
+    const int ITERATIONS = 10000000;  // 10M iterations instead of 1M
 
     cout << "Generating test data..." << endl;
     TestData data = generateTestData(ITERATIONS);
+
+    // Generate special test data for multiply/divide operations
+    MultiplyDivideTestData mulDivData = generateMulDivTestData(ITERATIONS);
 
     cout << "Running benchmarks with iterations: " << ITERATIONS << endl;
     cout << "------------------------------------------------------------" << endl;
@@ -140,36 +280,33 @@ int main() {
          << "SoftFloat (ms)" << setw(15) << "Speedup" << endl;
     cout << "------------------------------------------------------------" << endl;
 
-    // Verify implementations first
-    verifyImplementations(data);
+    // Verify implementations first - pass both data structures
+    verifyImplementations(data, mulDivData);
 
-    // Addition benchmark - avoid unnecessary conversions
+    // Addition benchmark - direct indexing without modulo
     double fixedAddTime = runBenchmark(
         "Fixed Addition",
         [&](int n) -> double {
-            // Use integers instead of floats to avoid conversion
             int64_t sum = 0;
             for (int k = 0; k < n; k++) {
-                int i = k % data.indices.size();
-                int j = data.indices[i];
-                auto result = data.fixed_values[i] + data.fixed_values[j];
-                sum += result.value();  // Use value() instead of toFloat()
+                // Direct array access without modulo
+                auto result = data.fixed_values[k] + data.fixed_values[(k + 1)];
+                sum += result.value();
             }
-            return static_cast<double>(sum);  // Only convert once at the end
+            return static_cast<double>(sum);
         },
         ITERATIONS);
 
     double softAddTime = runBenchmark(
         "SoftFloat Addition",
         [&](int n) -> double {
-            uint32_t sum = 0;  // Use integer accumulation
+            uint64_t sum = 0;
             for (int k = 0; k < n; k++) {
-                int i = k % data.indices.size();
-                int j = data.indices[i];
-                auto result = f32_add(data.sf_values[i], data.sf_values[j]);
-                sum += result.v;  // Directly use the bit pattern
+                // Direct array access without modulo
+                auto result = f64_add(data.sf_values[k], data.sf_values[(k + 1)]);
+                sum += result.v;
             }
-            return static_cast<double>(sum);  // Only convert once
+            return static_cast<double>(sum);
         },
         ITERATIONS);
 
@@ -177,15 +314,14 @@ int main() {
     cout << left << setw(20) << "Addition" << setw(15) << fixed << setprecision(3) << fixedAddTime
          << setw(15) << softAddTime << setw(15) << speedup << endl;
 
-    // Subtraction benchmark
+    // Subtraction benchmark - direct indexing without modulo
     double fixedSubTime = runBenchmark(
         "Fixed Subtraction",
         [&](int n) -> double {
             int64_t sum = 0;
             for (int k = 0; k < n; k++) {
-                int i = k % data.indices.size();
-                int j = data.indices[i];
-                auto result = data.fixed_values[i] - data.fixed_values[j];
+                // Direct array access without modulo
+                auto result = data.fixed_values[k] - data.fixed_values[(k + 1)];
                 sum += result.value();
             }
             return static_cast<double>(sum);
@@ -195,11 +331,10 @@ int main() {
     double softSubTime = runBenchmark(
         "SoftFloat Subtraction",
         [&](int n) -> double {
-            uint32_t sum = 0;
+            uint64_t sum = 0;
             for (int k = 0; k < n; k++) {
-                int i = k % data.indices.size();
-                int j = data.indices[i];
-                auto result = f32_sub(data.sf_values[i], data.sf_values[j]);
+                // Direct array access without modulo
+                auto result = f64_sub(data.sf_values[k], data.sf_values[(k + 1)]);
                 sum += result.v;
             }
             return static_cast<double>(sum);
@@ -210,15 +345,14 @@ int main() {
     cout << left << setw(20) << "Subtraction" << setw(15) << fixed << setprecision(3)
          << fixedSubTime << setw(15) << softSubTime << setw(15) << speedup << endl;
 
-    // Multiplication benchmark
+    // Multiplication benchmark - direct indexing without modulo
     double fixedMulTime = runBenchmark(
         "Fixed Multiplication",
         [&](int n) -> double {
             int64_t sum = 0;
             for (int k = 0; k < n; k++) {
-                int i = k % data.indices.size();
-                int j = data.indices[i];
-                auto result = data.fixed_values[i] * data.fixed_values[j];
+                // Direct array access without modulo
+                auto result = mulDivData.fixed_pairs[k].first * mulDivData.fixed_pairs[k].second;
                 sum += result.value();
             }
             return static_cast<double>(sum);
@@ -228,11 +362,10 @@ int main() {
     double softMulTime = runBenchmark(
         "SoftFloat Multiplication",
         [&](int n) -> double {
-            uint32_t sum = 0;
+            uint64_t sum = 0;
             for (int k = 0; k < n; k++) {
-                int i = k % data.indices.size();
-                int j = data.indices[i];
-                auto result = f32_mul(data.sf_values[i], data.sf_values[j]);
+                // Direct array access without modulo
+                auto result = f64_mul(mulDivData.sf_pairs[k].first, mulDivData.sf_pairs[k].second);
                 sum += result.v;
             }
             return static_cast<double>(sum);
@@ -243,21 +376,15 @@ int main() {
     cout << left << setw(20) << "Multiplication" << setw(15) << fixed << setprecision(3)
          << fixedMulTime << setw(15) << softMulTime << setw(15) << speedup << endl;
 
-    // Division benchmark
+    // Division benchmark - direct indexing without modulo
     double fixedDivTime = runBenchmark(
         "Fixed Division",
         [&](int n) -> double {
             int64_t sum = 0;
             for (int k = 0; k < n; k++) {
-                int i = k % data.indices.size();
-                int j = data.indices[i];
-                // Skip division by zero or very small values
-                if (data.fixed_values[j].value() != 0) {
-                    auto result = data.fixed_values[i] / data.fixed_values[j];
-                    sum += result.value();
-                } else {
-                    sum += 1;  // Add something to avoid optimization
-                }
+                // Direct array access without modulo
+                auto result = mulDivData.fixed_pairs[k].first / mulDivData.fixed_pairs[k].second;
+                sum += result.value();
             }
             return static_cast<double>(sum);
         },
@@ -266,18 +393,11 @@ int main() {
     double softDivTime = runBenchmark(
         "SoftFloat Division",
         [&](int n) -> double {
-            uint32_t sum = 0;
+            uint64_t sum = 0;
             for (int k = 0; k < n; k++) {
-                int i = k % data.indices.size();
-                int j = data.indices[i];
-
-                // Skip division by zero (check if exponent and mantissa are all zero)
-                if ((data.sf_values[j].v & 0x7FFFFFFF) != 0) {
-                    auto result = f32_div(data.sf_values[i], data.sf_values[j]);
-                    sum += result.v;
-                } else {
-                    sum += 1;  // Add something to avoid optimization
-                }
+                // Direct array access without modulo
+                auto result = f64_div(mulDivData.sf_pairs[k].first, mulDivData.sf_pairs[k].second);
+                sum += result.v;
             }
             return static_cast<double>(sum);
         },

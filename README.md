@@ -194,18 +194,20 @@ Benchmarks comparing Fixed64 to Berkeley SoftFloat (both software implementation
 
 | Operation      | Fixed64 (ms) | SoftFloat (ms) | Speedup (x) |
 |----------------|--------------|----------------|-------------|
-| Addition       | 10.030       | 52.381         | 5.22        |
-| Subtraction    | 14.185       | 52.944         | 3.73        |
-| Multiplication | 21.771       | 50.318         | 2.31        |
-| Division       | 96.673       | 83.290         | 0.86        |
-| **Average**    |              |                | **3.03**    |
+| Addition       | 7.277        | 178.518        | 24.47       |
+| Subtraction    | 7.226        | 164.017        | 23.95       |
+| Multiplication | 20.820       | 116.010        | 5.57        |
+| Division       | 213.291      | 212.461        | 1.00        |
+| **Average**    |              |                | **13.75**   |
 
-These benchmarks were run on a modern system with 1,000,000 operations per test. Results show that:
+These benchmarks were run on Windows with MinGW GCC, using 10,000,000 operations per test. Results show that:
 
-- Fixed64 addition and subtraction are significantly faster (3.7-5.2x) than software floating point
-- Fixed64 multiplication offers moderate performance gains (2.3x)
-- Fixed64 division is slightly slower than SoftFloat's optimized implementation
-- Overall, Fixed64 provides approximately 3x better performance on average
+- Fixed64 addition and subtraction are dramatically faster (24-25x) than software floating point
+- Fixed64 multiplication offers significant performance gains (5.6x)
+- Fixed64 division performs essentially the same as SoftFloat's optimized implementation
+- Overall, Fixed64 provides approximately 13.8x better performance on average
+
+The verification phase of the benchmark confirms that both implementations produce numerically equivalent results (within expected precision limits), with relative differences typically in the range of 10^-10 to 10^-13.
 
 For applications where consistent cross-platform behavior and performance are critical, Fixed64 offers an excellent alternative to floating-point arithmetic with deterministic results across all platforms.
 
