@@ -147,8 +147,50 @@ MultiplyDivideTestData generateMulDivTestData(int count) {
     return data;
 }
 
+// For square root test data
+struct SqrtTestData {
+    // For fixed-point
+    std::vector<math::fp::Fixed64<32>> fixed_values;
+    // For SoftFloat
+    std::vector<float64_t> sf_values;
+};
+
+// Generate special test data for square root operations (positive values only)
+SqrtTestData generateSqrtTestData(int count) {
+    SqrtTestData data;
+    // Add +1 to prevent any potential out-of-bounds access
+    int allocSize = count + 1;
+    data.fixed_values.reserve(allocSize);
+    data.sf_values.reserve(allocSize);
+
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_real_distribution<> dist(0.01, 1000.0);  // Positive values only
+
+    // Generate positive values suitable for square root
+    for (int i = 0; i < allocSize; i++) {
+        double val = dist(gen);
+
+        // Create fixed-point value
+        data.fixed_values.emplace_back(val);
+
+        // Create equivalent SoftFloat value
+        union {
+            double d;
+            uint64_t u;
+        } conv;
+
+        conv.d = val;
+        data.sf_values.push_back(float64_t{conv.u});
+    }
+
+    return data;
+}
+
 // Verify that both implementations produce equivalent results for all operations
-void verifyImplementations(const TestData& data, const MultiplyDivideTestData& mulDivData) {
+void verifyImplementations(const TestData& data,
+                           const MultiplyDivideTestData& mulDivData,
+                           const SqrtTestData& sqrtData) {
     std::cout << "Verifying implementations with sample operations..." << std::endl;
 
     // Sample a few random elements for addition/subtraction
@@ -256,6 +298,45 @@ void verifyImplementations(const TestData& data, const MultiplyDivideTestData& m
              << ", Rel Diff: " << (abs(fixed_div - sf_div_d) / (abs(sf_div_d) + 1e-10)) << endl;
     }
 
+    // Add square root verification
+    std::cout << "\n=== Square Root Verification ===" << std::endl;
+    vector<int> sqrtSamples = {0,
+                               static_cast<int>(sqrtData.fixed_values.size() / 3),
+                               static_cast<int>(sqrtData.fixed_values.size() / 2),
+                               static_cast<int>(sqrtData.fixed_values.size() - 1)};
+
+    for (int i : sqrtSamples) {
+        double fixed_val = static_cast<double>(sqrtData.fixed_values[i]);
+
+        union {
+            uint64_t u;
+            double d;
+        } sf_conv;
+
+        sf_conv.u = sqrtData.sf_values[i].v;
+        double sf_val = sf_conv.d;
+
+        // Calculate square root with fixed-point - using Fixed64Math::Sqrt
+        double fixed_sqrt =
+            static_cast<double>(math::fp::Fixed64Math::Sqrt(sqrtData.fixed_values[i]));
+
+        // Calculate square root with SoftFloat
+        float64_t sf_sqrt = f64_sqrt(sqrtData.sf_values[i]);
+
+        union {
+            uint64_t u;
+            double d;
+        } sqrt_conv;
+
+        sqrt_conv.u = sf_sqrt.v;
+        double sf_sqrt_d = sqrt_conv.d;
+
+        cout << "Value [" << i << "]: " << fixed_val << " (" << sf_val << ")" << endl;
+        cout << "Square Root - Fixed: " << fixed_sqrt << ", SoftFloat: " << sf_sqrt_d
+             << ", Diff: " << abs(fixed_sqrt - sf_sqrt_d)
+             << ", Rel Diff: " << (abs(fixed_sqrt - sf_sqrt_d) / (abs(sf_sqrt_d) + 1e-10)) << endl;
+    }
+
     std::cout << "\nVerification complete." << std::endl << std::endl;
 }
 
@@ -274,14 +355,17 @@ int main() {
     // Generate special test data for multiply/divide operations
     MultiplyDivideTestData mulDivData = generateMulDivTestData(ITERATIONS);
 
+    // Generate special test data for square root operations
+    SqrtTestData sqrtData = generateSqrtTestData(ITERATIONS);
+
     cout << "Running benchmarks with iterations: " << ITERATIONS << endl;
     cout << "------------------------------------------------------------" << endl;
     cout << left << setw(20) << "Operation" << setw(15) << "Fixed64 (ms)" << setw(15)
          << "SoftFloat (ms)" << setw(15) << "Speedup" << endl;
     cout << "------------------------------------------------------------" << endl;
 
-    // Verify implementations first - pass both data structures
-    verifyImplementations(data, mulDivData);
+    // Verify implementations first - pass all data structures
+    verifyImplementations(data, mulDivData, sqrtData);
 
     // Addition benchmark - direct indexing without modulo
     double fixedAddTime = runBenchmark(
@@ -407,6 +491,35 @@ int main() {
     cout << left << setw(20) << "Division" << setw(15) << fixed << setprecision(3) << fixedDivTime
          << setw(15) << softDivTime << setw(15) << speedup << endl;
 
+    // Add Square Root benchmark
+    double fixedSqrtTime = runBenchmark(
+        "Fixed Square Root",
+        [&](int n) -> double {
+            int64_t sum = 0;
+            for (int k = 0; k < n; k++) {
+                auto result = math::fp::Fixed64Math::Sqrt(sqrtData.fixed_values[k]);
+                sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        ITERATIONS);
+
+    double softSqrtTime = runBenchmark(
+        "SoftFloat Square Root",
+        [&](int n) -> double {
+            uint64_t sum = 0;
+            for (int k = 0; k < n; k++) {
+                auto result = f64_sqrt(sqrtData.sf_values[k]);
+                sum += result.v;
+            }
+            return static_cast<double>(sum);
+        },
+        ITERATIONS);
+
+    speedup = (fixedSqrtTime > 0) ? (softSqrtTime / fixedSqrtTime) : 999.999;
+    cout << left << setw(20) << "Square Root" << setw(15) << fixed << setprecision(3)
+         << fixedSqrtTime << setw(15) << softSqrtTime << setw(15) << speedup << endl;
+
     // Add a summary section
     cout << "\nSummary:" << endl;
     cout << "------------------------------------------------------------" << endl;
@@ -427,6 +540,10 @@ int main() {
     }
     if (fixedDivTime > 0) {
         avgSpeedup += softDivTime / fixedDivTime;
+        opCount++;
+    }
+    if (fixedSqrtTime > 0) {
+        avgSpeedup += softSqrtTime / fixedSqrtTime;
         opCount++;
     }
 
