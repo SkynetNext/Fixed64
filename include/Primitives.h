@@ -124,6 +124,8 @@ class int128_t {
         return static_cast<int64_t>(low_);
     }
 };
+
+#define __int128 int128_t
 #else
 #error "Platform does not support 128-bit integers"
 #endif
@@ -600,6 +602,9 @@ class Primitives {
     [[nodiscard]] static constexpr auto Popcount(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_popcountll(x);
+#elif defined(_MSC_VER)
+        // __popcnt64(x) is not constexpr-compatible on MSVC
+        return 0;
 #else
 #error "This code requires GCC, Clang compiler"
 #endif
