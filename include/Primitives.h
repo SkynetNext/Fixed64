@@ -236,6 +236,69 @@ class int128_t {
 
         return result;
     }
+
+    // Boolean conversion operator (used in conditional contexts)
+    constexpr explicit operator bool() const {
+        return low_ != 0 || high_ != 0;
+    }
+
+    // Comparison operators
+    constexpr bool operator==(const int128_t& other) const {
+        return low_ == other.low_ && high_ == other.high_;
+    }
+
+    constexpr bool operator!=(const int128_t& other) const {
+        return !(*this == other);
+    }
+
+    constexpr bool operator<(const int128_t& other) const {
+        if (high_ < other.high_)
+            return true;
+        if (high_ > other.high_)
+            return false;
+        return low_ < other.low_;
+    }
+
+    constexpr bool operator<=(const int128_t& other) const {
+        return *this < other || *this == other;
+    }
+
+    constexpr bool operator>(const int128_t& other) const {
+        return !(*this <= other);
+    }
+
+    constexpr bool operator>=(const int128_t& other) const {
+        return !(*this < other);
+    }
+
+    // Integer comparison operators (useful for common cases)
+    constexpr bool operator==(int64_t value) const {
+        return high_ == (value < 0 ? -1 : 0) && low_ == static_cast<uint64_t>(value);
+    }
+
+    constexpr bool operator!=(int64_t value) const {
+        return !(*this == value);
+    }
+
+    constexpr bool operator<(int64_t value) const {
+        if (high_ < (value < 0 ? -1 : 0))
+            return true;
+        if (high_ > (value < 0 ? -1 : 0))
+            return false;
+        return low_ < static_cast<uint64_t>(value);
+    }
+
+    constexpr bool operator<=(int64_t value) const {
+        return *this < value || *this == value;
+    }
+
+    constexpr bool operator>(int64_t value) const {
+        return !(*this <= value);
+    }
+
+    constexpr bool operator>=(int64_t value) const {
+        return !(*this < value);
+    }
 };
 #else
 #error "Platform does not support 128-bit integers"
