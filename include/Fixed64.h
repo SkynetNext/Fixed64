@@ -399,7 +399,7 @@ class Fixed64 {
 
             // Calculate scale
             constexpr auto pow10 = [](int n) constexpr -> int128_t {
-                int128_t result = 1;
+                int128_t result = int128_t(1);
                 for (int i = 0; i < n; ++i) {
                     result *= 10;
                 }
@@ -408,7 +408,7 @@ class Fixed64 {
             constexpr int128_t scale = pow10(DECIMAL_PLACES);
 
             // Use 128-bit integer for precise calculation
-            int64_t scaled = (static_cast<int128_t>(fracPart) * scale) >> P;
+            int64_t scaled = static_cast<int64_t>((static_cast<int128_t>(fracPart) * scale) >> P);
             // Format fractional part
             char decimalBuffer[32];
             int decimalLength = sprintf(decimalBuffer, "%0*" PRId64, DECIMAL_PLACES, scaled);
