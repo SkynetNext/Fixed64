@@ -627,16 +627,8 @@ class Fixed64 {
     template <int Q, int R>
     friend constexpr auto operator*=(Fixed64<Q>&, const Fixed64<R>&) noexcept -> Fixed64<Q>&;
 
-    template <int Q, typename IntType>
-        requires std::is_integral_v<IntType>
-    friend constexpr auto operator*=(Fixed64<Q>&, const IntType&) noexcept -> Fixed64<Q>&;
-
     template <int Q, int R>
     friend constexpr auto operator/=(Fixed64<Q>&, const Fixed64<R>&) noexcept -> Fixed64<Q>&;
-
-    template <int Q, typename IntType>
-        requires std::is_integral_v<IntType>
-    friend constexpr auto operator/=(Fixed64<Q>& a, const IntType& b) noexcept -> Fixed64<Q>&;
 
     template <int Q, int R>
     friend constexpr auto operator%=(Fixed64<Q>&, const Fixed64<R>&) noexcept -> Fixed64<Q>&;
@@ -644,6 +636,22 @@ class Fixed64 {
     // Declare all other Fixed64 precisions as friends
     template <int Q>
     friend class Fixed64;
+
+ public:
+    // Division operator - integer specialization
+    template <typename IntType>
+        requires std::is_integral_v<IntType>
+    constexpr auto operator/=(const IntType& b) noexcept -> Fixed64<P>& {
+        value_ /= b;
+        return *this;
+    }
+
+    template <typename IntType>
+        requires std::is_integral_v<IntType>
+    constexpr auto operator*=(const IntType& b) noexcept -> Fixed64<P>& {
+        value_ *= b;
+        return *this;
+    }
 };
 
 // Three-way comparison operator
@@ -782,13 +790,6 @@ constexpr auto operator*=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed6
     return a;
 }
 
-template <int Q, typename IntType>
-    requires std::is_integral_v<IntType>
-constexpr auto operator*=(Fixed64<Q>& a, const IntType& b) noexcept -> Fixed64<Q>& {
-    a.value_ *= b;
-    return a;
-}
-
 template <int P, typename FloatType>
     requires std::is_floating_point_v<FloatType>
 constexpr auto operator*=(Fixed64<P>& a, const FloatType& b) noexcept -> Fixed64<P>& {
@@ -841,14 +842,6 @@ constexpr auto operator/=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed6
 
     a.value_ = Primitives::Fixed64Div(a.value_, b.value_, R);
 
-    return a;
-}
-
-// Division operator - integer specialization
-template <int Q, typename IntType>
-    requires std::is_integral_v<IntType>
-constexpr auto operator/=(Fixed64<Q>& a, const IntType& b) noexcept -> Fixed64<Q>& {
-    a.value_ /= b;
     return a;
 }
 
