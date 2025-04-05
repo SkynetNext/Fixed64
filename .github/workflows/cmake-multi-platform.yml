@@ -1,75 +1,135 @@
-# This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
-name: CMake on multiple platforms
+# ------------------------------------------------------------------------------
+#  Copyright (c) 2023-2024 Your Name
+#  Distributed under the license of your choice
+# ------------------------------------------------------------------------------
 
+name: CMake Build & Test
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-
     strategy:
-      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
-
-      # Set up a matrix to run the following 3 configurations:
-      # 1. <Windows, Release, latest MSVC compiler toolchain on the default runner image, default generator>
-      # 2. <Linux, Release, latest GCC compiler toolchain on the default runner image, default generator>
-      # 3. <Linux, Release, latest Clang compiler toolchain on the default runner image, default generator>
-      #
-      # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        build_type: [Release]
-        c_compiler: [gcc, clang, cl]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Release, Debug]
+        compiler: [gcc, clang]
+        standard: [14, 17, 20]
         include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
-          - os: ubuntu-latest
+          # Define compiler settings for each environment
+          - compiler: gcc
             c_compiler: gcc
             cpp_compiler: g++
-          - os: ubuntu-latest
+          - compiler: clang
             c_compiler: clang
             cpp_compiler: clang++
-        exclude:
+          # MSVC for Windows
           - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
+            compiler: msvc
             c_compiler: cl
+            cpp_compiler: cl
+        exclude:
+          # Remove MSVC duplicates and combinations that don't make sense
+          - os: windows-latest
+            compiler: gcc
+          - os: windows-latest
+            compiler: clang
+          # MacOS typically uses Clang
+          - os: macos-latest
+            compiler: gcc
 
+    runs-on: ${{ matrix.os }}
+    
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Set up build environment (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
 
-    - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      - name: Set up build environment (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install ninja
+          
+      - name: Configure CMake
+        run: >
+          cmake -B ${{ github.workspace }}/build 
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
+          -S ${{ github.workspace }}
 
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -S ${{ github.workspace }}
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build --config ${{ matrix.build_type }}
 
-    - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      - name: Test
+        working-directory: ${{ github.workspace }}/build
+        run: ctest --build-config ${{ matrix.build_type }} --output-on-failure --verbose
 
-    - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }}
+  sanitizers:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [address, undefined]
+        
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Configure with ${{ matrix.sanitizer }} sanitizer
+        run: >
+          cmake -B ${{ github.workspace }}/build
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_C_COMPILER=clang
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_STANDARD=17
+          -DCMAKE_CXX_FLAGS="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer"
+          -DCMAKE_C_FLAGS="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=${{ matrix.sanitizer }}"
+          -S ${{ github.workspace }}
+          
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build --config Debug
+        
+      - name: Test
+        working-directory: ${{ github.workspace }}/build
+        run: ctest --build-config Debug --output-on-failure --verbose
+        
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          
+      - name: Install clang-tidy
+        run: sudo apt-get install -y clang-tidy
+          
+      - name: Configure with clang-tidy
+        run: >
+          cmake -B ${{ github.workspace }}/build
+          -DCMAKE_CXX_COMPILER=clang++
+          -DCMAKE_C_COMPILER=clang
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_STANDARD=17
+          -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=*,-fuchsia-*,-google-*,-llvm-header-guard,-cppcoreguidelines-owning-memory,-hicpp-no-array-decay,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-modernize-use-trailing-return-type,-readability-identifier-length"
+          -S ${{ github.workspace }}
+          
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build --config Debug
+        
+      - name: Test
+        working-directory: ${{ github.workspace }}/build
+        run: ctest --build-config Debug --output-on-failure --verbose
