@@ -12,7 +12,6 @@
 #include <string>
 #include <type_traits>
 
-
 #include "Fixed64TypeTraits.h"
 #include "Primitives.h"
 
@@ -760,25 +759,25 @@ constexpr auto operator-(const T& a, const Fixed64<P>& b) noexcept -> Fixed64<P>
 }
 
 // Multiplication operators
-template <int P, int Q>
-constexpr auto operator*=(Fixed64<P>& a, const Fixed64<Q>& b) noexcept -> Fixed64<P>& {
+template <int Q, int R>
+constexpr auto operator*=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed64<Q>& {
     // Use leading zero count to determine if 64-bit multiplication is safe
-    if constexpr (P + Q <= 32) {
+    if constexpr (Q + R <= 32) {
         // Fast path: if the sum of leading zeros in both operands is >= Q, no
         // overflow will occur
         if ((a.value_ >> 32) == 0 && (b.value_ >> 32) == 0) {
             // Safe to use 64-bit multiplication, no need for 128-bit integer
-            a.value_ = (a.value_ * b.value_) >> Q;
+            a.value_ = (a.value_ * b.value_) >> R;
 
             return a;
         }
 
-        a.value_ = Primitives::Fixed64MulBitStyle(a.value_, b.value_, Q);
+        a.value_ = Primitives::Fixed64MulBitStyle(a.value_, b.value_, R);
 
         return a;
     }
 
-    a.value_ = Primitives::Fixed64Mul(a.value_, b.value_, Q);
+    a.value_ = Primitives::Fixed64Mul(a.value_, b.value_, R);
 
     return a;
 }
@@ -816,31 +815,31 @@ constexpr auto operator*(const FloatType& a, const Fixed64<P>& b) noexcept -> Fi
 }
 
 // Division operators
-template <int P, int Q>
-constexpr auto operator/=(Fixed64<P>& a, const Fixed64<Q>& b) noexcept -> Fixed64<P>& {
+template <int Q, int R>
+constexpr auto operator/=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed64<Q>& {
     // Handle division by zero
     if (b.value_ == 0) {
-        a = (a.value_ >= 0) ? Fixed64<P>::Infinity() : Fixed64<P>::NegInfinity();
+        a = (a.value_ >= 0) ? Fixed64<Q>::Infinity() : Fixed64<Q>::NegInfinity();
         return a;
     }
 
     // For low precision fixed-point numbers, use runtime optimization
-    if constexpr (P + Q <= 32) {
+    if constexpr (Q + R <= 32) {
         // Check if left shifting by Q bits is safe (won't lose significant bits)
-        if ((a.value_ << Q) >> Q == a.value_) {
+        if ((a.value_ << R) >> R == a.value_) {
             // Safe path: use direct 64-bit integer division, avoiding complex
             // calculations
-            a.value_ = (a.value_ << Q) / b.value_;
+            a.value_ = (a.value_ << R) / b.value_;
 
             return a;
         }
 
-        a.value_ = Primitives::Fixed64DivBitStyle(a.value_, b.value_, Q);
+        a.value_ = Primitives::Fixed64DivBitStyle(a.value_, b.value_, R);
 
         return a;
     }
 
-    a.value_ = Primitives::Fixed64Div(a.value_, b.value_, Q);
+    a.value_ = Primitives::Fixed64Div(a.value_, b.value_, R);
 
     return a;
 }

@@ -8,6 +8,113 @@
 
 #ifdef __SIZEOF_INT128__
 using int128_t = __int128;
+#elif defined(_MSC_VER)
+// MSVC 128-bit integer simulation
+class int128_t {
+ private:
+    uint64_t low_;
+    int64_t high_;
+
+ public:
+    int128_t() : low_(0), high_(0) {}
+
+    // Constructor from 64-bit integer
+    int128_t(int64_t value) : low_(static_cast<uint64_t>(value)), high_(value < 0 ? -1 : 0) {}
+
+    // Constructor from 64-bit unsigned integer
+    int128_t(uint64_t value) : low_(value), high_(0) {}
+
+    // Right shift operator implementation
+    int128_t operator>>(int shift) const {
+        int128_t result;
+        if (shift == 0)
+            return *this;
+        if (shift >= 128)
+            return high_ < 0 ? int128_t(-1) : int128_t(0);
+
+        if (shift >= 64) {
+            // Shift more than 64 bits
+            result.low_ = static_cast<uint64_t>(high_ >> (shift - 64));
+            result.high_ = high_ >> 63;  // Preserve sign bit
+        } else {
+            // Shift less than 64 bits
+            result.low_ = (low_ >> shift) | (static_cast<uint64_t>(high_) << (64 - shift));
+            result.high_ = high_ >> shift;
+        }
+        return result;
+    }
+
+    // Left shift operator implementation
+    int128_t operator<<(int shift) const {
+        int128_t result;
+        if (shift == 0)
+            return *this;
+        if (shift >= 128)
+            return int128_t(0);
+
+        if (shift >= 64) {
+            // Shift more than 64 bits
+            result.high_ = static_cast<int64_t>(low_ << (shift - 64));
+            result.low_ = 0;
+        } else {
+            // Shift less than 64 bits
+            result.high_ = (high_ << shift) | static_cast<int64_t>(low_ >> (64 - shift));
+            result.low_ = low_ << shift;
+        }
+        return result;
+    }
+
+    // Bitwise OR operator with uint64_t
+    int128_t operator|(uint64_t value) const {
+        int128_t result;
+        result.low_ = low_ | value;
+        result.high_ = high_;
+        return result;
+    }
+
+    // Multiplication operator implementation (for fracPart * scale)
+    int128_t operator*(int64_t value) const {
+        // Simple implementation for double 64-bit multiplication
+        bool negative = (high_ < 0) != (value < 0);
+
+        uint64_t abs_val = value < 0 ? static_cast<uint64_t>(-value) : static_cast<uint64_t>(value);
+        uint64_t abs_low = high_ < 0 ? static_cast<uint64_t>(-low_) : low_;
+
+        // Split 64x64 bit multiplication into multiple 32x32 bit multiplications
+        uint64_t a0 = abs_low & 0xFFFFFFFF;
+        uint64_t a1 = abs_low >> 32;
+        uint64_t b0 = abs_val & 0xFFFFFFFF;
+        uint64_t b1 = abs_val >> 32;
+
+        uint64_t r0 = a0 * b0;
+        uint64_t r1 = a0 * b1 + a1 * b0;
+        uint64_t r2 = a1 * b1;
+
+        uint64_t result_low = r0 + (r1 << 32);
+        int64_t result_high = static_cast<int64_t>(r2 + (r1 >> 32));
+
+        // Handle carry
+        if (result_low < r0) {
+            result_high++;
+        }
+
+        // Apply sign
+        if (negative) {
+            result_low = ~result_low + 1;
+            result_high = ~result_high + (result_low == 0 ? 1 : 0);
+        }
+
+        int128_t result;
+        result.low_ = result_low;
+        result.high_ = result_high;
+        return result;
+    }
+
+    // Convert to int64_t (for result extraction)
+    explicit operator int64_t() const {
+        return static_cast<int64_t>(low_);
+    }
+};
 #else
 #error "Platform does not support 128-bit integers"
 #endif
@@ -436,8 +543,11 @@ class Primitives {
     [[nodiscard]] static constexpr auto BitWidth(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return x == 0 ? 0 : 64 - __builtin_clzll(x);
+#elif defined(_MSC_VER)
+        unsigned long index;
+        return x == 0 ? 0 : (_BitScanReverse64(&index, x) ? index + 1 : 0);
 #else
-#error "This code requires GCC or Clang compiler"
+#error "This code requires GCC, Clang, or MSVC compiler"
 #endif
     }
 
@@ -449,8 +559,11 @@ class Primitives {
     [[nodiscard]] static constexpr auto CountlZero(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_clzll(x);
+#elif defined(_MSC_VER)
+        unsigned long index;
+        return x == 0 ? 64 : (_BitScanReverse64(&index, x) ? 63 - index : 64);
 #else
-#error "This code requires GCC or Clang compiler"
+#error "This code requires GCC, Clang, or MSVC compiler"
 #endif
     }
 
@@ -462,8 +575,11 @@ class Primitives {
     [[nodiscard]] static constexpr auto CountrZero(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_ctzll(x);
+#elif defined(_MSC_VER)
+        unsigned long index;
+        return x == 0 ? 64 : (_BitScanForward64(&index, x) ? index : 64);
 #else
-#error "This code requires GCC or Clang compiler"
+#error "This code requires GCC, Clang, or MSVC compiler"
 #endif
     }
 
@@ -475,8 +591,11 @@ class Primitives {
     [[nodiscard]] static constexpr auto Popcount(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_popcountll(x);
+#elif defined(_MSC_VER)
+        // MSVC的__popcnt64实现
+        return static_cast<int>(__popcnt64(x));
 #else
-#error "This code requires GCC or Clang compiler"
+#error "This code requires GCC, Clang, or MSVC compiler"
 #endif
     }
 
@@ -486,7 +605,7 @@ class Primitives {
      * @return Absolute value
      */
     [[nodiscard]] static constexpr auto Abs(int64_t value) noexcept -> uint64_t {
-        return value < 0 ? (~value + 1) : value;
+        return value < 0 ? (static_cast<int64_t>(~static_cast<uint64_t>(value) + 1)) : value;
     }
 
     /**

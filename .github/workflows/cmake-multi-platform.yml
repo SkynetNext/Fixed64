@@ -32,6 +32,7 @@ jobs:
             compiler: msvc
             c_compiler: cl
             cpp_compiler: cl
+            build_type: Release
         exclude:
           # Remove MSVC duplicates and combinations that don't make sense
           - os: windows-latest
