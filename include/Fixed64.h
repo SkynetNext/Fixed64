@@ -219,7 +219,7 @@ class Fixed64 {
         constexpr int128_t PI_BITS =
             (static_cast<int128_t>(0x1921FB544ULL) << 32) | static_cast<uint64_t>(0x42D1846AULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((PI_BITS + rounding) >> shift), detail::nothing{});
     }
 
@@ -228,7 +228,7 @@ class Fixed64 {
         constexpr int128_t TWO_PI_BITS =
             (static_cast<int128_t>(0x3243F6A88ULL) << 32) | static_cast<uint64_t>(0x85A308D3ULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((TWO_PI_BITS + rounding) >> shift),
                           detail::nothing{});
     }
@@ -238,7 +238,7 @@ class Fixed64 {
         constexpr int128_t HALF_PI_BITS =
             (static_cast<int128_t>(0xC90FDAA2ULL) << 32) | static_cast<uint64_t>(0x2168C235ULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((HALF_PI_BITS + rounding) >> shift),
                           detail::nothing{});
     }
@@ -248,7 +248,7 @@ class Fixed64 {
         constexpr int128_t QUARTER_PI_BITS =
             (static_cast<int128_t>(0x6487ED51ULL) << 32) | static_cast<uint64_t>(0x10B4611AULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((QUARTER_PI_BITS + rounding) >> shift),
                           detail::nothing{});
     }
@@ -258,7 +258,7 @@ class Fixed64 {
         constexpr int128_t INV_PI_BITS =
             (static_cast<int128_t>(0x28BE60DBULL) << 32) | static_cast<uint64_t>(0x9391054AULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((INV_PI_BITS + rounding) >> shift),
                           detail::nothing{});
     }
@@ -268,7 +268,7 @@ class Fixed64 {
         constexpr int128_t E_BITS =
             (static_cast<int128_t>(0x15BF0A8B1ULL) << 32) | static_cast<uint64_t>(0x45769535ULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((E_BITS + rounding) >> shift), detail::nothing{});
     }
 
@@ -277,7 +277,7 @@ class Fixed64 {
         constexpr int128_t LN2_BITS =
             (static_cast<int128_t>(0x58B90BFBULL) << 32) | static_cast<uint64_t>(0xE8E7BCD6ULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((LN2_BITS + rounding) >> shift), detail::nothing{});
     }
 
@@ -286,7 +286,7 @@ class Fixed64 {
         constexpr int128_t LOG2E_BITS =
             (static_cast<int128_t>(0xB8AA3B29ULL) << 32) | static_cast<uint64_t>(0x5C17F0BCULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((LOG2E_BITS + rounding) >> shift),
                           detail::nothing{});
     }
@@ -297,7 +297,7 @@ class Fixed64 {
         constexpr int128_t LOG10_OF_2_BITS =
             (static_cast<int128_t>(0x268826A1ULL) << 32) | static_cast<uint64_t>(0x3EF3FDE6ULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((LOG10_OF_2_BITS + rounding) >> shift),
                           detail::nothing{});
     }
@@ -308,7 +308,7 @@ class Fixed64 {
         constexpr int128_t DEG_TO_RAD_BITS =
             (static_cast<int128_t>(0x23BE8D4ULL) << 32) | static_cast<uint64_t>(0x4A53A723ULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((DEG_TO_RAD_BITS + rounding) >> shift),
                           detail::nothing{});
     }
@@ -318,7 +318,7 @@ class Fixed64 {
         constexpr int128_t RAD_TO_DEG_BITS =
             (static_cast<int128_t>(0x1CA5DC1A63ULL) << 32) | static_cast<uint64_t>(0xC1F7B861ULL);
         constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : 0;
+        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
         return Fixed64<P>(static_cast<int64_t>((RAD_TO_DEG_BITS + rounding) >> shift),
                           detail::nothing{});
     }
