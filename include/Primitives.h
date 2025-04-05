@@ -6,29 +6,41 @@
 #include <cstdlib>
 #include <iostream>
 
-#ifdef __SIZEOF_INT128__
+#if defined(__SIZEOF_INT128__)
 using int128_t = __int128;
 #elif defined(_MSC_VER)
-// MSVC 128-bit integer simulation
+// 128-bit signed integer implementation
 class int128_t {
  private:
     uint64_t low_;
     int64_t high_;
 
  public:
-    int128_t() : low_(0), high_(0) {}
+    // Default constructor
+    constexpr int128_t() : low_(0), high_(0) {}
 
-    // Constructor from 64-bit integer
-    int128_t(int64_t value) : low_(static_cast<uint64_t>(value)), high_(value < 0 ? -1 : 0) {}
+    // Constructor from 64-bit signed integer
+    constexpr int128_t(int64_t value)
+        : low_(static_cast<uint64_t>(value)), high_(value < 0 ? -1 : 0) {}
 
     // Constructor from 64-bit unsigned integer
-    int128_t(uint64_t value) : low_(value), high_(0) {}
+    constexpr int128_t(uint64_t value) : low_(value), high_(0) {}
 
-    // Constructor from int (explicit to avoid ambiguity)
-    explicit int128_t(int value) : low_(static_cast<uint64_t>(value)), high_(value < 0 ? -1 : 0) {}
+    // Explicit constructor from int (prevents ambiguity)
+    constexpr explicit int128_t(int value)
+        : low_(static_cast<uint64_t>(value)), high_(value < 0 ? -1 : 0) {}
 
-    // Right shift operator implementation
-    int128_t operator>>(int shift) const {
+    // Access low and high parts
+    constexpr uint64_t low() const {
+        return low_;
+    }
+
+    constexpr int64_t high() const {
+        return high_;
+    }
+
+    // Right shift operator
+    constexpr int128_t operator>>(int shift) const {
         int128_t result;
         if (shift == 0)
             return *this;
@@ -47,8 +59,8 @@ class int128_t {
         return result;
     }
 
-    // Left shift operator implementation
-    int128_t operator<<(int shift) const {
+    // Left shift operator
+    constexpr int128_t operator<<(int shift) const {
         int128_t result;
         if (shift == 0)
             return *this;
@@ -67,29 +79,25 @@ class int128_t {
         return result;
     }
 
-    // Compound assignment operators
-    int128_t& operator*=(int64_t value) {
-        *this = *this * value;
-        return *this;
-    }
-
-    // Bitwise OR operator with uint64_t
-    int128_t operator|(uint64_t value) const {
-        int128_t result;
-        result.low_ = low_ | value;
-        result.high_ = high_;
-        return result;
-    }
-
-    // Multiplication operator implementation (for fracPart * scale)
-    int128_t operator*(int64_t value) const {
-        // Simple implementation for double 64-bit multiplication
+    // Multiplication operator for int64_t
+    constexpr int128_t operator*(int64_t value) const {
+        // Calculate sign of result
         bool negative = (high_ < 0) != (value < 0);
 
+        // Convert to absolute values
         uint64_t abs_val = value < 0 ? static_cast<uint64_t>(-value) : static_cast<uint64_t>(value);
-        uint64_t abs_low = high_ < 0 ? static_cast<uint64_t>(-low_) : low_;
+        uint64_t abs_low = low_;
+        int64_t abs_high = high_;
 
-        // Split 64x64 bit multiplication into multiple 32x32 bit multiplications
+        if (high_ < 0) {
+            // Two's complement negation
+            abs_low = ~low_ + 1;
+            abs_high = ~high_;
+            if (abs_low == 0)
+                abs_high += 1;
+        }
+
+        // Perform multiplication using 32-bit parts
         uint64_t a0 = abs_low & 0xFFFFFFFF;
         uint64_t a1 = abs_low >> 32;
         uint64_t b0 = abs_val & 0xFFFFFFFF;
@@ -108,24 +116,40 @@ class int128_t {
         }
 
         // Apply sign
-        if (negative) {
-            result_low = ~result_low + 1;
-            result_high = ~result_high + (result_low == 0 ? 1 : 0);
-        }
-
         int128_t result;
         result.low_ = result_low;
         result.high_ = result_high;
+
+        if (negative) {
+            // Two's complement negation
+            result.low_ = ~result.low_ + 1;
+            result.high_ = ~result.high_;
+            if (result.low_ == 0)
+                result.high_ += 1;
+        }
+
         return result;
     }
 
-    // Convert to int64_t (for result extraction)
-    explicit operator int64_t() const {
+    // Cast to int64_t
+    constexpr explicit operator int64_t() const {
         return static_cast<int64_t>(low_);
     }
-};
 
-#define __int128 int128_t
+    // Bitwise OR with uint64_t
+    constexpr int128_t operator|(uint64_t value) const {
+        int128_t result;
+        result.low_ = low_ | value;
+        result.high_ = high_;
+        return result;
+    }
+
+    // Compound assignment operators
+    constexpr int128_t& operator*=(int64_t value) {
+        *this = *this * value;
+        return *this;
+    }
+};
 #else
 #error "Platform does not support 128-bit integers"
 #endif
@@ -134,9 +158,8 @@ class int128_t {
  * operations */
 
 #define W_TYPE_SIZE 64
-typedef uint64_t UWtype;            // Single-word unsigned type
-typedef uint32_t UHWtype;           // Half-word unsigned type
-typedef unsigned __int128 UDWtype;  // Double-word unsigned type
+typedef uint64_t UWtype;   // Single-word unsigned type
+typedef uint32_t UHWtype;  // Half-word unsigned type
 
 #define __BITS4 (W_TYPE_SIZE / 4)
 #define __ll_B ((UWtype)1 << (W_TYPE_SIZE / 2))
@@ -845,8 +868,9 @@ class Primitives {
      * (https://github.com/ridiculousfish/libdivide) Uses based on normalization and binary
      * approximation without hardware divider
      */
-    [[nodiscard]] static inline __attribute__((always_inline)) constexpr auto
-    Divide128Div64To64(uint64_t numhi, uint64_t numlo, uint64_t den) noexcept -> uint64_t {
+    [[nodiscard]] static constexpr auto Divide128Div64To64(uint64_t numhi,
+                                                           uint64_t numlo,
+                                                           uint64_t den) noexcept -> uint64_t {
         // Overflow check
         if (numhi >= den) {
             return ~0ull;
