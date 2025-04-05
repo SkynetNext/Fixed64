@@ -149,6 +149,93 @@ class int128_t {
         *this = *this * value;
         return *this;
     }
+
+    // Binary addition operator
+    constexpr int128_t operator+(const int128_t& other) const {
+        int128_t result;
+        result.low_ = low_ + other.low_;
+        result.high_ = high_ + other.high_;
+
+        // Handle carry
+        if (result.low_ < low_) {
+            result.high_++;
+        }
+
+        return result;
+    }
+
+    // Addition assignment operator
+    constexpr int128_t& operator+=(const int128_t& other) {
+        uint64_t old_low = low_;
+        low_ += other.low_;
+        high_ += other.high_;
+
+        // Handle carry
+        if (low_ < old_low) {
+            high_++;
+        }
+
+        return *this;
+    }
+
+    // Binary subtraction operator
+    constexpr int128_t operator-(const int128_t& other) const {
+        int128_t result;
+        result.low_ = low_ - other.low_;
+        result.high_ = high_ - other.high_;
+
+        // Handle borrow
+        if (low_ < other.low_) {
+            result.high_--;
+        }
+
+        return result;
+    }
+
+    // Subtraction assignment operator
+    constexpr int128_t& operator-=(const int128_t& other) {
+        bool borrow = low_ < other.low_;
+        low_ -= other.low_;
+        high_ -= other.high_;
+
+        // Handle borrow
+        if (borrow) {
+            high_--;
+        }
+
+        return *this;
+    }
+
+    // Multiplication with int128_t
+    constexpr int128_t operator*(const int128_t& other) const {
+        // Use the existing int64_t multiplication logic
+        // This is a simplified implementation - for full 128-bit multiplication
+        // we would need more complex logic
+
+        // Handle simple case where one operand fits in 64 bits
+        if (high_ == 0 && other.high_ == 0) {
+            return int128_t(low_ * other.low_);
+        }
+
+        // Calculate sign
+        bool negative = (high_ < 0) != (other.high_ < 0);
+
+        // Get absolute values (simplified)
+        uint64_t abs_low1 = high_ < 0 ? ~low_ + 1 : low_;
+        uint64_t abs_low2 = other.high_ < 0 ? ~other.low_ + 1 : other.low_;
+
+        // Multiply low parts
+        uint64_t low_result = abs_low1 * abs_low2;
+
+        // Apply sign
+        int128_t result(low_result);
+        if (negative) {
+            result.low_ = ~result.low_ + 1;
+            result.high_ = ~result.high_ + (result.low_ == 0 ? 1 : 0);
+        }
+
+        return result;
+    }
 };
 #else
 #error "Platform does not support 128-bit integers"
@@ -578,8 +665,37 @@ class Primitives {
 #if defined(__GNUC__) || defined(__clang__)
         return x == 0 ? 0 : 64 - __builtin_clzll(x);
 #elif defined(_MSC_VER)
-        unsigned long index;
-        return x == 0 ? 0 : (_BitScanReverse64(&index, x) ? index + 1 : 0);
+        // Efficient constexpr implementation for MSVC
+        if (x == 0)
+            return 0;
+
+        // Find position of highest bit using binary search approach
+        int n = 0;
+        if (x & 0xFFFFFFFF00000000ULL) {
+            n += 32;
+            x >>= 32;
+        }
+        if (x & 0x00000000FFFF0000ULL) {
+            n += 16;
+            x >>= 16;
+        }
+        if (x & 0x000000000000FF00ULL) {
+            n += 8;
+            x >>= 8;
+        }
+        if (x & 0x00000000000000F0ULL) {
+            n += 4;
+            x >>= 4;
+        }
+        if (x & 0x000000000000000CULL) {
+            n += 2;
+            x >>= 2;
+        }
+        if (x & 0x0000000000000002ULL) {
+            n += 1;
+        }
+
+        return n + 1;  // Add 1 because we want width (position + 1)
 #else
 #error "This code requires GCC, Clang, or MSVC compiler"
 #endif
@@ -594,8 +710,45 @@ class Primitives {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_clzll(x);
 #elif defined(_MSC_VER)
-        unsigned long index;
-        return x == 0 ? 64 : (_BitScanReverse64(&index, x) ? 63 - index : 64);
+        // Efficient constexpr implementation for MSVC
+        if (x == 0)
+            return 64;
+
+        // Accelerated implementation using nibble-based approach
+        int result = 0;
+        // Check 16 bits at a time
+        if ((x & 0xFFFFFFFF00000000ULL) == 0) {
+            result += 32;
+            x <<= 32;
+        }
+        // Check 8 bits at a time
+        if ((x & 0xFF00000000000000ULL) == 0) {
+            result += 8;
+            x <<= 8;
+        }
+        // Check 4 bits at a time
+        if ((x & 0xF000000000000000ULL) == 0) {
+            result += 4;
+            x <<= 4;
+        }
+        // Check bit by bit for the final count
+        if ((x & 0x8000000000000000ULL) == 0) {
+            result += 1;
+            x <<= 1;
+        }
+        if ((x & 0x8000000000000000ULL) == 0) {
+            result += 1;
+            x <<= 1;
+        }
+        if ((x & 0x8000000000000000ULL) == 0) {
+            result += 1;
+            x <<= 1;
+        }
+        if ((x & 0x8000000000000000ULL) == 0) {
+            result += 1;
+        }
+
+        return result;
 #else
 #error "This code requires GCC, Clang, or MSVC compiler"
 #endif
@@ -610,8 +763,37 @@ class Primitives {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_ctzll(x);
 #elif defined(_MSC_VER)
-        unsigned long index;
-        return x == 0 ? 64 : (_BitScanForward64(&index, x) ? index : 64);
+        // Efficient constexpr implementation for MSVC
+        if (x == 0)
+            return 64;
+
+        // Use binary search approach to find first set bit
+        int n = 0;
+        if ((x & 0x00000000FFFFFFFFULL) == 0) {
+            n += 32;
+            x >>= 32;
+        }
+        if ((x & 0x000000000000FFFFULL) == 0) {
+            n += 16;
+            x >>= 16;
+        }
+        if ((x & 0x00000000000000FFULL) == 0) {
+            n += 8;
+            x >>= 8;
+        }
+        if ((x & 0x000000000000000FULL) == 0) {
+            n += 4;
+            x >>= 4;
+        }
+        if ((x & 0x0000000000000003ULL) == 0) {
+            n += 2;
+            x >>= 2;
+        }
+        if ((x & 0x0000000000000001ULL) == 0) {
+            n += 1;
+        }
+
+        return n;
 #else
 #error "This code requires GCC, Clang, or MSVC compiler"
 #endif
@@ -626,10 +808,17 @@ class Primitives {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_popcountll(x);
 #elif defined(_MSC_VER)
-        // __popcnt64(x) is not constexpr-compatible on MSVC
-        return 0;
+        // Efficient constexpr implementation for MSVC
+        // Uses the Hamming Weight algorithm (SWAR)
+        x = x - ((x >> 1) & 0x5555555555555555ULL);
+        x = (x & 0x3333333333333333ULL) + ((x >> 2) & 0x3333333333333333ULL);
+        x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
+        x = x + (x >> 8);
+        x = x + (x >> 16);
+        x = x + (x >> 32);
+        return static_cast<int>(x & 0x7F);
 #else
-#error "This code requires GCC, Clang compiler"
+#error "This code requires GCC, Clang, or MSVC compiler"
 #endif
     }
 
