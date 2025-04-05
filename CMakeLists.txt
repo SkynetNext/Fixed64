@@ -44,10 +44,11 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/examples")
             # MSVC compiler flags
             set(COMPILER_WARNINGS
                 /W4
-                /WX
-                /wd4244
-                /wd4146
-                /wd4996  # Disable specific warnings, e.g., deprecated function warnings
+                /WX-      # Don't treat warnings as errors
+                /wd4127   # Disable warning C4127: conditional expression is constant
+                /wd4244   # Disable warning C4244: conversion from 'int64_t' to 'int', possible loss of data
+                /wd4146   # Disable warning C4146: unary minus operator applied to unsigned type
+                /wd4996   # Disable specific warnings, e.g., deprecated function warnings
             )
         else()
             # GCC/Clang compiler flags
