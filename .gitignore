@@ -33,3 +33,5 @@
 .vscode/
 build/
 .cache/
+
+!prebuilt/softfloat/windows/softfloat.a

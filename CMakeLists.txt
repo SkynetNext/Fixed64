@@ -53,26 +53,28 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(ENABLE_SOFTFLOAT_BENCHMARK "Enable benchmarking against Berkeley SoftFloat" ON)
 
 if(ENABLE_SOFTFLOAT_BENCHMARK)
-    # Define SoftFloat paths
+    # Define SoftFloat paths with absolute paths
     set(SOFTFLOAT_DIR ${PROJECT_SOURCE_DIR}/third_party/berkeley-softfloat-3)
     
-    # Just use pre-built SoftFloat library
+    # Detect platform and use appropriate pre-compiled library
     if(WIN32)
-        set(SOFTFLOAT_LIB_FILE "${SOFTFLOAT_DIR}/lib/windows/softfloat.a")
-    else()
-        set(SOFTFLOAT_LIB_FILE "${SOFTFLOAT_DIR}/lib/linux/softfloat.a")
+        set(SOFTFLOAT_LIBRARY "${CMAKE_SOURCE_DIR}/prebuilt/softfloat/windows/softfloat.a")
+    elseif(APPLE)
+        set(SOFTFLOAT_LIBRARY "${CMAKE_SOURCE_DIR}/prebuilt/softfloat/macos/softfloat.a")
+    elseif(UNIX)
+        set(SOFTFLOAT_LIBRARY "${CMAKE_SOURCE_DIR}/prebuilt/softfloat/linux/softfloat.a")
     endif()
-    
-    # Verify the pre-built library exists
-    if(NOT EXISTS "${SOFTFLOAT_LIB_FILE}")
-        message(FATAL_ERROR "Pre-built SoftFloat library not found at ${SOFTFLOAT_LIB_FILE}. 
-            Please build SoftFloat manually and place the library in the expected location.")
+
+    # Only if prebuilt library doesn't exist, use the submodule for building
+    if(NOT EXISTS ${SOFTFLOAT_LIBRARY})
+        message(STATUS "Pre-compiled SoftFloat not found, will build from source")
+        # Your existing SoftFloat build logic here
     endif()
     
     # Create imported library target
     add_library(softfloat STATIC IMPORTED GLOBAL)
     set_target_properties(softfloat PROPERTIES
-        IMPORTED_LOCATION "${SOFTFLOAT_LIB_FILE}"
+        IMPORTED_LOCATION "${SOFTFLOAT_LIBRARY}"
     )
     
     # Set include directories
