@@ -1,5 +1,6 @@
 #pragma once
 
+#include <inttypes.h>
 #include <algorithm>  // Include header for std::clamp
 #include <bit>
 #include <cmath>
@@ -10,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+
 
 #include "Fixed64TypeTraits.h"
 #include "Primitives.h"
@@ -410,7 +412,7 @@ class Fixed64 {
             int64_t scaled = (static_cast<int128_t>(fracPart) * scale) >> P;
             // Format fractional part
             char decimalBuffer[32];
-            int decimalLength = sprintf(decimalBuffer, "%0*lld", DECIMAL_PLACES, scaled);
+            int decimalLength = sprintf(decimalBuffer, "%0*" PRId64, DECIMAL_PLACES, scaled);
 
             // Remove trailing zeros, but keep at least one digit
             while (decimalLength > 1 && decimalBuffer[decimalLength - 1] == '0') {
