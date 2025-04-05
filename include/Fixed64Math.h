@@ -582,27 +582,51 @@ class Fixed64Math {
         static constexpr Fixed64<P> P7 = Fixed64<P>::HalfPi();  // ~π/2
         static constexpr Fixed64<P> P8 = Fixed64<P>::Pi();      // ~π
 
-        auto absX = Abs(x);
-        auto absY = Abs(y);
-        auto t3 = absX;
-        auto t1 = absY;
-        auto t0 = Max(t3, t1);
-        t1 = Min(t3, t1);
-        t3 = Fixed64<P>::One() / t0;
-        t3 = t1 * t3;
-        auto t4 = t3 * t3;
-        t0 = P1;
-        t0 = t0 * t4 + P2;
-        t0 = t0 * t4 - P3;
-        t0 = t0 * t4 + P4;
-        t0 = t0 * t4 - P5;
-        t0 = t0 * t4 + P6;
-        t3 = t0 * t3;
-        t3 = absY > absX ? P7 - t3 : t3;
-        t3 = x < Fixed64<P>::Zero() ? P8 - t3 : t3;
-        t3 = y < Fixed64<P>::Zero() ? -t3 : t3;
+        // Handle input values and compute z = min(|x|, |y|) / max(|x|, |y|)
+        auto abs_x = Abs(x);
+        auto abs_y = Abs(y);
+        auto max_val = Max(abs_x, abs_y);
+        auto min_val = Min(abs_x, abs_y);
 
-        return t3;
+        // Early return for zero values
+        if (max_val == Fixed64<P>::Zero()) {
+            return Fixed64<P>::Zero();  // Both x and y are zero
+        }
+
+        // Calculate z = min/max
+        auto z = min_val / max_val;
+        auto z2 = z * z;  // z²
+
+        // Estrin's method for polynomial evaluation:
+        // Original: P1*z¹⁰ + P2*z⁸ - P3*z⁶ + P4*z⁴ - P5*z² + P6
+        auto z4 = z2 * z2;  // z⁴
+        auto z8 = z4 * z4;  // z⁸
+
+        // Group terms to allow parallel evaluation
+        auto p56 = P6 - z2 * P5;  // P6 - P5*z²
+        auto p34 = P4 - z2 * P3;  // P4 - P3*z²
+        auto p12 = P2 + z2 * P1;  // P2 + P1*z²
+
+        // Final polynomial evaluation using z8 directly
+        auto poly = p56 + z4 * p34 + z8 * p12;
+
+        // Compute atan value
+        auto angle = z * poly;
+
+        // Quadrant adjustments
+        if (abs_y > abs_x) {
+            angle = P7 - angle;  // Adjust for y dominant case
+        }
+
+        if (x < Fixed64<P>::Zero()) {
+            angle = P8 - angle;  // Adjust for negative x
+        }
+
+        if (y < Fixed64<P>::Zero()) {
+            angle = -angle;  // Adjust for negative y
+        }
+
+        return angle;
     }
 
     /**

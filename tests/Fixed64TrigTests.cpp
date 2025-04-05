@@ -109,8 +109,8 @@ TEST(Fixed64TrigSimpleTest, AtanAtan2Operations) {
             if (x == 0.0 && y == 0.0)
                 continue;  // Skip origin
             EXPECT_NEAR(static_cast<double>(Fixed64Math::Atan2(Fixed(y), Fixed(x))),
-                        std::atan2(y, x),
-                        2e-5);
+                        std::atan2(static_cast<double>(Fixed(y)), static_cast<double>(Fixed(x))),
+                        1.3e-5);
         }
     }
 }

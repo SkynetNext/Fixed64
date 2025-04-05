@@ -229,7 +229,7 @@ TEST_F(Fixed64TrigTest, Atan2Function) {
 
         EXPECT_RELATIVE_ERROR(actualAtan2,
                               expectedAtan2,
-                              0.001,
+                              0.0001,
                               "Atan2 failed for point (" << dblY << ", " << dblX << ")");
     }
 }
