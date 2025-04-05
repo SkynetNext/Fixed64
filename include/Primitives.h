@@ -24,6 +24,9 @@ class int128_t {
     // Constructor from 64-bit unsigned integer
     int128_t(uint64_t value) : low_(value), high_(0) {}
 
+    // Constructor from int (explicit to avoid ambiguity)
+    explicit int128_t(int value) : low_(static_cast<uint64_t>(value)), high_(value < 0 ? -1 : 0) {}
+
     // Right shift operator implementation
     int128_t operator>>(int shift) const {
         int128_t result;
@@ -62,6 +65,12 @@ class int128_t {
             result.low_ = low_ << shift;
         }
         return result;
+    }
+
+    // Compound assignment operators
+    int128_t& operator*=(int64_t value) {
+        *this = *this * value;
+        return *this;
     }
 
     // Bitwise OR operator with uint64_t
@@ -591,11 +600,8 @@ class Primitives {
     [[nodiscard]] static constexpr auto Popcount(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_popcountll(x);
-#elif defined(_MSC_VER)
-        // MSVC的__popcnt64实现
-        return static_cast<int>(__popcnt64(x));
 #else
-#error "This code requires GCC, Clang, or MSVC compiler"
+#error "This code requires GCC, Clang compiler"
 #endif
     }
 

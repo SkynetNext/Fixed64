@@ -46,7 +46,7 @@ class Fixed64TrigTest : public ::testing::Test {
     using Fixed = math::fp::Fixed64<32>;  // Trigonometric functions need 32-bit precision
 
     // Follow best practices using Epsilon as error bound
-    static constexpr double epsilon32 = static_cast<double>(Fixed::Epsilon());
+    const double epsilon32 = static_cast<double>(Fixed::Epsilon());
 
     // Special angle values (π/6, π/4, π/3)
     const Fixed pi_6 = Fixed::Pi() / Fixed(6.0);
