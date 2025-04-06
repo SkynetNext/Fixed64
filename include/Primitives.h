@@ -727,6 +727,9 @@ class Primitives {
     [[nodiscard]] static constexpr auto BitWidth(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return x == 0 ? 0 : 64 - __builtin_clzll(x);
+#elif defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201806L
+        // Use C++20 standard library implementation (available in VS2019 16.8+, _MSC_VER >= 1928)
+        return std::bit_width(x);
 #elif defined(_MSC_VER)
         // Efficient constexpr implementation for MSVC
         if (x == 0)
@@ -760,7 +763,7 @@ class Primitives {
 
         return n + 1;  // Add 1 because we want width (position + 1)
 #else
-#error "This code requires GCC, Clang, or MSVC compiler"
+#error "This code requires GCC, Clang, or MSVC compiler, or C++20 <bit> header support"
 #endif
     }
 
@@ -772,14 +775,17 @@ class Primitives {
     [[nodiscard]] static constexpr auto CountlZero(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_clzll(x);
+#elif defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201806L
+        // Use C++20 standard library implementation (available in VS2019 16.8+, _MSC_VER >= 1928)
+        return std::countl_zero(x);
 #elif defined(_MSC_VER)
         // Efficient constexpr implementation for MSVC
         if (x == 0)
             return 64;
 
-        // Accelerated implementation using nibble-based approach
+        // Accelerated implementation using binary search approach
         int result = 0;
-        // Check 16 bits at a time
+        // Check 32 bits at a time
         if ((x & 0xFFFFFFFF00000000ULL) == 0) {
             result += 32;
             x <<= 32;
@@ -813,7 +819,7 @@ class Primitives {
 
         return result;
 #else
-#error "This code requires GCC, Clang, or MSVC compiler"
+#error "This code requires GCC, Clang, or MSVC compiler, or C++20 <bit> header support"
 #endif
     }
 
@@ -825,6 +831,9 @@ class Primitives {
     [[nodiscard]] static constexpr auto CountrZero(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_ctzll(x);
+#elif defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201806L
+        // Use C++20 standard library implementation (available in VS2019 16.8+, _MSC_VER >= 1928)
+        return std::countr_zero(x);
 #elif defined(_MSC_VER)
         // Efficient constexpr implementation for MSVC
         if (x == 0)
@@ -858,7 +867,7 @@ class Primitives {
 
         return n;
 #else
-#error "This code requires GCC, Clang, or MSVC compiler"
+#error "This code requires GCC, Clang, or MSVC compiler, or C++20 <bit> header support"
 #endif
     }
 
@@ -870,9 +879,11 @@ class Primitives {
     [[nodiscard]] static constexpr auto Popcount(uint64_t x) noexcept -> int {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_popcountll(x);
+#elif defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201806L
+        // Use C++20 standard library implementation (available in VS2019 16.8+, _MSC_VER >= 1928)
+        return std::popcount(x);
 #elif defined(_MSC_VER)
-        // Efficient constexpr implementation for MSVC
-        // Uses the Hamming Weight algorithm (SWAR)
+        // Efficient constexpr implementation for MSVC using SWAR algorithm
         x = x - ((x >> 1) & 0x5555555555555555ULL);
         x = (x & 0x3333333333333333ULL) + ((x >> 2) & 0x3333333333333333ULL);
         x = (x + (x >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
@@ -881,7 +892,7 @@ class Primitives {
         x = x + (x >> 32);
         return static_cast<int>(x & 0x7F);
 #else
-#error "This code requires GCC, Clang, or MSVC compiler"
+#error "This code requires GCC, Clang, or MSVC compiler, or C++20 <bit> header support"
 #endif
     }
 
