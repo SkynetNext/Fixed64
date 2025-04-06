@@ -649,20 +649,16 @@ class Primitives {
 
         // Handle rounding using round-to-nearest, ties to even
         if (dist > 0) {
-            // Extract the round bit (highest bit shifted out)
-            uint64_t round_bit = 1ULL << (dist - 1);
-            bool round_bit_set = (lo_abs & round_bit) != 0;
+            // Create mask for all bits that will be shifted out
+            uint64_t round_mask = (1ULL << dist) - 1ULL;
+            uint64_t round_bits = lo_abs & round_mask;
 
-            // Create mask for all bits below round bit
-            uint64_t sticky_mask = round_bit - 1;
+            // Half-way point for rounding
+            uint64_t half_point = 1ULL << (dist - 1);
 
-            // Check if any bits below round bit are set (sticky bit)
-            bool sticky_bit_set = (lo_abs & sticky_mask) != 0;
-
-            // Round to nearest, ties to even:
-            // - Round up if round bit is 1 AND (sticky bit is 1 OR result is odd)
-            if (round_bit_set && (sticky_bit_set || (result & 1))) {
-                result++;
+            // Round up if round_bits > half_point or if exactly at half_point and result is odd
+            if (round_bits > half_point || (round_bits == half_point && (result & 1ULL))) {
+                result += 1;
             }
         }
 
