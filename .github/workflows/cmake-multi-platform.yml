@@ -50,7 +50,7 @@ jobs:
           - os: macos-latest
             compiler: {name: gcc, version: "", c_compiler: gcc, cpp_compiler: g++}
           - os: macos-latest
-            compiler: {name: clang, version: 14, c_compiler: clang-14, cpp_compiler: clang++-14}
+            compiler: {name: clang, version: 17, c_compiler: clang-17, cpp_compiler: clang++-17}
 
     runs-on: ${{ matrix.os }}
     
