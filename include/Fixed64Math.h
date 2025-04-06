@@ -515,6 +515,8 @@ class Fixed64Math {
 
         // Square of x, used multiple times
         Fixed64<P> x2 = x * x;
+        Fixed64<P> x4 = x2 * x2;
+        Fixed64<P> x8 = x4 * x4;
 
         // High-precision coefficients for 9th degree polynomial approximation
         constexpr Fixed64<P> a1(0.999866585925892067219);
