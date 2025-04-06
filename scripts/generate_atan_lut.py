@@ -4,7 +4,7 @@ import sys
 # Set very high precision
 mp.mp.dps = 100
 
-def generate_atan_lut(output_file=None, entries=256, scale_bits=63):
+def generate_atan_lut(output_file=None, entries=512, scale_bits=63):
     """Generate a lookup table for atan in the range [0,1]"""
     
     # Prepare the output with proper headers
@@ -50,51 +50,9 @@ def generate_atan_lut(output_file=None, entries=256, scale_bits=63):
     # Close the table
     lines.append("};")
     
-    # Add utility function for cubic interpolation lookup
+    # Add utility function for linear interpolation lookup
     lines.append("""
-// Lookup atan(x) with cubic interpolation between table entries for better accuracy
-inline constexpr int64_t LookupAtanCubic(int64_t x, int precision) {
-    // Ensure x is in [0,1] range scaled by 2^precision
-    if (x <= 0) return 0;
-    
-    const int64_t one = static_cast<int64_t>(1) << precision;
-    if (x >= one) return AtanLUT[AtanLUT.size() - 1] >> (63 - precision);
-    
-    // Scale x to table index
-    const int64_t scale = static_cast<int64_t>(AtanLUT.size() - 1);
-    const int64_t idx_scaled = (x * scale) >> precision;
-    const int index = static_cast<int>(idx_scaled);
-    
-    // Calculate fractional part for interpolation (keeping precision)
-    const int64_t frac = (x * scale) - (idx_scaled << precision);
-    const double t = static_cast<double>(frac) / (1LL << precision);
-    
-    // Get table values for interpolation (four points for cubic)
-    const int64_t y0 = (index > 0) ? AtanLUT[index - 1] : 2 * AtanLUT[0] - AtanLUT[1];
-    const int64_t y1 = AtanLUT[index];
-    const int64_t y2 = AtanLUT[index + 1];
-    const int64_t y3 = (static_cast<size_t>(index) + 2 < AtanLUT.size()) ? 
-                   AtanLUT[index + 2] : 
-                   2 * AtanLUT[AtanLUT.size() - 1] - AtanLUT[AtanLUT.size() - 2];
-    
-    // Cubic interpolation using Catmull-Rom spline
-    double t2 = t * t;
-    double t3 = t2 * t;
-    
-    // Catmull-Rom coefficients
-    double a = (-0.5 * t3 + t2 - 0.5 * t);
-    double b = (1.5 * t3 - 2.5 * t2 + 1.0);
-    double c = (-1.5 * t3 + 2.0 * t2 + 0.5 * t);
-    double d = (0.5 * t3 - 0.5 * t2);
-    
-    // Cubic interpolation formula
-    int64_t result = static_cast<int64_t>(a * y0 + b * y1 + c * y2 + d * y3);
-    
-    // Return scaled to requested precision
-    return result >> (63 - precision);
-}
-
-// Original linear interpolation version for performance-critical paths
+// Lookup atan(x) with linear interpolation between table entries
 inline constexpr int64_t LookupAtan(int64_t x, int precision) {
     // Ensure x is in [0,1] range scaled by 2^precision
     if (x <= 0)
@@ -135,7 +93,7 @@ inline constexpr int64_t LookupAtan(int64_t x, int precision) {
         print('\n'.join(lines))
 
 if __name__ == "__main__":
-    entries = 256  # Default number of entries
+    entries = 512  # Default number of entries (increased from 256)
     scale_bits = 63  # Default scale factor (standard for Fixed64)
     output_file = None
     
