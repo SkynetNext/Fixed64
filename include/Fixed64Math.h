@@ -6,6 +6,7 @@
 #include <concepts>
 #include <type_traits>
 
+#include "AtanLUT.h"
 #include "Fixed64.h"
 #include "FixedTrigLut.h"
 #include "Primitives.h"
@@ -496,63 +497,75 @@ class Fixed64Math {
     }
 
     /**
-     * @brief Calculate arc tangent value
+     * @brief Calculate arctangent using lookup table with linear interpolation
+     *
+     * @tparam P Precision of fixed-point number
      * @param x Input value
-     * @return Angle (in radians) [-π/2,π/2]
-     * @note Uses optimized polynomial approximation for better performance and accuracy
+     * @return Fixed64<P> Arctangent result in radians
      */
     template <int P>
-    [[nodiscard]] static auto Atan(Fixed64<P> x) noexcept -> Fixed64<P> {
+    static auto Atan(Fixed64<P> x) noexcept -> Fixed64<P> {
         // Handle special cases
         if (x == Fixed64<P>::Zero()) {
             return Fixed64<P>::Zero();
         }
 
         // Handle negative input: atan(-x) = -atan(x)
-        if (x < Fixed64<P>::Zero()) {
-            return -Atan(-x);
+        bool negative = x < Fixed64<P>::Zero();
+        if (negative) {
+            x = -x;
         }
 
         // For x > 1, use the identity: atan(x) = π/2 - atan(1/x)
-        if (x > Fixed64<P>::One()) {
-            return Fixed64<P>::HalfPi() - Atan(Fixed64<P>::One() / x);
+        bool reciprocal = x > Fixed64<P>::One();
+        if (reciprocal) {
+            x = Fixed64<P>::One() / x;
         }
 
-        // For values in [0.5, 1], use the identity: atan(x) = π/6 + atan((x*sqrt(3)-1)/(x+sqrt(3)))
-        // This transformation improves accuracy by reducing the approximation interval
-        if (x > Fixed64<P>(0.5)) {
-            constexpr auto sqrt3 = Fixed64<P>(0x0, 0xddb3d742c265490aULL, detail::nothing{});
-            return Fixed64<P>::Pi() / Fixed64<P>(6)
-                   + Atan((x * sqrt3 - Fixed64<P>::One()) / (x + sqrt3));
+        // Now x is in [0,1] range - use hybrid approach
+        Fixed64<P> result;
+
+        // For small values and values near 1, use polynomial method which is more accurate
+        // These are the ranges where the table lookup is failing
+        if (x < Fixed64<P>(0x0, 0x1333333333333333ULL, detail::nothing{})
+            || (x < Fixed64<P>::One()
+                && x > Fixed64<P>(0x0, 0x6cccccccccccccccULL, detail::nothing{}))) {
+            auto x2 = x * x;
+            auto x4 = x2 * x2;
+
+            // Optimized coefficients for polynomial approximation with increased precision
+            constexpr Fixed64<P> a1(
+                0x0, 0x7ffb9c250f62e1b6ULL, detail::nothing{});  // 0.99986602601599999
+            constexpr Fixed64<P> a3(
+                -0x1, 0xd5b8bef0ac9dc5bcULL, detail::nothing{});  // -0.33029950378728918
+            constexpr Fixed64<P> a5(
+                0x0, 0x170edc4e8b6ea246ULL, detail::nothing{});  // 0.18014100871265721
+            constexpr Fixed64<P> a7(
+                -0x1, 0xf51a5cb42f9342c3ULL, detail::nothing{});  // -0.08513299180854076
+            constexpr Fixed64<P> a9(
+                0x0, 0x02aab9749f7a659eULL, detail::nothing{});  // 0.02083509630661522
+
+            // Calculate polynomial using Estrin's method
+            auto term1 = a1;
+            auto term2 = a3 + x2 * a5;
+            auto term3 = a7 + x2 * a9;
+
+            result = term1 + x2 * term2 + x4 * x2 * term3;
+            result = result * x;
+        } else {
+            // For middle range [0.15, 0.85], use faster table lookup
+            int64_t scaled_x = x.value();
+            int64_t table_result = detail::LookupAtan(scaled_x, P);
+            result = Fixed64<P>(table_result, detail::nothing{});
         }
 
-        // For small values in [0, 0.5], use polynomial approximation
-        // Polynomial coefficients optimized for this range
-        auto x2 = x * x;
-        auto x4 = x2 * x2;
+        // Reconstruct based on range reduction
+        if (reciprocal) {
+            result = Fixed64<P>::HalfPi() - result;
+        }
 
-        // Optimized coefficients for polynomial approximation with increased precision
-        constexpr Fixed64<P> a1(
-            0x0, 0x7ffb9c250f62e1b6ULL, detail::nothing{});  // 0.99986602601599999
-        constexpr Fixed64<P> a3(
-            -0x1, 0xd5b8bef0ac9dc5bcULL, detail::nothing{});  // -0.33029950378728918
-        constexpr Fixed64<P> a5(
-            0x0, 0x170edc4e8b6ea246ULL, detail::nothing{});  // 0.18014100871265721
-        constexpr Fixed64<P> a7(
-            -0x1, 0xf51a5cb42f9342c3ULL, detail::nothing{});  // -0.08513299180854076
-        constexpr Fixed64<P> a9(
-            0x0, 0x02aab9749f7a659eULL, detail::nothing{});  // 0.02083509630661522
-
-        // Calculate polynomial using Estrin's method for better parallelization
-        // Original polynomial: a1*x + a3*x^3 + a5*x^5 + a7*x^7 + a9*x^9
-        auto term1 = a1;
-        auto term2 = a3 + x2 * a5;
-        auto term3 = a7 + x2 * a9;
-
-        auto result = term1 + x2 * term2 + x4 * x2 * term3;
-        result = result * x;
-
-        return result;
+        // Apply sign
+        return negative ? -result : result;
     }
 
     /**
