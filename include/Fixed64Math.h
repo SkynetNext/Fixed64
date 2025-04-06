@@ -770,8 +770,8 @@ class Fixed64Math {
      * @brief Return the smaller of two values
      */
     template <typename T1, typename T2>
-    [[nodiscard]] constexpr static auto Min(const T1& a, const T2& b) noexcept
-        -> detail::CompareType<T1, T2>::type {
+    [[nodiscard]] constexpr static auto Min(const T1& a, const T2& b) noexcept ->
+        typename detail::CompareType<T1, T2>::type {
         return a < b ? static_cast<typename detail::CompareType<T1, T2>::type>(a)
                      : static_cast<typename detail::CompareType<T1, T2>::type>(b);
     }
@@ -780,8 +780,8 @@ class Fixed64Math {
      * @brief Return the greater of two values
      */
     template <typename T1, typename T2>
-    [[nodiscard]] constexpr static auto Max(const T1& a, const T2& b) noexcept
-        -> detail::CompareType<T1, T2>::type {
+    [[nodiscard]] constexpr static auto Max(const T1& a, const T2& b) noexcept ->
+        typename detail::CompareType<T1, T2>::type {
         return a > b ? static_cast<typename detail::CompareType<T1, T2>::type>(a)
                      : static_cast<typename detail::CompareType<T1, T2>::type>(b);
     }
