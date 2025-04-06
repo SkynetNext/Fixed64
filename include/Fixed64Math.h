@@ -503,41 +503,49 @@ class Fixed64Math {
      */
     template <int P>
     [[nodiscard]] static auto Atan(Fixed64<P> x) noexcept -> Fixed64<P> {
-        // Handle negative input
-        if (x < Fixed64<P>(0)) {
+        // Handle special cases
+        if (x == Fixed64<P>::Zero()) {
+            return Fixed64<P>::Zero();
+        }
+
+        // Handle negative input: atan(-x) = -atan(x)
+        if (x < Fixed64<P>::Zero()) {
             return -Atan(-x);
         }
 
-        // Handle large values using atan(x) = π/2 - atan(1/x)
-        if (x > Fixed64<P>(1)) {
-            return Fixed64<P>::HalfPi() - Atan(Fixed64<P>(1) / x);
+        // For x > 1, use the identity: atan(x) = π/2 - atan(1/x)
+        if (x > Fixed64<P>::One()) {
+            return Fixed64<P>::HalfPi() - Atan(Fixed64<P>::One() / x);
         }
 
-        // Square of x, used multiple times
-        Fixed64<P> x2 = x * x;
-        Fixed64<P> x4 = x2 * x2;
-        Fixed64<P> x8 = x4 * x4;
+        // For values in [0.5, 1], use the identity: atan(x) = π/6 + atan((x*sqrt(3)-1)/(x+sqrt(3)))
+        // This transformation improves accuracy by reducing the approximation interval
+        if (x > Fixed64<P>(0.5)) {
+            constexpr auto sqrt3 = Fixed64<P>(1.732050807568877);
+            return Fixed64<P>::Pi() / Fixed64<P>(6)
+                   + Atan((x * sqrt3 - Fixed64<P>::One()) / (x + sqrt3));
+        }
 
-        // High-precision coefficients for 9th degree polynomial approximation
-        constexpr Fixed64<P> a1(0.999866585925892067219);
-        constexpr Fixed64<P> a3(-0.3302995856748204208633);
-        constexpr Fixed64<P> a5(0.1801410778872627235911);
-        constexpr Fixed64<P> a7(-0.0851330965517841476930);
-        constexpr Fixed64<P> a9(0.0208351382504613860795);
+        // For small values in [0, 0.5], use polynomial approximation
+        // Polynomial coefficients optimized for this range
+        auto x2 = x * x;
 
-        // Estrin's method: grouping the polynomial evaluation to minimize error
-        // p(x) = x * (a1 + x² * (a3 + x² * (a5 + x² * (a7 + x² * a9))))
+        // Optimized coefficients for polynomial approximation
+        constexpr Fixed64<P> a1(0.9998660);
+        constexpr Fixed64<P> a3(-0.3302995);
+        constexpr Fixed64<P> a5(0.1801410);
+        constexpr Fixed64<P> a7(-0.0851330);
+        constexpr Fixed64<P> a9(0.0208351);
 
-        // Group the higher terms first
-        Fixed64<P> higher = a7 + x2 * a9;
+        // Calculate polynomial using Horner's method
+        auto result = a9;
+        result = result * x2 + a7;
+        result = result * x2 + a5;
+        result = result * x2 + a3;
+        result = result * x2 + a1;
+        result = result * x;
 
-        // Work backwards, accumulating terms in a balanced way
-        Fixed64<P> middle = a5 + x2 * higher;
-        Fixed64<P> lower = a3 + x2 * middle;
-        Fixed64<P> all = a1 + x2 * lower;
-
-        // Final multiplication by x
-        return x * all;
+        return result;
     }
 
     /**
