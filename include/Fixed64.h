@@ -63,6 +63,10 @@ class Fixed64 {
     // Construct from raw value (internal use only)
     explicit constexpr Fixed64(int64_t raw_value, detail::nothing) noexcept : value_(raw_value) {}
 
+    // Construct from high and low parts of 128-bit value
+    explicit constexpr Fixed64(int64_t hi, uint64_t lo, detail::nothing) noexcept
+        : value_(Primitives::ShortShiftRightRound64(hi, lo, 63 - P)) {}
+
     template <int Q>
     explicit constexpr Fixed64(const Fixed64<Q>& other) noexcept {
         constexpr int SHIFT = P > Q ? P - Q : Q - P;
@@ -216,111 +220,70 @@ class Fixed64 {
 
     static constexpr auto Pi() noexcept -> Fixed64<P> {
         // Pi value (π * 2^63)
-        constexpr int128_t PI_BITS =
-            (static_cast<int128_t>(0x1921FB544ULL) << 32) | static_cast<uint64_t>(0x42D1846AULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((PI_BITS + rounding) >> shift), detail::nothing{});
+        // Full 128-bit hex: 0x0000000000000001921fb54442d18469
+        return Fixed64<P>(0x1, 0x921fb54442d18469ULL, detail::nothing{});
     }
 
     static constexpr auto TwoPi() noexcept -> Fixed64<P> {
         // 2*Pi value (2π * 2^63)
-        constexpr int128_t TWO_PI_BITS =
-            (static_cast<int128_t>(0x3243F6A88ULL) << 32) | static_cast<uint64_t>(0x85A308D3ULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((TWO_PI_BITS + rounding) >> shift),
-                          detail::nothing{});
+        // Full 128-bit hex: 0x0000000000000003243f6a8885a308d3
+        return Fixed64<P>(0x3, 0x243f6a8885a308d3ULL, detail::nothing{});
     }
 
     static constexpr auto HalfPi() noexcept -> Fixed64<P> {
         // Pi/2 value (π/2 * 2^63)
-        constexpr int128_t HALF_PI_BITS =
-            (static_cast<int128_t>(0xC90FDAA2ULL) << 32) | static_cast<uint64_t>(0x2168C235ULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((HALF_PI_BITS + rounding) >> shift),
-                          detail::nothing{});
+        // Full 128-bit hex: 0x0000000000000000c90fdaa22168c234
+        return Fixed64<P>(0x0, 0xc90fdaa22168c234ULL, detail::nothing{});
     }
 
     static constexpr auto QuarterPi() noexcept -> Fixed64<P> {
         // Pi/4 value (π/4 * 2^63)
-        constexpr int128_t QUARTER_PI_BITS =
-            (static_cast<int128_t>(0x6487ED51ULL) << 32) | static_cast<uint64_t>(0x10B4611AULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((QUARTER_PI_BITS + rounding) >> shift),
-                          detail::nothing{});
+        // Full 128-bit hex: 0x00000000000000006487ed5110b4611a
+        return Fixed64<P>(0x0, 0x6487ed5110b4611aULL, detail::nothing{});
     }
 
     static constexpr auto InvPi() noexcept -> Fixed64<P> {
         // 1/Pi value (1/π * 2^63)
-        constexpr int128_t INV_PI_BITS =
-            (static_cast<int128_t>(0x28BE60DBULL) << 32) | static_cast<uint64_t>(0x9391054AULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((INV_PI_BITS + rounding) >> shift),
-                          detail::nothing{});
+        // Full 128-bit hex: 0x000000000000000028be60db9391054a
+        return Fixed64<P>(0x0, 0x28be60db9391054aULL, detail::nothing{});
     }
 
     static constexpr auto E() noexcept -> Fixed64<P> {
         // e value (e * 2^63)
-        constexpr int128_t E_BITS =
-            (static_cast<int128_t>(0x15BF0A8B1ULL) << 32) | static_cast<uint64_t>(0x45769535ULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((E_BITS + rounding) >> shift), detail::nothing{});
+        // Full 128-bit hex: 0x00000000000000015bf0a8b145769535
+        return Fixed64<P>(0x1, 0x5bf0a8b145769535ULL, detail::nothing{});
     }
 
     static constexpr auto Ln2() noexcept -> Fixed64<P> {
         // ln(2) value (ln(2) * 2^63)
-        constexpr int128_t LN2_BITS =
-            (static_cast<int128_t>(0x58B90BFBULL) << 32) | static_cast<uint64_t>(0xE8E7BCD6ULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((LN2_BITS + rounding) >> shift), detail::nothing{});
+        // Full 128-bit hex: 0x000000000000000058b90bfbe8e7bcd5
+        return Fixed64<P>(0x0, 0x58b90bfbe8e7bcd5ULL, detail::nothing{});
     }
 
     static constexpr auto Log2E() noexcept -> Fixed64<P> {
         // log2(e) value (log2(e) * 2^63)
-        constexpr int128_t LOG2E_BITS =
-            (static_cast<int128_t>(0xB8AA3B29ULL) << 32) | static_cast<uint64_t>(0x5C17F0BCULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((LOG2E_BITS + rounding) >> shift),
-                          detail::nothing{});
+        // Full 128-bit hex: 0x0000000000000000b8aa3b295c17f0bb
+        return Fixed64<P>(0x0, 0xb8aa3b295c17f0bbULL, detail::nothing{});
     }
 
     // log10(2) constant
     static constexpr auto Log10Of2() noexcept -> Fixed64<P> {
         // log10(2) value (log10(2) * 2^63)
-        constexpr int128_t LOG10_OF_2_BITS =
-            (static_cast<int128_t>(0x268826A1ULL) << 32) | static_cast<uint64_t>(0x3EF3FDE6ULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((LOG10_OF_2_BITS + rounding) >> shift),
-                          detail::nothing{});
+        // Full 128-bit hex: 0x0000000000000000268826a13ef3fde6
+        return Fixed64<P>(0x0, 0x268826a13ef3fde6ULL, detail::nothing{});
     }
 
     // Angle conversion constants
     static constexpr auto Deg2Rad() noexcept -> Fixed64<P> {
         // Degrees to radians conversion factor (π/180 * 2^63)
-        constexpr int128_t DEG_TO_RAD_BITS =
-            (static_cast<int128_t>(0x23BE8D4ULL) << 32) | static_cast<uint64_t>(0x4A53A723ULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((DEG_TO_RAD_BITS + rounding) >> shift),
-                          detail::nothing{});
+        // Full 128-bit hex: 0x0000000000000000023be8d44a53a722
+        return Fixed64<P>(0x0, 0x023be8d44a53a722ULL, detail::nothing{});
     }
 
     static constexpr auto Rad2Deg() noexcept -> Fixed64<P> {
         // Radians to degrees conversion factor (180/π * 2^63)
-        constexpr int128_t RAD_TO_DEG_BITS =
-            (static_cast<int128_t>(0x1CA5DC1A63ULL) << 32) | static_cast<uint64_t>(0xC1F7B861ULL);
-        constexpr int shift = 63 - P;
-        constexpr int128_t rounding = (shift > 0) ? (int128_t(1) << (shift - 1)) : int128_t(0);
-        return Fixed64<P>(static_cast<int64_t>((RAD_TO_DEG_BITS + rounding) >> shift),
-                          detail::nothing{});
+        // Full 128-bit hex: 0x000000000000001ca5dc1a63c1f7b861
+        return Fixed64<P>(0x1c, 0xa5dc1a63c1f7b861ULL, detail::nothing{});
     }
 
     // Special values

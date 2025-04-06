@@ -92,13 +92,13 @@ class Fixed64Math {
         auto y = fracPart * ln2;
 
         // Use more terms for better precision while maintaining efficiency with Estrin's algorithm
-        constexpr Fixed64<P> c1(1.0);                // x^0
-        constexpr Fixed64<P> c2(1.0);                // x^1
-        constexpr Fixed64<P> c3(0.5);                // x^2
-        constexpr Fixed64<P> c4(0.166666666666667);  // x^3
-        constexpr Fixed64<P> c5(0.041666666666667);  // x^4
-        constexpr Fixed64<P> c6(0.008333333333333);  // x^5
-        constexpr Fixed64<P> c7(0.001388888888889);  // x^6
+        constexpr Fixed64<P> c1(1);                                              // x^0
+        constexpr Fixed64<P> c2(1);                                              // x^1
+        constexpr Fixed64<P> c3 = Fixed64<P>::One() / 2;                         // x^2
+        constexpr Fixed64<P> c4(0x0, 0x1555555555556157ULL, detail::nothing{});  // x^3
+        constexpr Fixed64<P> c5(0x0, 0x0555555555556157ULL, detail::nothing{});  // x^4
+        constexpr Fixed64<P> c6(0x0, 0x011111111111050eULL, detail::nothing{});  // x^5
+        constexpr Fixed64<P> c7(0x0, 0x002d82d82d82dc2eULL, detail::nothing{});  // x^6
 
         // Calculate polynomial using improved Estrin's algorithm
         auto y2 = y * y;
@@ -325,8 +325,8 @@ class Fixed64Math {
         auto x3 = x2 * fracPart;
 
         constexpr Fixed64<P> c1(1);
-        constexpr Fixed64<P> c2(0.5);
-        constexpr Fixed64<P> c3(0.1);
+        constexpr Fixed64<P> c2 = Fixed64<P>::Half();
+        constexpr Fixed64<P> c3 = Fixed64<P>::Point1();
         constexpr Fixed64<P> c4 = Fixed64<P>::One() / 120;
 
         auto num = c1 + fracPart * c2 + x2 * c3 + x3 * c4;
@@ -521,7 +521,7 @@ class Fixed64Math {
         // For values in [0.5, 1], use the identity: atan(x) = π/6 + atan((x*sqrt(3)-1)/(x+sqrt(3)))
         // This transformation improves accuracy by reducing the approximation interval
         if (x > Fixed64<P>(0.5)) {
-            constexpr auto sqrt3 = Fixed64<P>(1.732050807568877);
+            constexpr auto sqrt3 = Fixed64<P>(0x0, 0xddb3d742c265490aULL, detail::nothing{});
             return Fixed64<P>::Pi() / Fixed64<P>(6)
                    + Atan((x * sqrt3 - Fixed64<P>::One()) / (x + sqrt3));
         }
@@ -532,11 +532,16 @@ class Fixed64Math {
         auto x4 = x2 * x2;
 
         // Optimized coefficients for polynomial approximation with increased precision
-        constexpr Fixed64<P> a1(0.99986602601599999);
-        constexpr Fixed64<P> a3(-0.33029950378728918);
-        constexpr Fixed64<P> a5(0.18014100871265721);
-        constexpr Fixed64<P> a7(-0.08513299180854076);
-        constexpr Fixed64<P> a9(0.02083509630661522);
+        constexpr Fixed64<P> a1(
+            0x0, 0x7ffb9c250f62e1b6ULL, detail::nothing{});  // 0.99986602601599999
+        constexpr Fixed64<P> a3(
+            -0x1, 0xd5b8bef0ac9dc5bcULL, detail::nothing{});  // -0.33029950378728918
+        constexpr Fixed64<P> a5(
+            0x0, 0x170edc4e8b6ea246ULL, detail::nothing{});  // 0.18014100871265721
+        constexpr Fixed64<P> a7(
+            -0x1, 0xf51a5cb42f9342c3ULL, detail::nothing{});  // -0.08513299180854076
+        constexpr Fixed64<P> a9(
+            0x0, 0x02aab9749f7a659eULL, detail::nothing{});  // 0.02083509630661522
 
         // Calculate polynomial using Estrin's method for better parallelization
         // Original polynomial: a1*x + a3*x^3 + a5*x^5 + a7*x^7 + a9*x^9
@@ -575,11 +580,16 @@ class Fixed64Math {
         // Polynomial form: z * (P1*z¹⁰ + P2*z⁸ - P3*z⁶ + P4*z⁴ - P5*z² + P6)
         // Optimization interval: z ∈ [0, 1]
         // Reference paper keywords: "Efficient Approximations for the Arctangent Function"
-        static constexpr Fixed64<P> P1(-0.013470836654772);
-        static constexpr Fixed64<P> P2(0.057477314064364);
-        static constexpr Fixed64<P> P3(0.121236299202148);
-        static constexpr Fixed64<P> P4(0.195635939456039);
-        static constexpr Fixed64<P> P5(0.332994954915642);
+        // -0.013470836654772
+        static constexpr Fixed64<P> P1(-0x1, 0xfe46966e8f1a8004ULL, detail::nothing{});
+        // 0.057477314064364
+        static constexpr Fixed64<P> P2(0x0, 0x075b6aa8158cf56fULL, detail::nothing{});
+        // 0.121236299202148
+        static constexpr Fixed64<P> P3(0x0, 0x0f84abca14a55d8dULL, detail::nothing{});
+        // 0.195635939456039
+        static constexpr Fixed64<P> P4(0x0, 0x190a9934f165f140ULL, detail::nothing{});
+        // 0.332994954915642
+        static constexpr Fixed64<P> P5(0x0, 0x2a9f94248c3f2369ULL, detail::nothing{});
         static constexpr Fixed64<P> P6(1);                      // +1.0
         static constexpr Fixed64<P> P7 = Fixed64<P>::HalfPi();  // ~π/2
         static constexpr Fixed64<P> P8 = Fixed64<P>::Pi();      // ~π

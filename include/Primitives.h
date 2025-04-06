@@ -6,302 +6,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#if defined(__SIZEOF_INT128__)
-using int128_t = __int128;
-#else
-// 128-bit signed integer implementation
-class int128_t {
- private:
-    uint64_t low_;
-    int64_t high_;
-
- public:
-    // Default constructor
-    constexpr int128_t() : low_(0), high_(0) {}
-
-    // Constructor from 64-bit signed integer
-    constexpr int128_t(int64_t value)
-        : low_(static_cast<uint64_t>(value)), high_(value < 0 ? -1 : 0) {}
-
-    // Constructor from 64-bit unsigned integer
-    constexpr int128_t(uint64_t value) : low_(value), high_(0) {}
-
-    // Explicit constructor from int (prevents ambiguity)
-    constexpr explicit int128_t(int value)
-        : low_(static_cast<uint64_t>(value)), high_(value < 0 ? -1 : 0) {}
-
-    // Access low and high parts
-    constexpr uint64_t low() const {
-        return low_;
-    }
-
-    constexpr int64_t high() const {
-        return high_;
-    }
-
-    // Right shift operator
-    constexpr int128_t operator>>(int shift) const {
-        int128_t result;
-        if (shift == 0)
-            return *this;
-        if (shift >= 128)
-            return high_ < 0 ? int128_t(-1) : int128_t(0);
-
-        if (shift >= 64) {
-            // Shift more than 64 bits
-            result.low_ = static_cast<uint64_t>(high_ >> (shift - 64));
-            result.high_ = high_ >> 63;  // Preserve sign bit
-        } else {
-            // Shift less than 64 bits
-            result.low_ = (low_ >> shift) | (static_cast<uint64_t>(high_) << (64 - shift));
-            result.high_ = high_ >> shift;
-        }
-        return result;
-    }
-
-    // Left shift operator
-    constexpr int128_t operator<<(int shift) const {
-        int128_t result;
-        if (shift == 0)
-            return *this;
-        if (shift >= 128)
-            return int128_t(0);
-
-        if (shift >= 64) {
-            // Shift more than 64 bits
-            result.high_ = static_cast<int64_t>(low_ << (shift - 64));
-            result.low_ = 0;
-        } else {
-            // Shift less than 64 bits
-            result.high_ = (high_ << shift) | static_cast<int64_t>(low_ >> (64 - shift));
-            result.low_ = low_ << shift;
-        }
-        return result;
-    }
-
-    // Multiplication operator for int64_t
-    constexpr int128_t operator*(int64_t value) const {
-        // Calculate sign of result
-        bool negative = (high_ < 0) != (value < 0);
-
-        // Convert to absolute values
-        uint64_t abs_val = value < 0 ? static_cast<uint64_t>(-value) : static_cast<uint64_t>(value);
-        uint64_t abs_low = low_;
-        int64_t abs_high = high_;
-
-        if (high_ < 0) {
-            // Two's complement negation
-            abs_low = ~low_ + 1;
-            abs_high = ~high_;
-            if (abs_low == 0)
-                abs_high += 1;
-        }
-
-        // Perform multiplication using 32-bit parts
-        uint64_t a0 = abs_low & 0xFFFFFFFF;
-        uint64_t a1 = abs_low >> 32;
-        uint64_t b0 = abs_val & 0xFFFFFFFF;
-        uint64_t b1 = abs_val >> 32;
-
-        uint64_t r0 = a0 * b0;
-        uint64_t r1 = a0 * b1 + a1 * b0;
-        uint64_t r2 = a1 * b1;
-
-        uint64_t result_low = r0 + (r1 << 32);
-        int64_t result_high = static_cast<int64_t>(r2 + (r1 >> 32));
-
-        // Handle carry
-        if (result_low < r0) {
-            result_high++;
-        }
-
-        // Apply sign
-        int128_t result;
-        result.low_ = result_low;
-        result.high_ = result_high;
-
-        if (negative) {
-            // Two's complement negation
-            result.low_ = ~result.low_ + 1;
-            result.high_ = ~result.high_;
-            if (result.low_ == 0)
-                result.high_ += 1;
-        }
-
-        return result;
-    }
-
-    // Cast to int64_t
-    constexpr explicit operator int64_t() const {
-        return static_cast<int64_t>(low_);
-    }
-
-    // Bitwise OR with uint64_t
-    constexpr int128_t operator|(uint64_t value) const {
-        int128_t result;
-        result.low_ = low_ | value;
-        result.high_ = high_;
-        return result;
-    }
-
-    // Compound assignment operators
-    constexpr int128_t& operator*=(int64_t value) {
-        *this = *this * value;
-        return *this;
-    }
-
-    // Binary addition operator
-    constexpr int128_t operator+(const int128_t& other) const {
-        int128_t result;
-        result.low_ = low_ + other.low_;
-        result.high_ = high_ + other.high_;
-
-        // Handle carry
-        if (result.low_ < low_) {
-            result.high_++;
-        }
-
-        return result;
-    }
-
-    // Addition assignment operator
-    constexpr int128_t& operator+=(const int128_t& other) {
-        uint64_t old_low = low_;
-        low_ += other.low_;
-        high_ += other.high_;
-
-        // Handle carry
-        if (low_ < old_low) {
-            high_++;
-        }
-
-        return *this;
-    }
-
-    // Binary subtraction operator
-    constexpr int128_t operator-(const int128_t& other) const {
-        int128_t result;
-        result.low_ = low_ - other.low_;
-        result.high_ = high_ - other.high_;
-
-        // Handle borrow
-        if (low_ < other.low_) {
-            result.high_--;
-        }
-
-        return result;
-    }
-
-    // Subtraction assignment operator
-    constexpr int128_t& operator-=(const int128_t& other) {
-        bool borrow = low_ < other.low_;
-        low_ -= other.low_;
-        high_ -= other.high_;
-
-        // Handle borrow
-        if (borrow) {
-            high_--;
-        }
-
-        return *this;
-    }
-
-    // Multiplication with int128_t
-    constexpr int128_t operator*(const int128_t& other) const {
-        // Use the existing int64_t multiplication logic
-        // This is a simplified implementation - for full 128-bit multiplication
-        // we would need more complex logic
-
-        // Handle simple case where one operand fits in 64 bits
-        if (high_ == 0 && other.high_ == 0) {
-            return int128_t(low_ * other.low_);
-        }
-
-        // Calculate sign
-        bool negative = (high_ < 0) != (other.high_ < 0);
-
-        // Get absolute values (simplified)
-        uint64_t abs_low1 = high_ < 0 ? ~low_ + 1 : low_;
-        uint64_t abs_low2 = other.high_ < 0 ? ~other.low_ + 1 : other.low_;
-
-        // Multiply low parts
-        uint64_t low_result = abs_low1 * abs_low2;
-
-        // Apply sign
-        int128_t result(low_result);
-        if (negative) {
-            result.low_ = ~result.low_ + 1;
-            result.high_ = ~result.high_ + (result.low_ == 0 ? 1 : 0);
-        }
-
-        return result;
-    }
-
-    // Boolean conversion operator (used in conditional contexts)
-    constexpr explicit operator bool() const {
-        return low_ != 0 || high_ != 0;
-    }
-
-    // Comparison operators
-    constexpr bool operator==(const int128_t& other) const {
-        return low_ == other.low_ && high_ == other.high_;
-    }
-
-    constexpr bool operator!=(const int128_t& other) const {
-        return !(*this == other);
-    }
-
-    constexpr bool operator<(const int128_t& other) const {
-        if (high_ < other.high_)
-            return true;
-        if (high_ > other.high_)
-            return false;
-        return low_ < other.low_;
-    }
-
-    constexpr bool operator<=(const int128_t& other) const {
-        return *this < other || *this == other;
-    }
-
-    constexpr bool operator>(const int128_t& other) const {
-        return !(*this <= other);
-    }
-
-    constexpr bool operator>=(const int128_t& other) const {
-        return !(*this < other);
-    }
-
-    // Integer comparison operators (useful for common cases)
-    constexpr bool operator==(int64_t value) const {
-        return high_ == (value < 0 ? -1 : 0) && low_ == static_cast<uint64_t>(value);
-    }
-
-    constexpr bool operator!=(int64_t value) const {
-        return !(*this == value);
-    }
-
-    constexpr bool operator<(int64_t value) const {
-        if (high_ < (value < 0 ? -1 : 0))
-            return true;
-        if (high_ > (value < 0 ? -1 : 0))
-            return false;
-        return low_ < static_cast<uint64_t>(value);
-    }
-
-    constexpr bool operator<=(int64_t value) const {
-        return *this < value || *this == value;
-    }
-
-    constexpr bool operator>(int64_t value) const {
-        return !(*this <= value);
-    }
-
-    constexpr bool operator>=(int64_t value) const {
-        return !(*this < value);
-    }
-};
-#endif
-
 /* The following macros are derived from GCC's longlong.h and are used for high-precision integer
  * operations */
 
@@ -893,6 +597,80 @@ class Primitives {
      */
     [[nodiscard]] static constexpr auto Abs(int64_t value) noexcept -> uint64_t {
         return value < 0 ? (static_cast<int64_t>(~static_cast<uint64_t>(value) + 1)) : value;
+    }
+
+    /**
+     * @brief Shift a 128-bit value right with proper rounding for small distances (<64)
+     *
+     * @param hi High 64 bits (signed)
+     * @param lo Low 64 bits (unsigned)
+     * @param dist Shift distance (must be less than 64)
+     * @return int64_t Result with proper rounding
+     *
+     * @note This is optimized for the common case where dist = 63-P
+     */
+    static constexpr int64_t ShortShiftRightRound64(int64_t hi, uint64_t lo, uint8_t dist) {
+        if (dist >= 64) {
+            return hi < 0 ? -1 : 0;  // For large shifts, return sign extension
+        }
+
+        // Use GCC-style sign handling
+        int c1 = 0;  // Result sign flag
+
+        // Handle sign of the high part (determines sign of entire 128-bit value)
+        uint64_t hi_abs = static_cast<uint64_t>(hi);
+        uint64_t lo_abs = lo;
+
+        if (hi < 0) {
+            c1 = ~c1;  // Flip result sign
+
+            // Get absolute value of 128-bit number
+            hi_abs = ~hi_abs;
+            lo_abs = ~lo_abs;
+
+            // Add 1 (two's complement)
+            lo_abs += 1;
+            if (lo_abs == 0) {
+                hi_abs += 1;  // Handle carry
+            }
+        }
+
+        // Main value comes from high part shifted right
+        uint64_t result = hi_abs >> dist;
+
+        // Get bits that shift from high word to low word
+        uint64_t hi_to_lo_bits = hi_abs << (64 - dist);
+
+        // Bits from low part that contribute after shift
+        uint64_t lo_contribution = lo_abs >> dist;
+
+        // Combine high bits shifted down and low bits shifted in
+        result |= hi_to_lo_bits | lo_contribution;
+
+        // Handle rounding using round-to-nearest, ties to even
+        if (dist > 0) {
+            // Extract the round bit (highest bit shifted out)
+            uint64_t round_bit = 1ULL << (dist - 1);
+            bool round_bit_set = (lo_abs & round_bit) != 0;
+
+            // Create mask for all bits below round bit
+            uint64_t sticky_mask = round_bit - 1;
+
+            // Check if any bits below round bit are set (sticky bit)
+            bool sticky_bit_set = (lo_abs & sticky_mask) != 0;
+
+            // Round to nearest, ties to even:
+            // - Round up if round bit is 1 AND (sticky bit is 1 OR result is odd)
+            if (round_bit_set && (sticky_bit_set || (result & 1))) {
+                result++;
+            }
+        }
+
+        // Apply sign
+        if (c1)
+            return -static_cast<int64_t>(result);
+        else
+            return static_cast<int64_t>(result);
     }
 
     /**
