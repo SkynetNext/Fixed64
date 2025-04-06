@@ -21,6 +21,7 @@ jobs:
           - {name: gcc, version: 11, c_compiler: gcc-11, cpp_compiler: g++-11}
           - {name: gcc, version: 12, c_compiler: gcc-12, cpp_compiler: g++-12}
           - {name: gcc, version: "", c_compiler: gcc, cpp_compiler: g++}  # Latest version
+          - {name: clang, version: 14, c_compiler: clang-14, cpp_compiler: clang++-14}
           - {name: clang, version: "", c_compiler: clang, cpp_compiler: clang++}  # Latest version
         standard: [20]
         include:
@@ -38,6 +39,8 @@ jobs:
           - os: windows-latest
             compiler: {name: gcc, version: "", c_compiler: gcc, cpp_compiler: g++}
           - os: windows-latest
+            compiler: {name: clang, version: 14, c_compiler: clang-14, cpp_compiler: clang++-14}
+          - os: windows-latest
             compiler: {name: clang, version: "", c_compiler: clang, cpp_compiler: clang++}
           # MacOS typically uses Clang but we still allow specific versions
           - os: macos-latest
@@ -46,6 +49,8 @@ jobs:
             compiler: {name: gcc, version: 12, c_compiler: gcc-12, cpp_compiler: g++-12}
           - os: macos-latest
             compiler: {name: gcc, version: "", c_compiler: gcc, cpp_compiler: g++}
+          - os: macos-latest
+            compiler: {name: clang, version: 14, c_compiler: clang-14, cpp_compiler: clang++-14}
 
     runs-on: ${{ matrix.os }}
     

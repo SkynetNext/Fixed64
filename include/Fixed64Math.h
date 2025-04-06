@@ -772,8 +772,8 @@ class Fixed64Math {
     template <typename T1, typename T2>
     [[nodiscard]] constexpr static auto Min(const T1& a, const T2& b) noexcept
         -> detail::CompareType<T1, T2>::type {
-        return a < b ? static_cast<detail::CompareType<T1, T2>::type>(a)
-                     : static_cast<detail::CompareType<T1, T2>::type>(b);
+        return a < b ? static_cast<typename detail::CompareType<T1, T2>::type>(a)
+                     : static_cast<typename detail::CompareType<T1, T2>::type>(b);
     }
 
     /**
@@ -782,8 +782,8 @@ class Fixed64Math {
     template <typename T1, typename T2>
     [[nodiscard]] constexpr static auto Max(const T1& a, const T2& b) noexcept
         -> detail::CompareType<T1, T2>::type {
-        return a > b ? static_cast<detail::CompareType<T1, T2>::type>(a)
-                     : static_cast<detail::CompareType<T1, T2>::type>(b);
+        return a > b ? static_cast<typename detail::CompareType<T1, T2>::type>(a)
+                     : static_cast<typename detail::CompareType<T1, T2>::type>(b);
     }
 
     /**
