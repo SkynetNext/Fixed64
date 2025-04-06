@@ -529,20 +529,22 @@ class Fixed64Math {
         // For small values in [0, 0.5], use polynomial approximation
         // Polynomial coefficients optimized for this range
         auto x2 = x * x;
+        auto x4 = x2 * x2;
 
-        // Optimized coefficients for polynomial approximation
-        constexpr Fixed64<P> a1(0.9998660);
-        constexpr Fixed64<P> a3(-0.3302995);
-        constexpr Fixed64<P> a5(0.1801410);
-        constexpr Fixed64<P> a7(-0.0851330);
-        constexpr Fixed64<P> a9(0.0208351);
+        // Optimized coefficients for polynomial approximation with increased precision
+        constexpr Fixed64<P> a1(0.99986602601599999);
+        constexpr Fixed64<P> a3(-0.33029950378728918);
+        constexpr Fixed64<P> a5(0.18014100871265721);
+        constexpr Fixed64<P> a7(-0.08513299180854076);
+        constexpr Fixed64<P> a9(0.02083509630661522);
 
-        // Calculate polynomial using Horner's method
-        auto result = a9;
-        result = result * x2 + a7;
-        result = result * x2 + a5;
-        result = result * x2 + a3;
-        result = result * x2 + a1;
+        // Calculate polynomial using Estrin's method for better parallelization
+        // Original polynomial: a1*x + a3*x^3 + a5*x^5 + a7*x^7 + a9*x^9
+        auto term1 = a1;
+        auto term2 = a3 + x2 * a5;
+        auto term3 = a7 + x2 * a9;
+
+        auto result = term1 + x2 * term2 + x4 * x2 * term3;
         result = result * x;
 
         return result;

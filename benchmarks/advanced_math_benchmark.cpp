@@ -336,6 +336,53 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
     logResult.times["double"] = logDoubleTime;
     results.push_back(logResult);
 
+    // Atan benchmark
+    BenchmarkResult atanResult;
+    atanResult.operation = "Atan";
+
+    double atanTime = runBenchmark(
+        "Atan (Fixed64)",
+        [&](int n) -> double {
+            int64_t sum = 0;
+            for (int k = 0; k < n; k++) {
+                auto result = math::fp::Fixed64Math::Atan(data.unit_values[k]);
+                sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    // Add float benchmark
+    double atanFloatTime = runBenchmark(
+        "Atan (float)",
+        [&](int n) -> double {
+            float sum = 0;
+            for (int k = 0; k < n; k++) {
+                float result = std::atanf(data.unit_values_float[k]);
+                sum += result;
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    // Add double benchmark
+    double atanDoubleTime = runBenchmark(
+        "Atan (double)",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result = std::atan(data.unit_values_double[k]);
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
+    atanResult.times["Fixed64"] = atanTime;
+    atanResult.times["float"] = atanFloatTime;
+    atanResult.times["double"] = atanDoubleTime;
+    results.push_back(atanResult);
+
     // Atan2 benchmark
     BenchmarkResult atan2Result;
     atan2Result.operation = "Atan2";
