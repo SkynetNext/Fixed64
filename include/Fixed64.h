@@ -64,6 +64,9 @@ class Fixed64 {
     explicit constexpr Fixed64(int64_t raw_value, detail::nothing) noexcept : value_(raw_value) {}
 
     // Construct from high and low parts of 128-bit value
+    // Accepts a 128-bit value in Qx.63 fixed-point format (63 fractional bits)
+    // where 'hi' contains the upper 64 bits and 'lo' contains the lower 64 bits
+    // The value is then shifted and rounded to match the target precision P
     explicit constexpr Fixed64(int64_t hi, uint64_t lo, detail::nothing) noexcept
         : value_(Primitives::ShortShiftRightRound64(hi, lo, 63 - P)) {}
 
