@@ -406,7 +406,8 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         [&](int n) -> double {
             float sum = 0;
             for (int k = 0; k < n; k++) {
-                float result = std::sqrtf(sqrtData.float_values[k]);
+                // Use std::sqrt with float cast instead of std::sqrtf for better compatibility
+                float result = std::sqrt(sqrtData.float_values[k]);
                 sum += result;
             }
             return static_cast<double>(sum);

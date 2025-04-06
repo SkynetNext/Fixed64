@@ -23,8 +23,4 @@ target_link_libraries(fixed64_benchmark PRIVATE
 )
 
 # Add compiler options for benchmarks
-target_compile_options(fixed64_benchmark PRIVATE
-    -O3
-    -Wall
-    -Wextra
-)
+target_compile_options(fixed64_benchmark PRIVATE ${COMPILER_WARNINGS})
