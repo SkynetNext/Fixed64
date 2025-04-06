@@ -361,7 +361,20 @@ class Fixed64 {
     // Convert to string (high precision version)
     // NOLINTBEGIN(cppcoreguidelines-avoid-c-arrays,
     // cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    /**
+     * @brief Converts the fixed-point value to a string representation.
+     *
+     * This method generates a string representation of the fixed-point number with
+     * appropriate decimal places. It handles:
+     *   - Integer and fractional parts separately
+     *   - Sign handling for negative values
+     *   - Proper scaling for the fractional part
+     *   - Removal of trailing zeros
+     *
+     * @return A string representation of the fixed-point value.
+     */
     [[nodiscard]] auto ToString() const noexcept -> std::string {
+        // Initialize the buffer with enough capacity for most cases
         char buffer[64];
         char* ptr = buffer;
 
@@ -371,59 +384,50 @@ class Fixed64 {
         }
 
         // Get integer and fractional parts
-        int64_t absValue = std::abs(value_);
-        int64_t intPart = absValue >> P;
-        uint64_t fracPart = absValue & ((1LL << P) - 1);
+        int64_t abs_value = std::abs(value_);
+        int64_t int_part = abs_value >> P;
+        uint64_t frac_part = abs_value & ((1LL << P) - 1);
 
         // Handle integer part
-        if (intPart == 0) {
+        if (int_part == 0) {
             *ptr++ = '0';
         } else {
-            int64_t temp = intPart;
             char* start = ptr;
-            while (temp > 0) {
-                *ptr++ = '0' + (temp % 10);
-                temp /= 10;
+
+            // Convert integer part to string (in reverse)
+            while (int_part > 0) {
+                *ptr++ = '0' + static_cast<char>(int_part % 10);
+                int_part /= 10;
             }
+
+            // Reverse the digits to get correct order
             std::reverse(start, ptr);
         }
 
-        // Handle fractional part
-        if (P > 0) {
+        // Handle fractional part if non-zero or if we need decimal places
+        if (P > 0 && frac_part > 0) {
             *ptr++ = '.';
 
-            // Use fixed-point constants to calculate decimal places
-            // Using Log10Of2 constant to ensure cross-platform consistency
-            constexpr int DECIMAL_PLACES =
+            // Calculate number of decimal places needed (based on precision)
+            constexpr int kDecimalPlaces =
                 static_cast<int>(static_cast<int64_t>(P) * Log10Of2().value() >> P) + 2;
 
-            // Calculate scale
-            constexpr auto pow10 = [](int n) constexpr -> int128_t {
-                int128_t result = int128_t(1);
-                for (int i = 0; i < n; ++i) {
-                    result *= 10;
-                }
-                return result;
-            };
-            constexpr int128_t scale = pow10(DECIMAL_PLACES);
-
-            // Use 128-bit integer for precise calculation
-            int64_t scaled = static_cast<int64_t>((static_cast<int128_t>(fracPart) * scale) >> P);
-            // Format fractional part
-            char decimalBuffer[32];
-            int decimalLength = sprintf(decimalBuffer, "%0*" PRId64, DECIMAL_PLACES, scaled);
-
-            // Remove trailing zeros, but keep at least one digit
-            while (decimalLength > 1 && decimalBuffer[decimalLength - 1] == '0') {
-                decimalLength--;
+            // Convert fractional part to decimal representation
+            for (int i = 0; i < kDecimalPlaces && frac_part > 0; ++i) {
+                // Scale by 10 to get next decimal digit
+                frac_part *= 10;
+                uint64_t digit = frac_part >> P;
+                *ptr++ = '0' + static_cast<char>(digit);
+                frac_part &= ((1ULL << P) - 1);  // Keep only fractional part
             }
 
-            // Copy to final buffer
-            for (int i = 0; i < decimalLength; i++) {
-                *ptr++ = decimalBuffer[i];
+            // Remove trailing zeros
+            while (*(ptr - 1) == '0' && *(ptr - 2) != '.') {
+                --ptr;
             }
         }
 
+        // Null terminate the string
         *ptr = '\0';
         return std::string(buffer);
     }

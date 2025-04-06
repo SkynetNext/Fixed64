@@ -8,7 +8,7 @@
 
 #if defined(__SIZEOF_INT128__)
 using int128_t = __int128;
-#elif defined(_MSC_VER)
+#else
 // 128-bit signed integer implementation
 class int128_t {
  private:
@@ -300,8 +300,6 @@ class int128_t {
         return !(*this < value);
     }
 };
-#else
-#error "Platform does not support 128-bit integers"
 #endif
 
 /* The following macros are derived from GCC's longlong.h and are used for high-precision integer
