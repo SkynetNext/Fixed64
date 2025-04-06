@@ -54,10 +54,13 @@ All mathematical functions are also available through the standard C++ `std` nam
 
 ### Template-Based Precision Control
 
-Implemented as `Fixed64<P>` where P specifies fractional bits. Predefined types:
-- `Fixed64_16`: 16 fractional bits (Q47.16)
-- `Fixed64_32`: 32 fractional bits (Q31.32)
-- `Fixed64_40`: 40 fractional bits (Q23.40)
+Fixed64 is implemented as a template class `Fixed64<P>` where `P` specifies the number of fractional bits. This design allows you to optimize for either range or precision based on your application's needs:
+
+| Type | Format | Integer Bits | Fractional Bits | Range | Precision | √ Max |
+|------|--------|--------------|----------------|-------|-----------|-------|
+| `Fixed64_16` | Q47.16 | 47 | 16 | ±1.4×10¹⁴ | 1.5×10⁻⁵ | ±1.2×10⁷ |
+| `Fixed64_32` | Q31.32 | 31 | 32 | ±2.1×10⁹ | 2.3×10⁻¹⁰ | ±4.6×10⁴ |
+| `Fixed64_40` | Q23.40 | 23 | 40 | ±8.3×10⁶ | 9.1×10⁻¹³ | ±2.9×10³ |
 
 ### Header-Only Library
 
