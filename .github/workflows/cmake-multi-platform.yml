@@ -17,31 +17,41 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release, Debug]
-        compiler: [gcc, clang]
-        standard: [14, 17, 20]
+        compiler:
+          - {name: gcc, version: 11, c_compiler: gcc-11, cpp_compiler: g++-11}
+          - {name: gcc, version: 12, c_compiler: gcc-12, cpp_compiler: g++-12}
+          - {name: gcc, version: "", c_compiler: gcc, cpp_compiler: g++}  # Latest version
+          - {name: clang, version: 12, c_compiler: clang-12, cpp_compiler: clang++-12}
+          - {name: clang, version: 14, c_compiler: clang-14, cpp_compiler: clang++-14}
+          - {name: clang, version: "", c_compiler: clang, cpp_compiler: clang++}  # Latest version
+        standard: [20]
         include:
-          # Define compiler settings for each environment
-          - compiler: gcc
-            c_compiler: gcc
-            cpp_compiler: g++
-          - compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
           # MSVC for Windows
           - os: windows-latest
-            compiler: msvc
-            c_compiler: cl
-            cpp_compiler: cl
+            compiler: {name: msvc, version: "", c_compiler: cl, cpp_compiler: cl}
             build_type: Release
+            standard: 20
         exclude:
-          # Remove MSVC duplicates and combinations that don't make sense
+          # Remove combinations that don't make sense
           - os: windows-latest
-            compiler: gcc
+            compiler: {name: gcc, version: 11, c_compiler: gcc-11, cpp_compiler: g++-11}
           - os: windows-latest
-            compiler: clang
-          # MacOS typically uses Clang
+            compiler: {name: gcc, version: 12, c_compiler: gcc-12, cpp_compiler: g++-12}
+          - os: windows-latest
+            compiler: {name: gcc, version: "", c_compiler: gcc, cpp_compiler: g++}
+          - os: windows-latest
+            compiler: {name: clang, version: 12, c_compiler: clang-12, cpp_compiler: clang++-12}
+          - os: windows-latest
+            compiler: {name: clang, version: 14, c_compiler: clang-14, cpp_compiler: clang++-14}
+          - os: windows-latest
+            compiler: {name: clang, version: "", c_compiler: clang, cpp_compiler: clang++}
+          # MacOS typically uses Clang but we still allow specific versions
           - os: macos-latest
-            compiler: gcc
+            compiler: {name: gcc, version: 11, c_compiler: gcc-11, cpp_compiler: g++-11}
+          - os: macos-latest
+            compiler: {name: gcc, version: 12, c_compiler: gcc-12, cpp_compiler: g++-12}
+          - os: macos-latest
+            compiler: {name: gcc, version: "", c_compiler: gcc, cpp_compiler: g++}
 
     runs-on: ${{ matrix.os }}
     
@@ -56,6 +66,51 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build
 
+      - name: Install GCC
+        if: matrix.compiler.name == 'gcc' && runner.os == 'Linux'
+        run: |
+          if [ "${{ matrix.compiler.version }}" != "" ]; then
+            sudo apt-get install -y gcc-${{ matrix.compiler.version }} g++-${{ matrix.compiler.version }}
+            echo "CC=gcc-${{ matrix.compiler.version }}" >> $GITHUB_ENV
+            echo "CXX=g++-${{ matrix.compiler.version }}" >> $GITHUB_ENV
+          else
+            sudo apt-get install -y gcc g++
+            echo "CC=gcc" >> $GITHUB_ENV
+            echo "CXX=g++" >> $GITHUB_ENV
+          fi
+
+      - name: Install Clang
+        if: matrix.compiler.name == 'clang' && runner.os == 'Linux'
+        run: |
+          if [ "${{ matrix.compiler.version }}" != "" ]; then
+            sudo apt-get install -y clang-${{ matrix.compiler.version }}
+            echo "CC=clang-${{ matrix.compiler.version }}" >> $GITHUB_ENV
+            echo "CXX=clang++-${{ matrix.compiler.version }}" >> $GITHUB_ENV
+          else
+            sudo apt-get install -y clang
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
+          fi
+
+      - name: Install specific Clang on macOS
+        if: matrix.compiler.name == 'clang' && runner.os == 'macOS' && matrix.compiler.version != ''
+        run: |
+          brew install llvm@${{ matrix.compiler.version }}
+          echo "CC=/usr/local/opt/llvm@${{ matrix.compiler.version }}/bin/clang" >> $GITHUB_ENV
+          echo "CXX=/usr/local/opt/llvm@${{ matrix.compiler.version }}/bin/clang++" >> $GITHUB_ENV
+          
+      - name: Use default Clang on macOS
+        if: matrix.compiler.name == 'clang' && runner.os == 'macOS' && matrix.compiler.version == ''
+        run: |
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+          
+      - name: Set up Windows environment variables
+        if: runner.os == 'Windows'
+        run: |
+          echo "CC=${{ matrix.compiler.c_compiler }}" >> $env:GITHUB_ENV
+          echo "CXX=${{ matrix.compiler.cpp_compiler }}" >> $env:GITHUB_ENV
+      
       - name: Set up build environment (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -64,8 +119,8 @@ jobs:
       - name: Configure CMake
         run: >
           cmake -B ${{ github.workspace }}/build 
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler.cpp_compiler }}
+          -DCMAKE_C_COMPILER=${{ matrix.compiler.c_compiler }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
           -S ${{ github.workspace }}
