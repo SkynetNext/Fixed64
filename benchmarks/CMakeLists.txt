@@ -18,10 +18,8 @@ target_include_directories(fixed64_benchmark PRIVATE
     ${SOFTFLOAT_INCLUDES}
 )
 
-# Fix the softfloat linking
 target_link_libraries(fixed64_benchmark PRIVATE
     Fixed64
-    softfloat
 )
 
 # Add compiler options for benchmarks

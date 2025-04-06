@@ -8,7 +8,9 @@ TestData generateTestData(int count) {
     // Add +1 to prevent out-of-bounds access when using k+1 index
     int allocSize = count + 1;
     data.fixed_values.reserve(allocSize);
+
     data.sf_values.reserve(allocSize);
+
     data.float_values.reserve(allocSize);
     data.double_values.reserve(allocSize);
     data.indices.reserve(allocSize);
@@ -25,14 +27,8 @@ TestData generateTestData(int count) {
         // Create fixed-point value
         data.fixed_values.emplace_back(val);
 
-        // Create equivalent SoftFloat value
-        union {
-            double d;
-            uint64_t u;
-        } conv;
-
-        conv.d = val;
-        data.sf_values.push_back(float64_t{conv.u});
+        // Create equivalent SoftDouble value (simpler with soft_double)
+        data.sf_values.push_back(::math::softfloat::float64_t(val));
 
         // Create float and double values for standard library operations
         data.float_values.push_back(static_cast<float>(val));
@@ -51,7 +47,9 @@ MultiplyDivideTestData generateMulDivTestData(int count) {
     // Add +1 to prevent out-of-bounds access
     int allocSize = count + 1;
     data.fixed_pairs.reserve(allocSize);
+
     data.sf_pairs.reserve(allocSize);
+
     data.float_pairs.reserve(allocSize);
     data.double_pairs.reserve(allocSize);
 
@@ -71,16 +69,9 @@ MultiplyDivideTestData generateMulDivTestData(int count) {
         // Create fixed-point pair
         data.fixed_pairs.emplace_back(math::fp::Fixed64<32>(a), math::fp::Fixed64<32>(b));
 
-        // Create equivalent SoftFloat pair
-        union {
-            double d;
-            uint64_t u;
-        } conv_a, conv_b;
-
-        conv_a.d = a;
-        conv_b.d = b;
-
-        data.sf_pairs.emplace_back(float64_t{conv_a.u}, float64_t{conv_b.u});
+        // Create equivalent SoftDouble pair (simpler with soft_double)
+        data.sf_pairs.emplace_back(::math::softfloat::float64_t(a),
+                                   ::math::softfloat::float64_t(b));
 
         // Create float and double pairs for standard library operations
         data.float_pairs.emplace_back(static_cast<float>(a), static_cast<float>(b));
@@ -96,7 +87,9 @@ SqrtTestData generateSqrtTestData(int count) {
     // Add +1 to prevent any potential out-of-bounds access
     int allocSize = count + 1;
     data.fixed_values.reserve(allocSize);
+
     data.sf_values.reserve(allocSize);
+
     data.float_values.reserve(allocSize);
     data.double_values.reserve(allocSize);
 
@@ -111,14 +104,8 @@ SqrtTestData generateSqrtTestData(int count) {
         // Create fixed-point value
         data.fixed_values.emplace_back(val);
 
-        // Create equivalent SoftFloat value
-        union {
-            double d;
-            uint64_t u;
-        } conv;
-
-        conv.d = val;
-        data.sf_values.push_back(float64_t{conv.u});
+        // Create equivalent SoftDouble value
+        data.sf_values.push_back(::math::softfloat::float64_t(val));
 
         // Create float and double values for standard library operations
         data.float_values.push_back(static_cast<float>(val));
@@ -154,13 +141,14 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     double softAddTime = runBenchmark(
-        "SoftFloat Addition",
+        "SoftDouble Addition",
         [&](int n) -> double {
-            float64_t sum(0);
+            ::math::softfloat::float64_t sum(0);
             for (int k = 0; k < n; k++) {
-                sum = f64_add(sum, data.sf_values[k]);
+                // Use operator+ instead of f64_add
+                sum = sum + data.sf_values[k];
             }
-            return static_cast<double>(sum.v);
+            return static_cast<double>(sum);
         },
         iterations);
 
@@ -189,7 +177,9 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     addResult.times["Fixed64"] = fixedAddTime;
-    addResult.times["SoftFloat"] = softAddTime;
+
+    addResult.times["SoftDouble"] = softAddTime;
+
     addResult.times["float"] = floatAddTime;
     addResult.times["double"] = doubleAddTime;
     results.push_back(addResult);
@@ -210,13 +200,14 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     double softSubTime = runBenchmark(
-        "SoftFloat Subtraction",
+        "SoftDouble Subtraction",
         [&](int n) -> double {
-            float64_t sum(0);
+            ::math::softfloat::float64_t sum(0);
             for (int k = 0; k < n; k++) {
-                sum = f64_sub(sum, data.sf_values[k]);
+                // Use operator- instead of f64_sub
+                sum = sum - data.sf_values[k];
             }
-            return static_cast<double>(sum.v);
+            return static_cast<double>(sum);
         },
         iterations);
 
@@ -226,7 +217,7 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         [&](int n) -> double {
             float sum = 0;
             for (int k = 0; k < n; k++) {
-                sum += data.float_values[k];
+                sum -= data.float_values[k];
             }
             return static_cast<double>(sum);
         },
@@ -245,7 +236,9 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     subResult.times["Fixed64"] = fixedSubTime;
-    subResult.times["SoftFloat"] = softSubTime;
+
+    subResult.times["SoftDouble"] = softSubTime;
+
     subResult.times["float"] = floatSubTime;
     subResult.times["double"] = doubleSubTime;
     results.push_back(subResult);
@@ -267,12 +260,13 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     double softMulTime = runBenchmark(
-        "SoftFloat Multiplication",
+        "SoftDouble Multiplication",
         [&](int n) -> double {
-            uint64_t sum = 0;
+            ::math::softfloat::float64_t sum(0);
             for (int k = 0; k < n; k++) {
-                auto result = f64_mul(mulDivData.sf_pairs[k].first, mulDivData.sf_pairs[k].second);
-                sum += result.v;
+                // Use operator* instead of f64_mul
+                auto result = mulDivData.sf_pairs[k].first * mulDivData.sf_pairs[k].second;
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -306,7 +300,9 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     mulResult.times["Fixed64"] = fixedMulTime;
-    mulResult.times["SoftFloat"] = softMulTime;
+
+    mulResult.times["SoftDouble"] = softMulTime;
+
     mulResult.times["float"] = floatMulTime;
     mulResult.times["double"] = doubleMulTime;
     results.push_back(mulResult);
@@ -328,12 +324,13 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     double softDivTime = runBenchmark(
-        "SoftFloat Division",
+        "SoftDouble Division",
         [&](int n) -> double {
-            uint64_t sum = 0;
+            ::math::softfloat::float64_t sum(0);
             for (int k = 0; k < n; k++) {
-                auto result = f64_div(mulDivData.sf_pairs[k].first, mulDivData.sf_pairs[k].second);
-                sum += result.v;
+                // Use operator/ instead of f64_div
+                auto result = mulDivData.sf_pairs[k].first / mulDivData.sf_pairs[k].second;
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -367,7 +364,9 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     divResult.times["Fixed64"] = fixedDivTime;
-    divResult.times["SoftFloat"] = softDivTime;
+
+    divResult.times["SoftDouble"] = softDivTime;
+
     divResult.times["float"] = floatDivTime;
     divResult.times["double"] = doubleDivTime;
     results.push_back(divResult);
@@ -389,12 +388,13 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     double softSqrtTime = runBenchmark(
-        "SoftFloat Square Root",
+        "SoftDouble Square Root",
         [&](int n) -> double {
-            uint64_t sum = 0;
+            ::math::softfloat::float64_t sum(0);
             for (int k = 0; k < n; k++) {
-                auto result = f64_sqrt(sqrtData.sf_values[k]);
-                sum += result.v;
+                // Use ::math::softfloat::sqrt instead of f64_sqrt
+                auto result = ::math::softfloat::sqrt(sqrtData.sf_values[k]);
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -427,7 +427,9 @@ vector<BenchmarkResult> runBasicOperationsBenchmark(int iterations) {
         iterations);
 
     sqrtResult.times["Fixed64"] = fixedSqrtTime;
-    sqrtResult.times["SoftFloat"] = softSqrtTime;
+
+    sqrtResult.times["SoftDouble"] = softSqrtTime;
+
     sqrtResult.times["float"] = floatSqrtTime;
     sqrtResult.times["double"] = doubleSqrtTime;
     results.push_back(sqrtResult);

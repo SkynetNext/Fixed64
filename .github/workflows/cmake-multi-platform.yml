@@ -68,7 +68,6 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_CXX_STANDARD=${{ matrix.standard }}
-          -DENABLE_SOFTFLOAT_BENCHMARK=OFF
           -S ${{ github.workspace }}
 
       - name: Build
@@ -100,7 +99,6 @@ jobs:
           -DCMAKE_CXX_FLAGS="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer"
           -DCMAKE_C_FLAGS="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer"
           -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=${{ matrix.sanitizer }}"
-          -DENABLE_SOFTFLOAT_BENCHMARK=OFF
           -S ${{ github.workspace }}
           
       - name: Build

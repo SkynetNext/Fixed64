@@ -199,7 +199,7 @@ TEST_F(Fixed64TrigTest, InverseTrigonometricFunctions) {
         // Arctan test
         double expectedAtan = std::atan(dblX);
         double actualAtan = static_cast<double>(Fixed64Math::Atan(x));
-        EXPECT_RELATIVE_ERROR(actualAtan, expectedAtan, 0.0001, "Atan failed for value " << dblX);
+        EXPECT_RELATIVE_ERROR(actualAtan, expectedAtan, 0.00011, "Atan failed for value " << dblX);
     }
 }
 

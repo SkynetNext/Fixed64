@@ -190,47 +190,62 @@ int main() {
 
 ## Performance Benchmarks
 
-Comprehensive benchmarks comparing Fixed64 with Berkeley SoftFloat (software floating point) and hardware floating point (double) reveal the following performance characteristics:
+Comprehensive benchmarks comparing Fixed64 with soft_double (software floating point) and hardware floating point (double) reveal the following performance characteristics:
 
 ### Basic Arithmetic Operations
 
-| Operation      | Fixed64 (ms) | SoftFloat (ms) | Speedup vs SoftFloat | double (ms) | Speedup vs double |
+| Operation      | Fixed64 (ms) | SoftDouble(ms) | Speedup vs SoftDouble | double (ms) | Speedup vs double |
 |----------------|--------------|----------------|-----------------------|-------------|-------------------|
-| Addition       | 8.26         | 127.89         | 15.49x                | 13.56       | 1.64x             |
-| Subtraction    | 5.23         | 130.74         | 25.02x                | 14.79       | 2.83x             |
-| Multiplication | 20.71        | 112.54         | 5.43x                 | 12.43       | 0.60x             |
-| Division       | 214.01       | 232.83         | 1.09x                 | 14.67       | 0.07x             |
-| Square Root    | 200.75       | 166.43         | 0.83x                 | 19.33       | 0.10x             |
+| Addition       | 9.56         | 117.03         | 12.24x                | 15.40       | 1.61x             |
+| Subtraction    | 7.89         | 99.77          | 12.65x                | 13.81       | 1.75x             |
+| Multiplication | 19.72        | 177.50         | 9.00x                 | 12.00       | 0.61x             |
+| Division       | 213.49       | 289.05         | 1.35x                 | 14.14       | 0.07x             |
+| Square Root    | 198.08       | 236.17         | 1.19x                 | 18.69       | 0.09x             |
 
-These benchmarks were run using 10,000,000 operations per test. The results show that:
+These benchmarks show that:
 
-- Fixed64 outperforms SoftFloat by significant margins on addition (15.5x) and subtraction (25x)
-- Fixed64 multiplication is over 5x faster than SoftFloat
-- Division performance is comparable between the implementations
-- SoftFloat's square root implementation is approximately 20% faster than Fixed64's
-- Hardware floating-point division and square root operations are substantially faster than both software implementations
+- Fixed64 outperforms SoftDouble by significant margins on addition (12.2x) and subtraction (12.7x)
+- Fixed64 multiplication is 9x faster than SoftDouble
+- Fixed64 division and square root operations are moderately faster than SoftDouble
+- Hardware floating-point (double) outperforms both software implementations for division and square root operations
 
 ### Advanced Mathematical Functions
 
-| Function | Fixed64 (ms) | double (ms) | Fixed64 vs double |
-|----------|--------------|-------------|-------------------|
-| Pow2     | 176.15       | 504.36      | 2.86x faster      |
-| Sin      | 45.58        | 114.07      | 2.50x faster      |
-| Acos     | 68.65        | 137.26      | 2.00x faster      |
+| Function | Fixed64 (ms) | SoftDouble (ms) | Speedup vs SoftDouble | double (ms) | Speedup vs double |
+|----------|--------------|-----------------|------------------------|-------------|-------------------|
+| Pow2     | 161.16       | 3242.63         | 20.12x                 | 526.31      | 3.27x             |
+| Sin      | 47.64        | 2738.24         | 57.48x                 | 126.51      | 2.66x             |
+| Acos     | 93.02        | 3015.59         | 32.42x                 | 137.76      | 1.48x             |
+| Exp      | 324.27       | 2081.09         | 6.42x                  | 53.70       | 0.17x             |
+| Log      | 463.71       | 2370.27         | 5.11x                  | 63.09       | 0.14x             |
+| Atan     | 215.79       | 2738.82         | 12.69x                 | 139.04      | 0.64x             |
+| Atan2    | 464.65       | 3053.10         | 6.57x                  | 281.33      | 0.61x             |
+| Pow      | 1073.97      | 4857.86         | 4.52x                  | 308.44      | 0.29x             |
 
-Interestingly, for more complex functions like trigonometric and exponential operations, Fixed64's implementations outperform even hardware floating-point operations. This advantage stems from:
+For advanced functions, Fixed64 demonstrates remarkable performance:
 
-1. Optimized algorithms specifically designed for the fixed-point representation
-2. Lookup table usage for function evaluation acceleration
-3. Elimination of floating-point pipeline stalls and precision management overhead
+1. Fixed64 is dramatically faster than SoftDouble, with speedups ranging from 4.5x to 57.5x
+2. Fixed64 outperforms even hardware double precision for many functions:
+   - Pow2, Sin, Acos, Atan, and Atan2 are all faster in Fixed64 than using native hardware doubles
+   - These advantages stem from optimized algorithms specifically designed for the fixed-point representation
+3. For Exp, Log, and Pow, hardware floating-point remains faster, as expected for these complex functions
 
 ### Hardware Floating Point Comparison
 
-Compared to hardware floating point operations (when available):
+When hardware floating point is available:
+
 - Basic arithmetic operations (especially division and square root) are faster with hardware floating point
 - However, Fixed64 maintains deterministic cross-platform behavior that hardware floating point cannot guarantee
-- For advanced functions, Fixed64 implementations are 2.0-2.9x faster than equivalent floating point operations
+- For many advanced functions, Fixed64 implementations are 1.5x-3.3x faster than equivalent hardware floating point operations
+- Fixed64 addition and subtraction operations are also faster than hardware floating-point operations
 
 ### Conclusion
 
-Fixed64 offers excellent performance for deterministic cross-platform arithmetic. When hardware floating point is available, basic operations like division and square root will be faster using hardware. However, Fixed64's advanced function implementations outperform even hardware floating point, making it an excellent choice for applications where both performance and determinism are required.
+Fixed64 offers excellent performance for deterministic cross-platform arithmetic. The benchmarks highlight its particular strengths:
+
+1. Significant performance advantage over software floating-point alternatives (SoftDouble)
+2. Similar or better performance than hardware floating-point for many common operations
+3. Exceptional performance for transcendental functions compared to both software and hardware alternatives
+4. Guaranteed bit-exact results across different platforms and architectures
+
+This makes Fixed64 an excellent choice for applications where both performance and deterministic cross-platform results are required.

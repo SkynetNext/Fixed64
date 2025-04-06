@@ -4,10 +4,7 @@
 #include "Fixed64.h"
 #include "Fixed64Math.h"
 #include "benchmark_utils.h"
-
-extern "C" {
-#include "softfloat.h"
-}
+#include "math/softfloat/soft_double.h"
 
 using namespace std;
 
@@ -18,7 +15,7 @@ struct TestData {
     // For fixed-point
     std::vector<math::fp::Fixed64<32>> fixed_values;
     // For SoftFloat
-    std::vector<float64_t> sf_values;
+    std::vector<::math::softfloat::float64_t> sf_values;
     // For float standard operations
     std::vector<float> float_values;
     // For double standard operations
@@ -31,7 +28,7 @@ struct MultiplyDivideTestData {
     // For fixed-point
     std::vector<std::pair<math::fp::Fixed64<32>, math::fp::Fixed64<32>>> fixed_pairs;
     // For SoftFloat
-    std::vector<std::pair<float64_t, float64_t>> sf_pairs;
+    std::vector<std::pair<::math::softfloat::float64_t, ::math::softfloat::float64_t>> sf_pairs;
     // For float standard operations
     std::vector<std::pair<float, float>> float_pairs;
     // For double standard operations
@@ -42,7 +39,7 @@ struct SqrtTestData {
     // For fixed-point
     std::vector<math::fp::Fixed64<32>> fixed_values;
     // For SoftFloat
-    std::vector<float64_t> sf_values;
+    std::vector<::math::softfloat::float64_t> sf_values;
     // For float standard operations
     std::vector<float> float_values;
     // For double standard operations

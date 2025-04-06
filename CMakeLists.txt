@@ -66,40 +66,11 @@ endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Add Berkeley SoftFloat support for benchmarking
-option(ENABLE_SOFTFLOAT_BENCHMARK "Enable benchmarking against Berkeley SoftFloat" ON)
+# Option to enable soft_double benchmarks
+option(ENABLE_BENCHMARK "Enable benchmarks " ON)
+if(ENABLE_BENCHMARK)
+    # Add soft_double headers
+    include_directories(third_party/soft_double)
 
-if(ENABLE_SOFTFLOAT_BENCHMARK)
-    # Define SoftFloat paths with absolute paths
-    set(SOFTFLOAT_DIR ${PROJECT_SOURCE_DIR}/third_party/berkeley-softfloat-3)
-    
-    # Detect platform and use appropriate pre-compiled library
-    if(WIN32)
-        set(SOFTFLOAT_LIBRARY "${CMAKE_SOURCE_DIR}/prebuilt/softfloat/windows/softfloat.a")
-    elseif(APPLE)
-        set(SOFTFLOAT_LIBRARY "${CMAKE_SOURCE_DIR}/prebuilt/softfloat/macos/softfloat.a")
-    elseif(UNIX)
-        set(SOFTFLOAT_LIBRARY "${CMAKE_SOURCE_DIR}/prebuilt/softfloat/linux/softfloat.a")
-    endif()
-
-    # Only if prebuilt library doesn't exist, use the submodule for building
-    if(NOT EXISTS ${SOFTFLOAT_LIBRARY})
-        message(STATUS "Pre-compiled SoftFloat not found, will build from source")
-        # Your existing SoftFloat build logic here
-    endif()
-    
-    # Create imported library target
-    add_library(softfloat STATIC IMPORTED GLOBAL)
-    set_target_properties(softfloat PROPERTIES
-        IMPORTED_LOCATION "${SOFTFLOAT_LIBRARY}"
-    )
-    
-    # Set include directories
-    set(SOFTFLOAT_INCLUDES 
-        ${SOFTFLOAT_DIR}/source/include
-        ${SOFTFLOAT_DIR}/source/RISCV
-    )
-    
-    # Add benchmark directory
     add_subdirectory(benchmarks)
 endif()

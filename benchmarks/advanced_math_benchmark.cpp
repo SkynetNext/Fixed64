@@ -2,6 +2,11 @@
 
 namespace benchmark {
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#define M_PI_2 (M_PI / 2.0)
+#endif
+
 MathTestData generateMathTestData(int count) {
     using namespace std;
     MathTestData data;
@@ -12,16 +17,26 @@ MathTestData generateMathTestData(int count) {
     data.positive_values.reserve(allocSize);
     data.angle_values.reserve(allocSize);
     data.atan2_pairs.reserve(allocSize);
+    data.pow_pairs.reserve(allocSize);
 
     data.unit_values_float.reserve(allocSize);
     data.positive_values_float.reserve(allocSize);
     data.angle_values_float.reserve(allocSize);
     data.atan2_pairs_float.reserve(allocSize);
+    data.pow_pairs_float.reserve(allocSize);
 
     data.unit_values_double.reserve(allocSize);
     data.positive_values_double.reserve(allocSize);
     data.angle_values_double.reserve(allocSize);
     data.atan2_pairs_double.reserve(allocSize);
+    data.pow_pairs_double.reserve(allocSize);
+
+    // Add soft_double data structures
+    data.unit_values_softdouble.reserve(allocSize);
+    data.positive_values_softdouble.reserve(allocSize);
+    data.angle_values_softdouble.reserve(allocSize);
+    data.atan2_pairs_softdouble.reserve(allocSize);
+    data.pow_pairs_softdouble.reserve(allocSize);
 
     random_device rd;
     mt19937 gen(rd());
@@ -58,14 +73,16 @@ MathTestData generateMathTestData(int count) {
         data.positive_values_double.push_back(positive_val);
         data.angle_values_double.push_back(angle_val);
         data.atan2_pairs_double.emplace_back(y_val, x_val);
+
+        // SoftDouble data
+        data.unit_values_softdouble.push_back(::math::softfloat::float64_t(unit_val));
+        data.positive_values_softdouble.push_back(::math::softfloat::float64_t(positive_val));
+        data.angle_values_softdouble.push_back(::math::softfloat::float64_t(angle_val));
+        data.atan2_pairs_softdouble.emplace_back(::math::softfloat::float64_t(y_val),
+                                                 ::math::softfloat::float64_t(x_val));
     }
 
     // Generate test data pairs (base, exponent) for Pow function
-    data.pow_pairs.reserve(count);
-    data.pow_pairs_float.reserve(count);
-    data.pow_pairs_double.reserve(count);
-
-    // Random generator for power test data
     uniform_real_distribution<> base_dist(0.1, 4.0);  // Positive bases to avoid complex results
     uniform_real_distribution<> exp_dist(-2.0, 2.0);  // Mix of negative and positive exponents
 
@@ -83,6 +100,10 @@ MathTestData generateMathTestData(int count) {
         data.pow_pairs_float.emplace_back(static_cast<float>(base_val),
                                           static_cast<float>(exp_val));
         data.pow_pairs_double.emplace_back(base_val, exp_val);
+
+        // Create SoftDouble pair
+        data.pow_pairs_softdouble.emplace_back(::math::softfloat::float64_t(base_val),
+                                               ::math::softfloat::float64_t(exp_val));
     }
 
     return data;
@@ -108,6 +129,20 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             for (int k = 0; k < n; k++) {
                 auto result = math::fp::Fixed64Math::Pow2(data.unit_values[k]);
                 sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double pow2SoftDoubleTime = runBenchmark(
+        "Pow2 (SoftDouble)",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                // If exp2 isn't directly available, use pow(2,x) instead
+                auto result = ::math::softfloat::pow(::math::softfloat::float64_t(2.0),
+                                                     data.unit_values_softdouble[k]);
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -142,6 +177,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     pow2Result.times["Fixed64"] = pow2Time;
+    pow2Result.times["SoftDouble"] = pow2SoftDoubleTime;
     pow2Result.times["float"] = pow2FloatTime;
     pow2Result.times["double"] = pow2DoubleTime;
     results.push_back(pow2Result);
@@ -157,6 +193,18 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             for (int k = 0; k < n; k++) {
                 auto result = math::fp::Fixed64Math::Sin(data.angle_values[k]);
                 sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double sinSoftDoubleTime = runBenchmark(
+        "Sin (SoftDouble)",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                auto result = ::math::softfloat::sin(data.angle_values_softdouble[k]);
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -189,6 +237,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     sinResult.times["Fixed64"] = sinTime;
+    sinResult.times["SoftDouble"] = sinSoftDoubleTime;
     sinResult.times["float"] = sinFloatTime;
     sinResult.times["double"] = sinDoubleTime;
     results.push_back(sinResult);
@@ -204,6 +253,18 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             for (int k = 0; k < n; k++) {
                 auto result = math::fp::Fixed64Math::Acos(data.unit_values[k]);
                 sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double acosSoftDoubleTime = runBenchmark(
+        "Acos (SoftDouble)",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                auto result = ::math::softfloat::acos(data.unit_values_softdouble[k]);
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -238,6 +299,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     acosResult.times["Fixed64"] = acosTime;
+    acosResult.times["SoftDouble"] = acosSoftDoubleTime;
     acosResult.times["float"] = acosFloatTime;
     acosResult.times["double"] = acosDoubleTime;
     results.push_back(acosResult);
@@ -253,6 +315,18 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             for (int k = 0; k < n; k++) {
                 auto result = math::fp::Fixed64Math::Exp(data.unit_values[k]);
                 sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double expSoftDoubleTime = runBenchmark(
+        "Exp (SoftDouble)",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                auto result = ::math::softfloat::exp(data.unit_values_softdouble[k]);
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -285,6 +359,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     expResult.times["Fixed64"] = expTime;
+    expResult.times["SoftDouble"] = expSoftDoubleTime;
     expResult.times["float"] = expFloatTime;
     expResult.times["double"] = expDoubleTime;
     results.push_back(expResult);
@@ -300,6 +375,18 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             for (int k = 0; k < n; k++) {
                 auto result = math::fp::Fixed64Math::Log(data.positive_values[k]);
                 sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double logSoftDoubleTime = runBenchmark(
+        "Log (SoftDouble)",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                auto result = ::math::softfloat::log(data.positive_values_softdouble[k]);
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -332,6 +419,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     logResult.times["Fixed64"] = logTime;
+    logResult.times["SoftDouble"] = logSoftDoubleTime;
     logResult.times["float"] = logFloatTime;
     logResult.times["double"] = logDoubleTime;
     results.push_back(logResult);
@@ -347,6 +435,18 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             for (int k = 0; k < n; k++) {
                 auto result = math::fp::Fixed64Math::Atan(data.unit_values[k]);
                 sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double atanSoftDoubleTime = runBenchmark(
+        "Atan (SoftDouble)",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                auto result = ::math::softfloat::atan(data.unit_values_softdouble[k]);
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -379,6 +479,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     atanResult.times["Fixed64"] = atanTime;
+    atanResult.times["SoftDouble"] = atanSoftDoubleTime;
     atanResult.times["float"] = atanFloatTime;
     atanResult.times["double"] = atanDoubleTime;
     results.push_back(atanResult);
@@ -395,6 +496,44 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
                 auto result = math::fp::Fixed64Math::Atan2(data.atan2_pairs[k].first,
                                                            data.atan2_pairs[k].second);
                 sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double atan2SoftDoubleTime = runBenchmark(
+        "Atan2 (SoftDouble)",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                // Implementation for when atan2 isn't directly available
+                auto y = data.atan2_pairs_softdouble[k].first;
+                auto x = data.atan2_pairs_softdouble[k].second;
+
+                // Manual implementation of atan2 using available functions
+                ::math::softfloat::float64_t result;
+
+                if (x > ::math::softfloat::float64_t(0)) {
+                    result = ::math::softfloat::atan(y / x);
+                } else if (x < ::math::softfloat::float64_t(0)) {
+                    if (y >= ::math::softfloat::float64_t(0)) {
+                        result =
+                            ::math::softfloat::atan(y / x) + ::math::softfloat::float64_t(M_PI);
+                    } else {
+                        result =
+                            ::math::softfloat::atan(y / x) - ::math::softfloat::float64_t(M_PI);
+                    }
+                } else {  // x == 0
+                    if (y > ::math::softfloat::float64_t(0)) {
+                        result = ::math::softfloat::float64_t(M_PI / 2);
+                    } else if (y < ::math::softfloat::float64_t(0)) {
+                        result = ::math::softfloat::float64_t(-M_PI / 2);
+                    } else {                                       // y == 0
+                        result = ::math::softfloat::float64_t(0);  // Undefined, but return 0
+                    }
+                }
+
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -429,6 +568,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     atan2Result.times["Fixed64"] = atan2Time;
+    atan2Result.times["SoftDouble"] = atan2SoftDoubleTime;
     atan2Result.times["float"] = atan2FloatTime;
     atan2Result.times["double"] = atan2DoubleTime;
     results.push_back(atan2Result);
@@ -445,6 +585,19 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
                 auto result =
                     math::fp::Fixed64Math::Pow(data.pow_pairs[k].first, data.pow_pairs[k].second);
                 sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double softDoublePowTime = runBenchmark(
+        "SoftDouble Power",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                auto result = ::math::softfloat::pow(data.pow_pairs_softdouble[k].first,
+                                                     data.pow_pairs_softdouble[k].second);
+                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -477,6 +630,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     powResult.times["Fixed64"] = fixedPowTime;
+    powResult.times["SoftDouble"] = softDoublePowTime;
     powResult.times["float"] = floatPowTime;
     powResult.times["double"] = doublePowTime;
     results.push_back(powResult);
