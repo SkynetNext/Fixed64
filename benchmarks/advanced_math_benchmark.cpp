@@ -216,7 +216,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         [&](int n) -> double {
             float sum = 0;
             for (int k = 0; k < n; k++) {
-                float result = std::sinf(data.angle_values_float[k]);
+                float result = std::sin(data.angle_values_float[k]);
                 sum += result;
             }
             return static_cast<double>(sum);
@@ -277,7 +277,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             float sum = 0;
             for (int k = 0; k < n; k++) {
                 float value = static_cast<float>(data.unit_values_float[k]);
-                float result = std::acosf(value);
+                float result = std::acos(value);
                 sum += result;
             }
             return static_cast<double>(sum);
@@ -338,7 +338,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         [&](int n) -> double {
             float sum = 0;
             for (int k = 0; k < n; k++) {
-                float result = std::expf(data.unit_values_float[k]);
+                float result = std::exp(data.unit_values_float[k]);
                 sum += result;
             }
             return static_cast<double>(sum);
@@ -398,7 +398,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         [&](int n) -> double {
             float sum = 0;
             for (int k = 0; k < n; k++) {
-                float result = std::logf(data.positive_values_float[k]);
+                float result = std::log(data.positive_values_float[k]);
                 sum += result;
             }
             return static_cast<double>(sum);
@@ -458,7 +458,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         [&](int n) -> double {
             float sum = 0;
             for (int k = 0; k < n; k++) {
-                float result = std::atanf(data.unit_values_float[k]);
+                float result = std::atan(data.unit_values_float[k]);
                 sum += result;
             }
             return static_cast<double>(sum);
@@ -546,7 +546,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             float sum = 0;
             for (int k = 0; k < n; k++) {
                 float result =
-                    std::atan2f(data.atan2_pairs_float[k].first, data.atan2_pairs_float[k].second);
+                    std::atan2(data.atan2_pairs_float[k].first, data.atan2_pairs_float[k].second);
                 sum += result;
             }
             return static_cast<double>(sum);
@@ -609,7 +609,7 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
             float sum = 0;
             for (int k = 0; k < n; k++) {
                 float result =
-                    std::powf(data.pow_pairs_float[k].first, data.pow_pairs_float[k].second);
+                    std::pow(data.pow_pairs_float[k].first, data.pow_pairs_float[k].second);
                 sum += result;
             }
             return static_cast<double>(sum);
