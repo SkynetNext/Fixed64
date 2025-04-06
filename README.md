@@ -190,7 +190,7 @@ int main() {
 
 ## Performance Benchmarks
 
-Comprehensive benchmarks comparing Fixed64 with soft_double (software floating point) and hardware floating point (double) reveal the following performance characteristics:
+Comprehensive benchmarks comparing Fixed64 with [soft_double](https://github.com/ckormanyos/soft_double.git) (software floating point) and hardware floating point (double) reveal the following performance characteristics. The soft_double library is a modern C++ header-only implementation that provides the same functionality as [Berkeley SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3.git).
 
 ### Basic Arithmetic Operations
 
