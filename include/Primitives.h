@@ -730,7 +730,7 @@ class Primitives {
 #elif defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201806L
         // Use C++20 standard library implementation (available in VS2019 16.8+, _MSC_VER >= 1928)
         return std::bit_width(x);
-#elif defined(_MSC_VER)
+#else
         // Efficient constexpr implementation for MSVC
         if (x == 0)
             return 0;
@@ -762,8 +762,6 @@ class Primitives {
         }
 
         return n + 1;  // Add 1 because we want width (position + 1)
-#else
-#error "This code requires GCC, Clang, or MSVC compiler, or C++20 <bit> header support"
 #endif
     }
 
@@ -778,7 +776,7 @@ class Primitives {
 #elif defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201806L
         // Use C++20 standard library implementation (available in VS2019 16.8+, _MSC_VER >= 1928)
         return std::countl_zero(x);
-#elif defined(_MSC_VER)
+#else
         // Efficient constexpr implementation for MSVC
         if (x == 0)
             return 64;
@@ -818,8 +816,6 @@ class Primitives {
         }
 
         return result;
-#else
-#error "This code requires GCC, Clang, or MSVC compiler, or C++20 <bit> header support"
 #endif
     }
 
@@ -834,7 +830,7 @@ class Primitives {
 #elif defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201806L
         // Use C++20 standard library implementation (available in VS2019 16.8+, _MSC_VER >= 1928)
         return std::countr_zero(x);
-#elif defined(_MSC_VER)
+#else
         // Efficient constexpr implementation for MSVC
         if (x == 0)
             return 64;
@@ -866,8 +862,6 @@ class Primitives {
         }
 
         return n;
-#else
-#error "This code requires GCC, Clang, or MSVC compiler, or C++20 <bit> header support"
 #endif
     }
 
@@ -882,7 +876,7 @@ class Primitives {
 #elif defined(__cpp_lib_bitops) && __cpp_lib_bitops >= 201806L
         // Use C++20 standard library implementation (available in VS2019 16.8+, _MSC_VER >= 1928)
         return std::popcount(x);
-#elif defined(_MSC_VER)
+#else
         // Efficient constexpr implementation for MSVC using SWAR algorithm
         x = x - ((x >> 1) & 0x5555555555555555ULL);
         x = (x & 0x3333333333333333ULL) + ((x >> 2) & 0x3333333333333333ULL);
@@ -891,8 +885,6 @@ class Primitives {
         x = x + (x >> 16);
         x = x + (x >> 32);
         return static_cast<int>(x & 0x7F);
-#else
-#error "This code requires GCC, Clang, or MSVC compiler, or C++20 <bit> header support"
 #endif
     }
 
