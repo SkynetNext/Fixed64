@@ -3,10 +3,9 @@
 #include <math/softfloat/soft_double.h>
 #include <cmath>
 #include <vector>
-#include "Fixed64.h"
-#include "Fixed64Math.h"
 #include "benchmark_utils.h"
-
+#include "fixed64.h"
+#include "fixed64_math.h"
 
 namespace benchmark {
 

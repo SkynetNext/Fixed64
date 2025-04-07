@@ -1,9 +1,9 @@
 #pragma once
 
 #include <cmath>  // For std::sqrt
-#include "Fixed64.h"
-#include "Fixed64Math.h"
 #include "benchmark_utils.h"
+#include "fixed64.h"
+#include "fixed64_math.h"
 #include "math/softfloat/soft_double.h"
 
 using namespace std;

@@ -3,8 +3,8 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
-#include "FixedTrigLutTables.h"
-#include "Primitives.h"
+#include "fixed_trig_lut_tables.h"
+#include "primitives.h"
 
 namespace math::fp {
 

@@ -1,7 +1,7 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include "Fixed64.h"
+#include "fixed64.h"
 #include "gtest/gtest.h"
 
 namespace math::fp::tests {

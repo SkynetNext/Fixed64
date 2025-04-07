@@ -13,7 +13,7 @@ namespace math::fp::fixed64_traits {
 template <typename T>
 struct is_fixed64_impl : std::false_type {};
 
-// Specialized after including Fixed64.h
+// Specialized after including fixed64.h
 template <int P>
 struct is_fixed64_impl<math::fp::Fixed64<P>> : std::true_type {};
 

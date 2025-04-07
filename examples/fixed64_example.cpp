@@ -1,6 +1,6 @@
 #include <iostream>
-#include "Fixed64.h"
-#include "Fixed64Math.h"
+#include "fixed64.h"
+#include "fixed64_math.h"
 
 // Option 1: Import the entire namespace (not recommended for large namespaces)
 // using namespace math::fp;

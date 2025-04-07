@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <cmath>
 #include <limits>
-#include "Fixed64.h"
+#include "fixed64.h"
 
 // Define missing constants if needed
 #ifndef M_PI

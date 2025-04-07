@@ -6,15 +6,17 @@
 #include <concepts>
 #include <type_traits>
 
-#include "AtanLUT.h"
-#include "Fixed64.h"
-#include "FixedTrigLut.h"
-#include "Primitives.h"
+#include "atan_lut.h"
+#include "fixed64.h"
+#include "fixed_trig_lut.h"
+#include "primitives.h"
+#include "sin_lut.h"
 
 namespace math::fp {
 
-constexpr int kMinTrigPrecision =
+constexpr int kMinTrigFractionBits =
     32;  // Minimum precision required for trigonometric lookup table implementation
+constexpr int kTrigLutFractionBits = 60;
 
 /**
  * @brief Fixed-point number mathematical operations library
@@ -407,15 +409,10 @@ class Fixed64Math {
      * @return Sine value [-1,1]
      */
     template <int P>
-        requires(P >= kMinTrigPrecision)
+        requires(P >= kMinTrigFractionBits && P <= kTrigLutFractionBits)
     [[nodiscard]] static auto Sin(Fixed64<P> x) noexcept -> Fixed64<P> {
-        if constexpr (P == kMinTrigPrecision) {
-            return Fixed64<P>(FixedTrigLut::Sin(x.value()), detail::nothing{});
-        } else {
-            return Fixed64<P>(FixedTrigLut::Sin(x.value() >> (P - kMinTrigPrecision))
-                                  << (P - kMinTrigPrecision),
-                              detail::nothing{});
-        }
+        x %= Fixed64<P>::TwoPi();
+        return Fixed64<P>(math::fp::detail::LookupSin(x.value(), P), detail::nothing{});
     }
 
     /**
@@ -424,15 +421,9 @@ class Fixed64Math {
      * @return Cosine value [-1,1]
      */
     template <int P>
-        requires(P >= kMinTrigPrecision)
+        requires(P >= kMinTrigFractionBits)
     [[nodiscard]] static auto Cos(Fixed64<P> x) noexcept -> Fixed64<P> {
-        if constexpr (P == kMinTrigPrecision) {
-            return Fixed64<P>(FixedTrigLut::Cos(x.value()), detail::nothing{});
-        } else {
-            return Fixed64<P>(FixedTrigLut::Cos(x.value() >> (P - kMinTrigPrecision))
-                                  << (P - kMinTrigPrecision),
-                              detail::nothing{});
-        }
+        return Sin(x + Fixed64<P>::HalfPi());
     }
 
     /**
@@ -441,7 +432,7 @@ class Fixed64Math {
      * @return Tangent value
      */
     template <int P>
-        requires(P >= kMinTrigPrecision)
+        requires(P >= kMinTrigFractionBits)
     [[nodiscard]] static auto Tan(Fixed64<P> x) noexcept -> Fixed64<P> {
         return Sin(x) / Cos(x);
     }
@@ -453,7 +444,7 @@ class Fixed64Math {
      * @note For values outside [-1,1]: returns 0 if x>1, returns π if x<-1
      */
     template <int P>
-        requires(P >= kMinTrigPrecision)
+        requires(P >= kMinTrigFractionBits)
     [[nodiscard]] static auto Acos(Fixed64<P> x) noexcept -> Fixed64<P> {
         if (x > Fixed64<P>::One()) {
             return Fixed64<P>::Zero();
@@ -462,11 +453,11 @@ class Fixed64Math {
             return Fixed64<P>::Pi();
         }
 
-        if constexpr (P == kMinTrigPrecision) {
+        if constexpr (P == kMinTrigFractionBits) {
             return Fixed64<P>(FixedTrigLut::Acos(x.value()), detail::nothing{});
         } else {
-            return Fixed64<P>(FixedTrigLut::Acos(x.value() >> (P - kMinTrigPrecision))
-                                  << (P - kMinTrigPrecision),
+            return Fixed64<P>(FixedTrigLut::Acos(x.value() >> (P - kMinTrigFractionBits))
+                                  << (P - kMinTrigFractionBits),
                               detail::nothing{});
         }
     }
@@ -478,7 +469,7 @@ class Fixed64Math {
      * @note Returns 0 if input is outside the [-1,1] range
      */
     template <int P>
-        requires(P >= kMinTrigPrecision)
+        requires(P >= kMinTrigFractionBits)
     [[nodiscard]] static auto Asin(Fixed64<P> x) noexcept -> Fixed64<P> {
         if (x > Fixed64<P>::One()) {
             return Fixed64<P>::HalfPi();
@@ -487,11 +478,11 @@ class Fixed64Math {
             return -Fixed64<P>::HalfPi();
         }
 
-        if constexpr (P == kMinTrigPrecision) {
+        if constexpr (P == kMinTrigFractionBits) {
             return Fixed64<P>(FixedTrigLut::Asin(x.value()), detail::nothing{});
         } else {
-            return Fixed64<P>(FixedTrigLut::Asin(x.value() >> (P - kMinTrigPrecision))
-                                  << (P - kMinTrigPrecision),
+            return Fixed64<P>(FixedTrigLut::Asin(x.value() >> (P - kMinTrigFractionBits))
+                                  << (P - kMinTrigFractionBits),
                               detail::nothing{});
         }
     }
@@ -1004,33 +995,33 @@ class Fixed64Math {
 }  // namespace math::fp
 
 namespace std {
-// Trigonometric function support (requires P >= kMinTrigPrecision)
+// Trigonometric function support (requires P >= kMinTrigFractionBits)
 template <int P>
-    requires(P >= ::math::fp::kMinTrigPrecision)
+    requires(P >= ::math::fp::kMinTrigFractionBits)
 inline auto sin(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
     return ::math::fp::Fixed64Math::Sin(x);
 }
 
 template <int P>
-    requires(P >= ::math::fp::kMinTrigPrecision)
+    requires(P >= ::math::fp::kMinTrigFractionBits)
 inline auto cos(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
     return ::math::fp::Fixed64Math::Cos(x);
 }
 
 template <int P>
-    requires(P >= ::math::fp::kMinTrigPrecision)
+    requires(P >= ::math::fp::kMinTrigFractionBits)
 inline auto tan(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
     return ::math::fp::Fixed64Math::Tan(x);
 }
 
 template <int P>
-    requires(P >= ::math::fp::kMinTrigPrecision)
+    requires(P >= ::math::fp::kMinTrigFractionBits)
 inline auto asin(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
     return ::math::fp::Fixed64Math::Asin(x);
 }
 
 template <int P>
-    requires(P >= ::math::fp::kMinTrigPrecision)
+    requires(P >= ::math::fp::kMinTrigFractionBits)
 inline auto acos(const ::math::fp::Fixed64<P>& x) noexcept -> ::math::fp::Fixed64<P> {
     return ::math::fp::Fixed64Math::Acos(x);
 }

@@ -14,7 +14,7 @@ Fixed64 uses `int64_t` for representing fixed-point numbers, ensuring fast and e
 
 Through bit-precise implementation, Fixed64 ensures consistent results across different platforms - crucial for applications requiring deterministic outcomes. Unlike many fixed-point libraries that rely on simple multiplication/division for float/double conversions (which can introduce platform-specific variations), Fixed64 directly manipulates the bits according to IEEE 754 floating-point standard.
 
-The bit-manipulation techniques in `Primitives.h` fundamentally solve cross-platform consistency issues by:
+The bit-manipulation techniques in `primitives.h` fundamentally solve cross-platform consistency issues by:
 - Performing deterministic bit-level operations for all conversions
 - Precisely controlling rounding behavior
 - Eliminating compiler and hardware-specific floating-point optimizations
@@ -75,7 +75,7 @@ Includes commonly used constants (`Zero()`, `One()`, `Pi()`) and special values 
 ### Basic Operations
 
 ```cpp
-#include "Fixed64.h"
+#include "fixed64.h"
 
 using math::fp::Fixed64<16>;
 
@@ -104,8 +104,8 @@ int main() {
 ### Mathematical Functions
 
 ```cpp
-#include "Fixed64.h"
-#include "Fixed64Math.h"
+#include "fixed64.h"
+#include "fixed64_math.h"
 
 using Fixed = math::fp::Fixed64<32>;
 using math::fp::Fixed64Math;
@@ -133,8 +133,8 @@ int main() {
 ### Trigonometric Functions
 
 ```cpp
-#include "Fixed64.h"
-#include "Fixed64Math.h"
+#include "fixed64.h"
+#include "fixed64_math.h"
 
 using Fixed = math::fp::Fixed64<32>;
 using math::fp::Fixed64Math;
@@ -162,8 +162,8 @@ int main() {
 ### Advanced Features
 
 ```cpp
-#include "Fixed64.h"
-#include "Fixed64Math.h"
+#include "fixed64.h"
+#include "fixed64_math.h"
 #include <limits>
 
 using Fixed16 = math::fp::Fixed64<16>;

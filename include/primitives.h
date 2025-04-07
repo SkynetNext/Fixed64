@@ -591,15 +591,6 @@ class Primitives {
     }
 
     /**
-     * @brief Calculate absolute value, avoiding overflow issue with INT64_MIN
-     * @param value Input value
-     * @return Absolute value
-     */
-    [[nodiscard]] static constexpr auto Abs(int64_t value) noexcept -> uint64_t {
-        return value < 0 ? (static_cast<int64_t>(~static_cast<uint64_t>(value) + 1)) : value;
-    }
-
-    /**
      * @brief Shift a 128-bit value right with proper rounding for small distances (<64)
      *
      * @param hi High 64 bits (signed)
@@ -609,7 +600,8 @@ class Primitives {
      *
      * @note This is optimized for the common case where dist = 63-P
      */
-    static constexpr int64_t ShortShiftRightRound64(int64_t hi, uint64_t lo, uint8_t dist) {
+    static constexpr auto ShortShiftRightRound64(int64_t hi, uint64_t lo, uint8_t dist) noexcept
+        -> int64_t {
         if (dist >= 64) {
             return hi < 0 ? -1 : 0;  // For large shifts, return sign extension
         }
@@ -682,7 +674,7 @@ class Primitives {
      * @param shift Right shift amount, range 1-63
      * @return Equivalent to (a*b)>>shift, but avoids intermediate value overflow
      */
-    static constexpr uint64_t MulU64Shifted(uint64_t a, uint64_t b, int shift) noexcept {
+    static constexpr auto MulU64Shifted(uint64_t a, uint64_t b, int shift) noexcept -> uint64_t {
         uint64_t high, low;
 
         // Use umul_ppmm macro to directly calculate 128-bit result

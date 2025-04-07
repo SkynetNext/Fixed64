@@ -12,8 +12,8 @@
 #include <string>
 #include <type_traits>
 
-#include "Fixed64TypeTraits.h"
-#include "Primitives.h"
+#include "fixed64_type_traits.h"
+#include "primitives.h"
 
 /**
  * @brief 64-bit fixed-point number type providing deterministic cross-platform
@@ -622,6 +622,13 @@ class Fixed64 {
         value_ *= b;
         return *this;
     }
+
+    template <typename IntType>
+        requires std::is_integral_v<IntType>
+    constexpr auto operator%=(const IntType& b) noexcept -> Fixed64<P>& {
+        value_ %= b;
+        return *this;
+    }
 };
 
 // Three-way comparison operator
@@ -853,7 +860,7 @@ constexpr auto operator%=(Fixed64<P>& a, const Fixed64<Q>& b) noexcept -> Fixed6
 }
 
 template <int P, typename T>
-    requires std::is_arithmetic_v<T>
+    requires std::is_floating_point_v<T>
 constexpr auto operator%=(Fixed64<P>& a, const T& b) noexcept -> Fixed64<P>& {
     a %= Fixed64<P>(b);
     return a;

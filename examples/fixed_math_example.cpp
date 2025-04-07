@@ -1,6 +1,6 @@
 #include <iostream>
-#include "Fixed64.h"
-#include "Fixed64Math.h"
+#include "fixed64.h"
+#include "fixed64_math.h"
 
 // Use math::fp namespace explicitly for specific symbols
 using math::fp::Fixed64_16;
