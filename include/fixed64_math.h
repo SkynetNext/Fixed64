@@ -470,7 +470,7 @@ class Fixed64Math {
      * @brief Calculate arc sine value
      * @param x Input value [-1,1]
      * @return Angle (in radians) [-π/2,π/2]
-     * @note Returns 0 if input is outside the [-1,1] range
+     * @note For values outside [-1,1]: returns π/2 if x>1, returns -π/2 if x<-1
      */
     template <int P>
         requires(P >= kTrigFractionBits)
@@ -482,15 +482,8 @@ class Fixed64Math {
             return -Fixed64<P>::HalfPi();
         }
 
-        if constexpr (P == kTrigFractionBits) {
-            return Fixed64<P>(Fixed64<P>::HalfPi().value() - detail::LookupAcos(x.value()),
-                              detail::nothing{});
-        } else {
-            return Fixed64<P>(Fixed64<P>::HalfPi().value()
-                                      - detail::LookupAcos(x.value() >> (P - kTrigFractionBits))
-                                  << (P - kTrigFractionBits),
-                              detail::nothing{});
-        }
+        // Use the identity: asin(x) = π/2 - acos(x)
+        return Fixed64<P>::HalfPi() - Acos(x);
     }
 
     /**

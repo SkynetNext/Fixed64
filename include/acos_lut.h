@@ -352,8 +352,7 @@ inline constexpr std::array<int64_t, 1991> kAcosLut = {
  */
 inline constexpr auto LookupAcos(int64_t x) noexcept -> int64_t {
     // Precision definitions
-    constexpr int TABLE_PRECISION = 12;  // Lookup table precision (4096 = 2^12)
-    constexpr int FRACTION_BITS = 32;    // Q31.32 format precision
+    constexpr int FRACTION_BITS = 32;  // Q31.32 format precision
 
     // Q31.32 format constants
     constexpr int64_t ONE = 1LL << FRACTION_BITS;
