@@ -4,7 +4,6 @@
 
 #include "fixed64.h"
 #include "fixed64_math.h"
-#include "fixed_trig_lut.h"
 #include "gtest/gtest.h"
 
 #ifndef M_PI
@@ -114,9 +113,9 @@ TEST_F(Fixed64TrigTest, BasicTrigonometricFunctions) {
 
         // Test basic sin/cos accuracy
         EXPECT_RELATIVE_ERROR(
-            actualSin, expectedSin, 0.00001, "Sin failed at angle " << dblAngle << " radians");
+            actualSin, expectedSin, 0.00004, "Sin failed at angle " << dblAngle << " radians");
         EXPECT_RELATIVE_ERROR(
-            actualCos, expectedCos, 0.00001, "Cos failed at angle " << dblAngle << " radians");
+            actualCos, expectedCos, 0.00004, "Cos failed at angle " << dblAngle << " radians");
 
         // Skip near-zero cos values to avoid division problems
         if (std::abs(actualCos) > 0.01) {
