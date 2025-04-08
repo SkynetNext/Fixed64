@@ -797,17 +797,17 @@ class Fixed64Math {
      * @param x Input floating-point number
      * @return Converted fixed-point number
      */
-    template <typename ToT, typename FromT>
-        requires(::std::is_arithmetic_v<FromT>) && detail::IsFixed64<ToT>
-    [[nodiscard]] static constexpr auto ClampedCast(FromT x) noexcept -> ToT {
-        if (x >= static_cast<FromT>(ToT::Max())) {
-            return ToT::Max();
+    template <typename DestType, typename SourceType>
+        requires(::std::is_arithmetic_v<SourceType>) && detail::IsFixed64<DestType>
+    [[nodiscard]] static constexpr auto ClampedCast(SourceType x) noexcept -> DestType {
+        if (x >= static_cast<SourceType>(DestType::Max())) {
+            return DestType::Max();
         }
-        if (x <= static_cast<FromT>(ToT::Min())) {
-            return ToT::Min();
+        if (x <= static_cast<SourceType>(DestType::Min())) {
+            return DestType::Min();
         }
 
-        return static_cast<ToT>(x);
+        return static_cast<DestType>(x);
     }
 
     /**

@@ -75,9 +75,9 @@ MathTestData generateMathTestData(int count) {
         data.atan2_pairs_double.emplace_back(y_val, x_val);
 
         // SoftDouble data
-        data.unit_values_softdouble.push_back(::math::softfloat::float64_t(unit_val));
-        data.positive_values_softdouble.push_back(::math::softfloat::float64_t(positive_val));
-        data.angle_values_softdouble.push_back(::math::softfloat::float64_t(angle_val));
+        data.unit_values_softdouble.emplace_back(unit_val);
+        data.positive_values_softdouble.emplace_back(positive_val);
+        data.angle_values_softdouble.emplace_back(angle_val);
         data.atan2_pairs_softdouble.emplace_back(::math::softfloat::float64_t(y_val),
                                                  ::math::softfloat::float64_t(x_val));
     }

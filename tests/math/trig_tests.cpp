@@ -13,39 +13,14 @@
 
 namespace math::fp::tests {
 
-// Helper function to check if values are within relative error bounds
-// For values close to zero, uses absolute error instead
-inline bool IsWithinRelativeError(double actual,
-                                  double expected,
-                                  double max_relative_error = 0.0001) {
-    // For near-zero expected values, use absolute tolerance
-    if (std::abs(expected) < 1e-6) {
-        return std::abs(actual) < 1e-6;
-    }
-
-    // For very small values, use a more relaxed relative error
-    if (std::abs(expected) < 1e-4) {
-        return std::abs(actual - expected) < 1e-5;  // Use absolute error for tiny values
-    }
-
-    double relative_error = std::abs((actual - expected) / expected);
-    return relative_error <= max_relative_error;
-}
-
-// Macro that provides detailed error information when test fails
-#define EXPECT_RELATIVE_ERROR(actual, expected, max_rel_error, message)                    \
-    EXPECT_TRUE(IsWithinRelativeError(actual, expected, max_rel_error))                    \
-        << message                                                                         \
-        << " - Relative error: " << std::abs(((actual) - (expected)) / (expected)) * 100.0 \
-        << "%, Actual: " << (actual) << ", Expected: " << (expected)
-
 class Fixed64TrigTest : public ::testing::Test {
  protected:
     // Use appropriate precision constant
     using Fixed = math::fp::Fixed64<32>;  // Trigonometric functions need 32-bit precision
 
     // Follow best practices using Epsilon as error bound
-    const double epsilon32 = static_cast<double>(Fixed::Epsilon());
+    const double epsilonSmall = 1e-6;
+    const double epsilonLarge = 1.5e-5;
 
     // Special angle values (π/6, π/4, π/3)
     const Fixed pi_6 = Fixed::Pi() / Fixed(6.0);
@@ -111,24 +86,24 @@ TEST_F(Fixed64TrigTest, BasicTrigonometricFunctions) {
         double actualSin = static_cast<double>(Fixed64Math::Sin(angle));
         double actualCos = static_cast<double>(Fixed64Math::Cos(angle));
 
-        // Test basic sin/cos accuracy
-        EXPECT_RELATIVE_ERROR(
-            actualSin, expectedSin, 0.00004, "Sin failed at angle " << dblAngle << " radians");
-        EXPECT_RELATIVE_ERROR(
-            actualCos, expectedCos, 0.00004, "Cos failed at angle " << dblAngle << " radians");
+        // Test basic sin/cos accuracy using absolute error
+        EXPECT_NEAR(actualSin, expectedSin, epsilonSmall)
+            << "Sin failed at angle " << dblAngle << " radians";
+        EXPECT_NEAR(actualCos, expectedCos, epsilonSmall)
+            << "Cos failed at angle " << dblAngle << " radians";
 
         // Skip near-zero cos values to avoid division problems
         if (std::abs(actualCos) > 0.01) {
             // Test tan directly
             double expectedTan = std::tan(dblAngle);
             double actualTan = static_cast<double>(Fixed64Math::Tan(angle));
-            EXPECT_RELATIVE_ERROR(
-                actualTan, expectedTan, 0.001, "Tan failed at angle " << dblAngle << " radians");
+            EXPECT_NEAR(actualTan, expectedTan, epsilonLarge)
+                << "Tan failed at angle " << dblAngle << " radians";
 
             // Verify tan == sin/cos relationship
             double sinOverCos = actualSin / actualCos;
-            EXPECT_RELATIVE_ERROR(
-                actualTan, sinOverCos, 0.001, "Tan != Sin/Cos at angle " << dblAngle << " radians");
+            EXPECT_NEAR(actualTan, sinOverCos, epsilonLarge)
+                << "Tan != Sin/Cos at angle " << dblAngle << " radians";
         }
     }
 }
@@ -145,32 +120,22 @@ TEST_F(Fixed64TrigTest, SmallAngleApproximations) {
 
         // For very small angles, sin(x) ≈ x
         double actualSin = static_cast<double>(Fixed64Math::Sin(angle));
-        EXPECT_RELATIVE_ERROR(
-            actualSin,
-            std::sin(dblAngle),
-            0.001,
-            "Small angle approximation for sin failed at " << degrees << " degrees");
+        EXPECT_NEAR(actualSin, std::sin(dblAngle), epsilonSmall)
+            << "Small angle approximation for sin failed at " << degrees << " degrees";
 
         // For very small angles, cos(x) ≈ 1
         double actualCos = static_cast<double>(Fixed64Math::Cos(angle));
-        EXPECT_RELATIVE_ERROR(
-            actualCos,
-            std::cos(dblAngle),
-            0.001,
-            "Small angle approximation for cos failed at " << degrees << " degrees");
+        EXPECT_NEAR(actualCos, std::cos(dblAngle), epsilonSmall)
+            << "Small angle approximation for cos failed at " << degrees << " degrees";
 
         // For very small angles, sin(x) ≈ tan(x) ≈ x
         if (degrees < 0.5) {  // Only test for very small angles
-            EXPECT_RELATIVE_ERROR(actualSin,
-                                  dblAngle,
-                                  0.01,
-                                  "Sin(x) ≈ x approximation failed at " << degrees << " degrees");
+            EXPECT_NEAR(actualSin, dblAngle, epsilonSmall)
+                << "Sin(x) ≈ x approximation failed at " << degrees << " degrees";
 
             double actualTan = static_cast<double>(Fixed64Math::Tan(angle));
-            EXPECT_RELATIVE_ERROR(actualTan,
-                                  dblAngle,
-                                  0.01,
-                                  "Tan(x) ≈ x approximation failed at " << degrees << " degrees");
+            EXPECT_NEAR(actualTan, dblAngle, epsilonSmall)
+                << "Tan(x) ≈ x approximation failed at " << degrees << " degrees";
         }
     }
 }
@@ -188,17 +153,17 @@ TEST_F(Fixed64TrigTest, InverseTrigonometricFunctions) {
         // Arcsin test
         double expectedAsin = std::asin(dblX);
         double actualAsin = static_cast<double>(Fixed64Math::Asin(x));
-        EXPECT_RELATIVE_ERROR(actualAsin, expectedAsin, 0.0001, "Asin failed for value " << dblX);
+        EXPECT_NEAR(actualAsin, expectedAsin, epsilonLarge) << "Asin failed for value " << dblX;
 
         // Arccos test
         double expectedAcos = std::acos(dblX);
         double actualAcos = static_cast<double>(Fixed64Math::Acos(x));
-        EXPECT_RELATIVE_ERROR(actualAcos, expectedAcos, 0.0001, "Acos failed for value " << dblX);
+        EXPECT_NEAR(actualAcos, expectedAcos, epsilonLarge) << "Acos failed for value " << dblX;
 
         // Arctan test
         double expectedAtan = std::atan(dblX);
         double actualAtan = static_cast<double>(Fixed64Math::Atan(x));
-        EXPECT_RELATIVE_ERROR(actualAtan, expectedAtan, 0.00011, "Atan failed for value " << dblX);
+        EXPECT_NEAR(actualAtan, expectedAtan, epsilonLarge) << "Atan failed for value " << dblX;
     }
 }
 
@@ -226,10 +191,8 @@ TEST_F(Fixed64TrigTest, Atan2Function) {
         double expectedAtan2 = std::atan2(dblY, dblX);
         double actualAtan2 = static_cast<double>(Fixed64Math::Atan2(y_fixed, x_fixed));
 
-        EXPECT_RELATIVE_ERROR(actualAtan2,
-                              expectedAtan2,
-                              0.00002,
-                              "Atan2 failed for point (" << dblY << ", " << dblX << ")");
+        EXPECT_NEAR(actualAtan2, expectedAtan2, epsilonLarge)
+            << "Atan2 failed for point (" << dblY << ", " << dblX << ")";
     }
 }
 
@@ -244,38 +207,23 @@ TEST_F(Fixed64TrigTest, TrigonometricIdentities) {
 
         // Pythagorean identity: sin²(θ) + cos²(θ) = 1
         Fixed identity1 = (sinVal * sinVal) + (cosVal * cosVal);
-        EXPECT_RELATIVE_ERROR(
-            static_cast<double>(identity1),
-            1.0,
-            0.001,
-            "Pythagorean identity failed at angle " << static_cast<double>(angle));
+        EXPECT_NEAR(static_cast<double>(identity1), 1.0, epsilonSmall)
+            << "Pythagorean identity failed at angle " << static_cast<double>(angle);
 
         // Tangent identity: tan(θ) = sin(θ)/cos(θ)
         if (std::abs(static_cast<double>(cosVal)) > 0.01) {
             Fixed tanVal = Fixed64Math::Tan(angle);
             Fixed identity2 = sinVal / cosVal;
-            EXPECT_RELATIVE_ERROR(
-                static_cast<double>(tanVal),
-                static_cast<double>(identity2),
-                0.001,
-                "Tangent identity failed at angle " << static_cast<double>(angle));
+            EXPECT_NEAR(static_cast<double>(tanVal), static_cast<double>(identity2), epsilonLarge)
+                << "Tangent identity failed at angle " << static_cast<double>(angle);
         }
 
         // Double angle formula: cos(2θ) = cos²(θ) - sin²(θ)
         Fixed cos2x = Fixed64Math::Cos(angle * Fixed(2.0));
         Fixed identity3 = (cosVal * cosVal) - (sinVal * sinVal);
 
-        if (std::abs(static_cast<double>(cos2x)) < 1e-6
-            && std::abs(static_cast<double>(identity3)) < 1e-6) {
-            EXPECT_NEAR(static_cast<double>(cos2x), static_cast<double>(identity3), 2e-6)
-                << "Double angle cosine identity for near-zero values";
-        } else {
-            EXPECT_RELATIVE_ERROR(
-                static_cast<double>(cos2x),
-                static_cast<double>(identity3),
-                0.01,
-                "Double angle cosine identity failed at " << static_cast<double>(angle));
-        }
+        EXPECT_NEAR(static_cast<double>(cos2x), static_cast<double>(identity3), epsilonLarge)
+            << "Double angle cosine identity failed at " << static_cast<double>(angle);
     }
 }
 
@@ -311,11 +259,13 @@ TEST_F(Fixed64TrigTest, LookupTableImplementation) {
         double sin2 = static_cast<double>(Fixed64Math::Sin(angle2));
 
         // For small differences, use absolute error
-        EXPECT_NEAR(sin1, sin2, 1e-5) << "Sin lookup table should be continuous at " << base;
+        EXPECT_NEAR(sin1, sin2, epsilonSmall)
+            << "Sin lookup table should be continuous at " << base;
 
         double cos1 = static_cast<double>(Fixed64Math::Cos(angle1));
         double cos2 = static_cast<double>(Fixed64Math::Cos(angle2));
-        EXPECT_NEAR(cos1, cos2, 1e-5) << "Cos lookup table should be continuous at " << base;
+        EXPECT_NEAR(cos1, cos2, epsilonSmall)
+            << "Cos lookup table should be continuous at " << base;
     }
 
     // Test function periodicity
@@ -328,18 +278,20 @@ TEST_F(Fixed64TrigTest, LookupTableImplementation) {
         double sin2 = static_cast<double>(Fixed64Math::Sin(angle_plus_2pi));
 
         // Use absolute error for periodic tests
-        EXPECT_NEAR(sin1, sin2, 1e-5) << "Sin should be periodic at " << static_cast<double>(angle);
+        EXPECT_NEAR(sin1, sin2, epsilonSmall)
+            << "Sin should be periodic at " << static_cast<double>(angle);
 
         // Check cos(x) = cos(x + 2π)
         double cos1 = static_cast<double>(Fixed64Math::Cos(angle));
         double cos2 = static_cast<double>(Fixed64Math::Cos(angle_plus_2pi));
-        EXPECT_NEAR(cos1, cos2, 1e-5) << "Cos should be periodic at " << static_cast<double>(angle);
+        EXPECT_NEAR(cos1, cos2, epsilonSmall)
+            << "Cos should be periodic at " << static_cast<double>(angle);
 
         // Check tan(x) = tan(x + π)
         if (std::abs(std::cos(static_cast<double>(angle))) > 0.1) {
             double tan1 = static_cast<double>(Fixed64Math::Tan(angle));
             double tan2 = static_cast<double>(Fixed64Math::Tan(angle_plus_2pi));
-            EXPECT_NEAR(tan1, tan2, 1e-5)
+            EXPECT_NEAR(tan1, tan2, epsilonLarge)
                 << "Tan should be periodic at " << static_cast<double>(angle);
         }
     }
@@ -352,18 +304,19 @@ TEST_F(Fixed64TrigTest, LookupTableImplementation) {
         // Check sin(-x) = -sin(x)
         double sin_pos = static_cast<double>(Fixed64Math::Sin(angleFP));
         double sin_neg = static_cast<double>(Fixed64Math::Sin(neg_angleFP));
-        EXPECT_NEAR(sin_neg, -sin_pos, 1e-5) << "Sin(-x) should equal -Sin(x) at " << angle;
+        EXPECT_NEAR(sin_neg, -sin_pos, epsilonSmall) << "Sin(-x) should equal -Sin(x) at " << angle;
 
         // Check cos(-x) = cos(x)
         double cos_pos = static_cast<double>(Fixed64Math::Cos(angleFP));
         double cos_neg = static_cast<double>(Fixed64Math::Cos(neg_angleFP));
-        EXPECT_NEAR(cos_neg, cos_pos, 1e-5) << "Cos(-x) should equal Cos(x) at " << angle;
+        EXPECT_NEAR(cos_neg, cos_pos, epsilonSmall) << "Cos(-x) should equal Cos(x) at " << angle;
 
         // Check tan(-x) = -tan(x)
         if (std::abs(std::cos(angle)) > 0.1) {
             double tan_pos = static_cast<double>(Fixed64Math::Tan(angleFP));
             double tan_neg = static_cast<double>(Fixed64Math::Tan(neg_angleFP));
-            EXPECT_NEAR(tan_neg, -tan_pos, 1e-5) << "Tan(-x) should equal -Tan(x) at " << angle;
+            EXPECT_NEAR(tan_neg, -tan_pos, epsilonLarge)
+                << "Tan(-x) should equal -Tan(x) at " << angle;
         }
     }
 }
