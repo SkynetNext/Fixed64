@@ -143,29 +143,31 @@ class Fixed64Math {
             return Fixed64<P>::Zero();
         }
 
-        // Scale x to [1,2) range
-        int n = 0;
-        auto scaled_x = x;
+        // 1. Find the position of the most significant bit
+        const uint64_t u_x = static_cast<uint64_t>(x.value());
+        const int msb = 63 - Primitives::CountlZero(u_x);
 
-        if (x > Fixed64<P>::One()) {
-            // If x > 1, divide by 2 until x is in [1,2) range
-            while (scaled_x >= Fixed64<P>(2)) {
-                scaled_x = scaled_x / Fixed64<P>(2);
-                n++;
-            }
+        // Calculate exponent (similar to IEEE-754 format)
+        const int exp = msb - P;
+
+        // 2. Normalize x to [1,2) range by shifting
+        int64_t normalized_x;
+        if (msb >= P) {
+            // Right shift to normalize
+            normalized_x = x.value() >> (msb - P);
         } else {
-            // If x < 1, multiply by 2 until x is in [1,2) range
-            while (scaled_x < Fixed64<P>::One()) {
-                scaled_x = scaled_x * Fixed64<P>(2);
-                n--;
-            }
+            // Left shift to normalize
+            normalized_x = x.value() << (P - msb);
         }
 
-        // Calculate z = (a-1)/(a+1), where a is the scaled value
+        // Convert to Fixed64 for calculation
+        auto scaled_x = Fixed64<P>(normalized_x, detail::nothing{});
+
+        // 3. Calculate z = (a-1)/(a+1), where a is the scaled value
         auto z = (scaled_x - Fixed64<P>::One()) / (scaled_x + Fixed64<P>::One());
         auto z2 = z * z;
 
-        // Use polynomial approximation for ln(x), based on Padé approximation
+        // 4. Use polynomial approximation for ln(x), based on Padé approximation
         // ln(x) ≈ 2z(1 + z²/3 + z⁴/5 + z⁶/7 + ...)
         constexpr Fixed64<P> c1(2);
         constexpr Fixed64<P> c3 = Fixed64<P>(2) / 3;
@@ -180,8 +182,8 @@ class Fixed64Math {
         result = result * z2 + c1;
         result = result * z;
 
-        // Add n*ln(2)
-        result = result + Fixed64<P>(n) * Fixed64<P>::Ln2();
+        // 5. Add exp*ln(2) to account for the normalization
+        result = result + Fixed64<P>(exp) * Fixed64<P>::Ln2();
 
         return result;
     }

@@ -199,16 +199,16 @@ Comprehensive benchmarks comparing Fixed64 with [soft_double](https://github.com
 
 | Operation      | Fixed64 (ms) | SoftDouble(ms) | Speedup vs SoftDouble | double (ms) | Speedup vs double |
 |----------------|--------------|----------------|-----------------------|-------------|-------------------|
-| Addition       | 9.56         | 117.03         | 12.24x                | 15.40       | 1.61x             |
-| Subtraction    | 7.89         | 99.77          | 12.65x                | 13.81       | 1.75x             |
-| Multiplication | 19.72        | 177.50         | 9.00x                 | 12.00       | 0.61x             |
-| Division       | 213.49       | 289.05         | 1.35x                 | 14.14       | 0.07x             |
-| Square Root    | 198.08       | 236.17         | 1.19x                 | 18.69       | 0.09x             |
+| Addition       | 7.11         | 86.96          | 12.24x                | 10.66       | 1.50x             |
+| Subtraction    | 7.31         | 90.83          | 12.43x                | 10.57       | 1.45x             |
+| Multiplication | 21.33        | 169.67         | 7.95x                 | 12.90       | 0.60x             |
+| Division       | 136.03       | 217.31         | 1.60x                 | 12.80       | 0.09x             |
+| Square Root    | 168.22       | 183.43         | 1.09x                 | 15.42       | 0.09x             |
 
 These benchmarks show that:
 
-- Fixed64 outperforms SoftDouble by significant margins on addition (12.2x) and subtraction (12.7x)
-- Fixed64 multiplication is 9x faster than SoftDouble
+- Fixed64 outperforms SoftDouble by significant margins on addition (12.2x) and subtraction (12.4x)
+- Fixed64 multiplication is 8x faster than SoftDouble
 - Fixed64 division and square root operations are moderately faster than SoftDouble
 - Hardware floating-point (double) outperforms both software implementations for division and square root operations
 
@@ -216,18 +216,18 @@ These benchmarks show that:
 
 | Function | Fixed64 (ms) | SoftDouble (ms) | Speedup vs SoftDouble | double (ms) | Speedup vs double |
 |----------|--------------|-----------------|------------------------|-------------|-------------------|
-| Pow2     | 161.16       | 3242.63         | 20.12x                 | 526.31      | 3.27x             |
-| Sin      | 47.64        | 2738.24         | 57.48x                 | 126.51      | 2.66x             |
-| Acos     | 93.02        | 3015.59         | 32.42x                 | 137.76      | 1.48x             |
-| Exp      | 324.27       | 2081.09         | 6.42x                  | 53.70       | 0.17x             |
-| Log      | 463.71       | 2370.27         | 5.11x                  | 63.09       | 0.14x             |
-| Atan     | 215.79       | 2738.82         | 12.69x                 | 139.04      | 0.64x             |
-| Atan2    | 464.65       | 3053.10         | 6.57x                  | 281.33      | 0.61x             |
-| Pow      | 1073.97      | 4857.86         | 4.52x                  | 308.44      | 0.29x             |
+| Pow2     | 102.79       | 2582.24         | 25.12x                 | 592.58      | 5.77x             |
+| Sin      | 38.01        | 1867.90         | 49.14x                 | 100.15      | 2.63x             |
+| Acos     | 63.56        | 2323.08         | 36.55x                 | 203.28      | 3.20x             |
+| Exp      | 139.37       | 1691.18         | 12.13x                 | 43.51       | 0.31x             |
+| Log      | 293.11       | 1894.10         | 6.46x                  | 46.90       | 0.16x             |
+| Atan     | 99.16        | 1855.05         | 18.71x                 | 186.94      | 1.89x             |
+| Atan2    | 282.52       | 2214.61         | 7.84x                  | 401.48      | 1.42x             |
+| Pow      | 519.61       | 3729.06         | 7.18x                  | 204.63      | 0.39x             |
 
 For advanced functions, Fixed64 demonstrates remarkable performance:
 
-1. Fixed64 is dramatically faster than SoftDouble, with speedups ranging from 4.5x to 57.5x
+1. Fixed64 is dramatically faster than SoftDouble, with speedups ranging from 6.5x to 49.1x
 2. Fixed64 outperforms even hardware double precision for many functions:
    - Pow2, Sin, Acos, Atan, and Atan2 are all faster in Fixed64 than using native hardware doubles
    - These advantages stem from optimized algorithms specifically designed for the fixed-point representation
@@ -239,7 +239,7 @@ When hardware floating point is available:
 
 - Basic arithmetic operations (especially division and square root) are faster with hardware floating point
 - However, Fixed64 maintains deterministic cross-platform behavior that hardware floating point cannot guarantee
-- For many advanced functions, Fixed64 implementations are 1.5x-3.3x faster than equivalent hardware floating point operations
+- For many advanced functions, Fixed64 implementations are 1.5x-5.8x faster than equivalent hardware floating point operations
 - Fixed64 addition and subtraction operations are also faster than hardware floating-point operations
 
 ### Conclusion
