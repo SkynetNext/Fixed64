@@ -384,6 +384,52 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
     atanResult.times["double"] = atanDoubleTime;
     results.push_back(atanResult);
 
+    // Tan benchmark
+    BenchmarkResult tanResult;
+    tanResult.operation = "Tan";
+
+    double tanTime = runBenchmark(
+        "Tan (Fixed64)",
+        [&](int n) -> double {
+            int64_t sum = 0;
+            for (int k = 0; k < n; k++) {
+                auto result = math::fp::Fixed64Math::Tan(data.angle_values[k]);
+                sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double tanSoftDoubleTime = runBenchmark(
+        "Tan (SoftDouble)",
+        [&](int n) -> double {
+            ::math::softfloat::float64_t sum(0);
+            for (int k = 0; k < n; k++) {
+                auto result = ::math::softfloat::tan(data.angle_values_softdouble[k]);
+                sum = sum + result;
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    // Add double benchmark
+    double tanDoubleTime = runBenchmark(
+        "Tan (double)",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result = std::tan(data.angle_values_double[k]);
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
+    tanResult.times["Fixed64"] = tanTime;
+    tanResult.times["SoftDouble"] = tanSoftDoubleTime;
+    tanResult.times["double"] = tanDoubleTime;
+    results.push_back(tanResult);
+
     // Atan2 benchmark
     BenchmarkResult atan2Result;
     atan2Result.operation = "Atan2";
@@ -396,44 +442,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
                 auto result = math::fp::Fixed64Math::Atan2(data.atan2_pairs[k].first,
                                                            data.atan2_pairs[k].second);
                 sum += result.value();
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
-    double atan2SoftDoubleTime = runBenchmark(
-        "Atan2 (SoftDouble)",
-        [&](int n) -> double {
-            ::math::softfloat::float64_t sum(0);
-            for (int k = 0; k < n; k++) {
-                // Implementation for when atan2 isn't directly available
-                auto y = data.atan2_pairs_softdouble[k].first;
-                auto x = data.atan2_pairs_softdouble[k].second;
-
-                // Manual implementation of atan2 using available functions
-                ::math::softfloat::float64_t result;
-
-                if (x > ::math::softfloat::float64_t(0)) {
-                    result = ::math::softfloat::atan(y / x);
-                } else if (x < ::math::softfloat::float64_t(0)) {
-                    if (y >= ::math::softfloat::float64_t(0)) {
-                        result =
-                            ::math::softfloat::atan(y / x) + ::math::softfloat::float64_t(M_PI);
-                    } else {
-                        result =
-                            ::math::softfloat::atan(y / x) - ::math::softfloat::float64_t(M_PI);
-                    }
-                } else {  // x == 0
-                    if (y > ::math::softfloat::float64_t(0)) {
-                        result = ::math::softfloat::float64_t(M_PI / 2);
-                    } else if (y < ::math::softfloat::float64_t(0)) {
-                        result = ::math::softfloat::float64_t(-M_PI / 2);
-                    } else {                                       // y == 0
-                        result = ::math::softfloat::float64_t(0);  // Undefined, but return 0
-                    }
-                }
-
-                sum = sum + result;
             }
             return static_cast<double>(sum);
         },
@@ -454,7 +462,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         iterations);
 
     atan2Result.times["Fixed64"] = atan2Time;
-    atan2Result.times["SoftDouble"] = atan2SoftDoubleTime;
     atan2Result.times["double"] = atan2DoubleTime;
     results.push_back(atan2Result);
 

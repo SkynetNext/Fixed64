@@ -291,7 +291,7 @@ TEST_F(Fixed64TrigTest, LookupTableImplementation) {
         if (std::abs(std::cos(static_cast<double>(angle))) > 0.1) {
             double tan1 = static_cast<double>(Fixed64Math::Tan(angle));
             double tan2 = static_cast<double>(Fixed64Math::Tan(angle_plus_2pi));
-            EXPECT_NEAR(tan1, tan2, epsilonLarge)
+            EXPECT_NEAR(tan1, tan2, epsilonSmall)
                 << "Tan should be periodic at " << static_cast<double>(angle);
         }
     }
@@ -315,7 +315,7 @@ TEST_F(Fixed64TrigTest, LookupTableImplementation) {
         if (std::abs(std::cos(angle)) > 0.1) {
             double tan_pos = static_cast<double>(Fixed64Math::Tan(angleFP));
             double tan_neg = static_cast<double>(Fixed64Math::Tan(neg_angleFP));
-            EXPECT_NEAR(tan_neg, -tan_pos, epsilonLarge)
+            EXPECT_NEAR(tan_neg, -tan_pos, epsilonSmall)
                 << "Tan(-x) should equal -Tan(x) at " << angle;
         }
     }

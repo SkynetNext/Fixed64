@@ -11,6 +11,7 @@
 #include "fixed64.h"
 #include "primitives.h"
 #include "sin_lut.h"
+#include "tan_lut.h"
 
 namespace math::fp {
 
@@ -440,7 +441,7 @@ class Fixed64Math {
     template <int P>
         requires(P >= kTrigFractionBits)
     [[nodiscard]] static auto Tan(Fixed64<P> x) noexcept -> Fixed64<P> {
-        return Sin(x) / Cos(x);
+        return Fixed64<P>(detail::LookupTan(x.value(), P), detail::nothing{});
     }
 
     /**
