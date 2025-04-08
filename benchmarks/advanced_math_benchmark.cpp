@@ -19,12 +19,6 @@ MathTestData generateMathTestData(int count) {
     data.atan2_pairs.reserve(allocSize);
     data.pow_pairs.reserve(allocSize);
 
-    data.unit_values_float.reserve(allocSize);
-    data.positive_values_float.reserve(allocSize);
-    data.angle_values_float.reserve(allocSize);
-    data.atan2_pairs_float.reserve(allocSize);
-    data.pow_pairs_float.reserve(allocSize);
-
     data.unit_values_double.reserve(allocSize);
     data.positive_values_double.reserve(allocSize);
     data.angle_values_double.reserve(allocSize);
@@ -62,12 +56,6 @@ MathTestData generateMathTestData(int count) {
         data.angle_values.emplace_back(angle_val);
         data.atan2_pairs.emplace_back(math::fp::Fixed64<32>(y_val), math::fp::Fixed64<32>(x_val));
 
-        // Float data
-        data.unit_values_float.push_back(static_cast<float>(unit_val));
-        data.positive_values_float.push_back(static_cast<float>(positive_val));
-        data.angle_values_float.push_back(static_cast<float>(angle_val));
-        data.atan2_pairs_float.emplace_back(static_cast<float>(y_val), static_cast<float>(x_val));
-
         // Double data
         data.unit_values_double.push_back(unit_val);
         data.positive_values_double.push_back(positive_val);
@@ -96,9 +84,7 @@ MathTestData generateMathTestData(int count) {
         auto exp_fixed = math::fp::Fixed64<32>(exp_val);
         data.pow_pairs.emplace_back(base_fixed, exp_fixed);
 
-        // Create equivalent float and double pairs
-        data.pow_pairs_float.emplace_back(static_cast<float>(base_val),
-                                          static_cast<float>(exp_val));
+        // Create equivalent double pairs
         data.pow_pairs_double.emplace_back(base_val, exp_val);
 
         // Create SoftDouble pair
@@ -148,20 +134,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         },
         iterations);
 
-    // Add float benchmark
-    double pow2FloatTime = runBenchmark(
-        "Pow2 (float)",
-        [&](int n) -> double {
-            float sum = 0;
-            for (int k = 0; k < n; k++) {
-                float value = static_cast<float>(data.unit_values_float[k]);
-                float result = std::exp2f(value);
-                sum += result;
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
     // Add double benchmark
     double pow2DoubleTime = runBenchmark(
         "Pow2 (double)",
@@ -178,7 +150,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
 
     pow2Result.times["Fixed64"] = pow2Time;
     pow2Result.times["SoftDouble"] = pow2SoftDoubleTime;
-    pow2Result.times["float"] = pow2FloatTime;
     pow2Result.times["double"] = pow2DoubleTime;
     results.push_back(pow2Result);
 
@@ -210,19 +181,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         },
         iterations);
 
-    // Add float benchmark using pre-converted values
-    double sinFloatTime = runBenchmark(
-        "Sin (float)",
-        [&](int n) -> double {
-            float sum = 0;
-            for (int k = 0; k < n; k++) {
-                float result = std::sin(data.angle_values_float[k]);
-                sum += result;
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
     // Add double benchmark using pre-converted values
     double sinDoubleTime = runBenchmark(
         "Sin (double)",
@@ -238,7 +196,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
 
     sinResult.times["Fixed64"] = sinTime;
     sinResult.times["SoftDouble"] = sinSoftDoubleTime;
-    sinResult.times["float"] = sinFloatTime;
     sinResult.times["double"] = sinDoubleTime;
     results.push_back(sinResult);
 
@@ -270,20 +227,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         },
         iterations);
 
-    // Add float benchmark
-    double acosFloatTime = runBenchmark(
-        "Acos (float)",
-        [&](int n) -> double {
-            float sum = 0;
-            for (int k = 0; k < n; k++) {
-                float value = static_cast<float>(data.unit_values_float[k]);
-                float result = std::acos(value);
-                sum += result;
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
     // Add double benchmark
     double acosDoubleTime = runBenchmark(
         "Acos (double)",
@@ -300,7 +243,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
 
     acosResult.times["Fixed64"] = acosTime;
     acosResult.times["SoftDouble"] = acosSoftDoubleTime;
-    acosResult.times["float"] = acosFloatTime;
     acosResult.times["double"] = acosDoubleTime;
     results.push_back(acosResult);
 
@@ -332,19 +274,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         },
         iterations);
 
-    // Add float benchmark
-    double expFloatTime = runBenchmark(
-        "Exp (float)",
-        [&](int n) -> double {
-            float sum = 0;
-            for (int k = 0; k < n; k++) {
-                float result = std::exp(data.unit_values_float[k]);
-                sum += result;
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
     // Add double benchmark
     double expDoubleTime = runBenchmark(
         "Exp (double)",
@@ -360,7 +289,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
 
     expResult.times["Fixed64"] = expTime;
     expResult.times["SoftDouble"] = expSoftDoubleTime;
-    expResult.times["float"] = expFloatTime;
     expResult.times["double"] = expDoubleTime;
     results.push_back(expResult);
 
@@ -392,19 +320,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         },
         iterations);
 
-    // Add float benchmark
-    double logFloatTime = runBenchmark(
-        "Log (float)",
-        [&](int n) -> double {
-            float sum = 0;
-            for (int k = 0; k < n; k++) {
-                float result = std::log(data.positive_values_float[k]);
-                sum += result;
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
     // Add double benchmark
     double logDoubleTime = runBenchmark(
         "Log (double)",
@@ -420,7 +335,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
 
     logResult.times["Fixed64"] = logTime;
     logResult.times["SoftDouble"] = logSoftDoubleTime;
-    logResult.times["float"] = logFloatTime;
     logResult.times["double"] = logDoubleTime;
     results.push_back(logResult);
 
@@ -452,19 +366,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         },
         iterations);
 
-    // Add float benchmark
-    double atanFloatTime = runBenchmark(
-        "Atan (float)",
-        [&](int n) -> double {
-            float sum = 0;
-            for (int k = 0; k < n; k++) {
-                float result = std::atan(data.unit_values_float[k]);
-                sum += result;
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
     // Add double benchmark
     double atanDoubleTime = runBenchmark(
         "Atan (double)",
@@ -480,7 +381,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
 
     atanResult.times["Fixed64"] = atanTime;
     atanResult.times["SoftDouble"] = atanSoftDoubleTime;
-    atanResult.times["float"] = atanFloatTime;
     atanResult.times["double"] = atanDoubleTime;
     results.push_back(atanResult);
 
@@ -539,20 +439,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         },
         iterations);
 
-    // Add float benchmark
-    double atan2FloatTime = runBenchmark(
-        "Atan2 (float)",
-        [&](int n) -> double {
-            float sum = 0;
-            for (int k = 0; k < n; k++) {
-                float result =
-                    std::atan2(data.atan2_pairs_float[k].first, data.atan2_pairs_float[k].second);
-                sum += result;
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
     // Add double benchmark
     double atan2DoubleTime = runBenchmark(
         "Atan2 (double)",
@@ -569,7 +455,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
 
     atan2Result.times["Fixed64"] = atan2Time;
     atan2Result.times["SoftDouble"] = atan2SoftDoubleTime;
-    atan2Result.times["float"] = atan2FloatTime;
     atan2Result.times["double"] = atan2DoubleTime;
     results.push_back(atan2Result);
 
@@ -603,19 +488,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
         },
         iterations);
 
-    double floatPowTime = runBenchmark(
-        "Float Power",
-        [&](int n) -> double {
-            float sum = 0;
-            for (int k = 0; k < n; k++) {
-                float result =
-                    std::pow(data.pow_pairs_float[k].first, data.pow_pairs_float[k].second);
-                sum += result;
-            }
-            return static_cast<double>(sum);
-        },
-        iterations);
-
     double doublePowTime = runBenchmark(
         "Double Power",
         [&](int n) -> double {
@@ -631,7 +503,6 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
 
     powResult.times["Fixed64"] = fixedPowTime;
     powResult.times["SoftDouble"] = softDoublePowTime;
-    powResult.times["float"] = floatPowTime;
     powResult.times["double"] = doublePowTime;
     results.push_back(powResult);
 

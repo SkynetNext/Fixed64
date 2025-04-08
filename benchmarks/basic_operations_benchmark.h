@@ -16,8 +16,8 @@ struct TestData {
     std::vector<math::fp::Fixed64<32>> fixed_values;
     // For SoftFloat
     std::vector<::math::softfloat::float64_t> sf_values;
-    // For float standard operations
-    std::vector<float> float_values;
+    // For int64_t standard operations
+    std::vector<int64_t> int64_values;
     // For double standard operations
     std::vector<double> double_values;
     // Additional indices for random access patterns
@@ -29,8 +29,8 @@ struct MultiplyDivideTestData {
     std::vector<std::pair<math::fp::Fixed64<32>, math::fp::Fixed64<32>>> fixed_pairs;
     // For SoftFloat
     std::vector<std::pair<::math::softfloat::float64_t, ::math::softfloat::float64_t>> sf_pairs;
-    // For float standard operations
-    std::vector<std::pair<float, float>> float_pairs;
+    // For int64_t standard operations
+    std::vector<std::pair<int64_t, int64_t>> int64_pairs;
     // For double standard operations
     std::vector<std::pair<double, double>> double_pairs;
 };
@@ -40,8 +40,6 @@ struct SqrtTestData {
     std::vector<math::fp::Fixed64<32>> fixed_values;
     // For SoftFloat
     std::vector<::math::softfloat::float64_t> sf_values;
-    // For float standard operations
-    std::vector<float> float_values;
     // For double standard operations
     std::vector<double> double_values;
 };

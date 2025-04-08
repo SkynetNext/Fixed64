@@ -18,13 +18,6 @@ struct MathTestData {
     std::vector<std::pair<math::fp::Fixed64<32>, math::fp::Fixed64<32>>> atan2_pairs;
     std::vector<std::pair<math::fp::Fixed64<32>, math::fp::Fixed64<32>>> pow_pairs;
 
-    // Float data (pre-converted to avoid conversion costs during benchmarking)
-    std::vector<float> unit_values_float;
-    std::vector<float> positive_values_float;
-    std::vector<float> angle_values_float;
-    std::vector<std::pair<float, float>> atan2_pairs_float;
-    std::vector<std::pair<float, float>> pow_pairs_float;
-
     // Double data (pre-converted to avoid conversion costs during benchmarking)
     std::vector<double> unit_values_double;
     std::vector<double> positive_values_double;
