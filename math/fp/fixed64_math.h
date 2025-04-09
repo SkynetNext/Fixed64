@@ -512,23 +512,14 @@ class Fixed64Math {
     }
 
     /**
-     * @brief Calculate two-argument arc tangent value
-     * @param y y-coordinate
-     * @param x x-coordinate
-     * @return Angle (in radians) [-π,π], specifically:
-     *         - When x>0, return value is in [-π/2, π/2]
-     *         - When x<0, return value is in (-π, -π/2] and [π/2, π)
-     *         - When x=0, y>0 returns π/2, y<0 returns -π/2, y=0 returns 0
+     * @brief Computes two-argument arctangent with quadrant determination
      *
-     * @note Precision characteristics:
-     * - Highest precision: When |y| is much greater than |x|, relative error is approximately
-     * 1e-8%~1e-9%
-     * - Medium precision: When |y| is much less than |x|, relative error is in the range of
-     * 1e-3%~1e-6%
-     * - Lowest precision: When |y|≈|x|, relative error is approximately 1.7e-3%
+     * @param y Y-coordinate component
+     * @param x X-coordinate component
+     * @return Angle in radians in range [-π,π]
      *
-     * Uses optimized polynomial approximation algorithm with coefficients optimized using least
-     * squares method
+     * @note Special cases: atan2(0,0)=0, atan2(±y,0)=±π/2, atan2(0,±x)=0 or ±π.
+     * Precision limited by 256-entry LUT with linear interpolation.
      */
     template <int P>
     [[nodiscard]] static auto Atan2(Fixed64<P> y, Fixed64<P> x) noexcept -> Fixed64<P> {
@@ -576,9 +567,13 @@ class Fixed64Math {
     }
 
     /**
-     * @brief Calculate square root using improved Newton's method
-     * @param x Input value
-     * @return Square root value
+     * @brief Computes square root using optimized algorithm
+     *
+     * @param x Input value (must be non-negative)
+     * @return Square root of x
+     *
+     * @note Returns 0 for negative inputs. Maximum absolute error limited by
+     * Fixed64<P>'s resolution (2^-P).
      */
     template <int P>
     [[nodiscard]] constexpr static auto Sqrt(Fixed64<P> x) noexcept -> Fixed64<P> {
