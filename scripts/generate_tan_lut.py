@@ -78,8 +78,6 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
         "// Fast lookup tan(x) with linear interpolation between table entries")
     lines.append(
         "// Input x is in fixed-point format with specified fraction bits representing angle in radians")
-    lines.append(
-        f"// Output is in Q{int_bits}.{fraction_bits} fixed-point format representing tan(x)")
     lines.append("// Precision: ~1.5e-5 when input_fraction_bits=32")
     lines.append(
         "inline constexpr auto LookupTanFast(int64_t x, int input_fraction_bits) noexcept -> int64_t {")
@@ -187,13 +185,11 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("}")
     lines.append("")
 
-    # Generate the Hermite interpolation version
+    # Generate the Hermite interpolation version with optimized Horner method
     lines.append(
-        "// Lookup tan(x) with Hermite cubic interpolation between table entries")
+        "// Lookup tan(x) with optimized Hermite cubic interpolation between table entries")
     lines.append(
         "// Input x is in fixed-point format with specified fraction bits representing angle in radians")
-    lines.append(
-        f"// Output is in Q{int_bits}.{fraction_bits} fixed-point format representing tan(x)")
     lines.append(
         "// Precision: ~1.0e-9 when input_fraction_bits=32 (about 1500x more accurate than fast version)")
     lines.append(
@@ -261,7 +257,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("    }")
     lines.append("")
 
-    lines.append("    // 6. Get points and compute derivatives")
+    lines.append("    // 6. Get points from table")
     lines.append(
         "    int64_t p0 = kTanLut[idx];      // Point at left endpoint")
     lines.append(
@@ -270,8 +266,6 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
 
     lines.append(
         "    // 7. Compute derivatives using the fact that tan'(x) = 1 + tan²(x)")
-    lines.append(
-        "    // For tan function, the derivative at point x is 1 + tan²(x)")
     lines.append(
         "    int64_t p0_squared = Primitives::Fixed64Mul(p0, p0, kOutputFractionBits);")
     lines.append(
@@ -282,65 +276,46 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
         "    int64_t m1 = kOne + p1_squared;  // Derivative at right endpoint")
     lines.append("")
 
-    lines.append(
-        "    // Scale derivatives by step size (assuming uniform steps in the original angle space)")
-    lines.append("    // The step size is approximately π/2 / (table_size-1)")
-    lines.append("    constexpr int64_t step_size = Primitives::Fixed64Div(")
+    lines.append("    // Scale derivatives by step size")
+    lines.append("    constexpr int64_t kStepSize = Primitives::Fixed64Div(")
     lines.append(
         "        kPiOver2, (kTanLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);")
     lines.append(
-        "    m0 = Primitives::Fixed64Mul(m0, step_size, kOutputFractionBits);")
+        "    m0 = Primitives::Fixed64Mul(m0, kStepSize, kOutputFractionBits);")
     lines.append(
-        "    m1 = Primitives::Fixed64Mul(m1, step_size, kOutputFractionBits);")
+        "    m1 = Primitives::Fixed64Mul(m1, kStepSize, kOutputFractionBits);")
     lines.append("")
 
-    lines.append("    // 8. Hermite basis functions")
-    lines.append("    // h00(t) = 2t³ - 3t² + 1")
-    lines.append("    // h10(t) = t³ - 2t² + t")
-    lines.append("    // h01(t) = -2t³ + 3t²")
-    lines.append("    // h11(t) = t³ - t²")
+    lines.append("    // 8. Compute optimized Hermite coefficients")
+    lines.append("    // p(t) = ((a*t + b)*t + c)*t + d  (Horner's method)")
+    lines.append("    // where:")
+    lines.append("    // a = 2(p₀-p₁) + m₀+m₁")
+    lines.append("    // b = 3(p₁-p₀) - 2m₀-m₁")
+    lines.append("    // c = m₀")
+    lines.append("    // d = p₀")
+    lines.append("    int64_t p0_minus_p1 = p0 - p1;")
+    lines.append("    int64_t a = p0_minus_p1 * 2 + m0 + m1;")
+    lines.append("    int64_t b = -p0_minus_p1 * 3 - m0 * 2 - m1;")
+    lines.append("    int64_t c = m0;")
+    lines.append("    int64_t d = p0;")
     lines.append("")
 
+    lines.append("    // 9. Compute interpolation using Horner's method")
+    lines.append("    int64_t result =")
+    lines.append("        d")
+    lines.append("        + Primitives::Fixed64Mul(")
+    lines.append("            t,")
+    lines.append("            c")
+    lines.append("                + Primitives::Fixed64Mul(")
     lines.append(
-        "    int64_t t2 = Primitives::Fixed64Mul(t, t, kOutputFractionBits);")
-    lines.append(
-        "    int64_t t3 = Primitives::Fixed64Mul(t2, t, kOutputFractionBits);")
-    lines.append("")
-
-    lines.append(
-        "    int64_t h00 = kOne - Primitives::Fixed64Mul(3LL << kOutputFractionBits, t2, kOutputFractionBits)")
-    lines.append(
-        "                   + Primitives::Fixed64Mul(2LL << kOutputFractionBits, t3, kOutputFractionBits);")
-    lines.append("")
-
-    lines.append("    int64_t h10 =")
-    lines.append(
-        "        t - Primitives::Fixed64Mul(2LL << kOutputFractionBits, t2, kOutputFractionBits) + t3;")
-    lines.append("")
-
-    lines.append(
-        "    int64_t h01 = Primitives::Fixed64Mul(3LL << kOutputFractionBits, t2, kOutputFractionBits)")
-    lines.append(
-        "                   - Primitives::Fixed64Mul(2LL << kOutputFractionBits, t3, kOutputFractionBits);")
-    lines.append("")
-
-    lines.append("    int64_t h11 = t3 - t2;")
-    lines.append("")
-
-    lines.append("    // 9. Compute Hermite interpolation")
-    lines.append(
-        "    int64_t interpolated_value = Primitives::Fixed64Mul(h00, p0, kOutputFractionBits)")
-    lines.append(
-        "                                  + Primitives::Fixed64Mul(h10, m0, kOutputFractionBits)")
-    lines.append(
-        "                                  + Primitives::Fixed64Mul(h01, p1, kOutputFractionBits)")
-    lines.append(
-        "                                  + Primitives::Fixed64Mul(h11, m1, kOutputFractionBits);")
+        "                    t, b + Primitives::Fixed64Mul(t, a, kOutputFractionBits), kOutputFractionBits),")
+    lines.append("            kOutputFractionBits);")
     lines.append("")
 
     lines.append("    // 10. Apply sign flip if necessary")
-    lines.append(
-        "    int64_t result = flip ? -interpolated_value : interpolated_value;")
+    lines.append("    if (flip) {")
+    lines.append("        result = -result;")
+    lines.append("    }")
     lines.append("")
 
     lines.append(
