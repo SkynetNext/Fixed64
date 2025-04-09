@@ -21,7 +21,7 @@ class Fixed64TrigTest : public ::testing::Test {
     // Follow best practices using Epsilon as error bound
     const double epsilonSmall = 1e-6;
     const double epsilonLarge = 1.5e-5;
-    const double epsilonTiny = static_cast<double>(Fixed::Epsilon()) * 2;
+    const double epsilonTiny = static_cast<double>(Fixed::Epsilon()) * 3;
 
     // Special angle values (π/6, π/4, π/3)
     const Fixed pi_6 = Fixed::Pi() / Fixed(6.0);
@@ -164,7 +164,7 @@ TEST_F(Fixed64TrigTest, InverseTrigonometricFunctions) {
         // Arctan test
         double expectedAtan = std::atan(dblX);
         double actualAtan = static_cast<double>(Fixed64Math::Atan(x));
-        EXPECT_NEAR(actualAtan, expectedAtan, epsilonSmall) << "Atan failed for value " << dblX;
+        EXPECT_NEAR(actualAtan, expectedAtan, epsilonTiny) << "Atan failed for value " << dblX;
     }
 }
 

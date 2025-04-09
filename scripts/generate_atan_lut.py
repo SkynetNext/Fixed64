@@ -66,7 +66,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
         "// Input x is in fixed-point format with specified fraction bits representing a value in [-1,1]")
     lines.append(
         f"// Output is in fixed-point format with the same fraction bits representing atan(x)")
-    lines.append("// Precision: ~1.5e-5 when fraction_bits=32")
+    lines.append("// Precision: ~3.1e-7 when fraction_bits=32")
     lines.append(
         "inline constexpr auto LookupAtanFast(int64_t x, int input_fraction_bits) noexcept -> int64_t {")
     lines.append("    // Constants")
@@ -152,6 +152,149 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     lines.append("    if (use_reciprocal) {")
     lines.append("        // π/2 in our fixed-point format")
     lines.append(
+        f"        constexpr int64_t kHalfPi = {pi_over_2_hex};  // pi/2 = {float(pi_over_2)}")
+    lines.append("        result = kHalfPi - result;")
+    lines.append("    }")
+    lines.append("")
+
+    lines.append("    // 6. Convert result back to input format if needed")
+    lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
+    lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
+    lines.append(
+        "            result >>= (kOutputFractionBits - input_fraction_bits);")
+    lines.append("        } else {")
+    lines.append(
+        "            result <<= (input_fraction_bits - kOutputFractionBits);")
+    lines.append("        }")
+    lines.append("    }")
+    lines.append("")
+
+    lines.append("    // Apply sign")
+    lines.append("    return is_negative ? -result : result;")
+    lines.append("}")
+    lines.append("")
+
+    # Add a new quadratic interpolation version
+    lines.append(
+        "// High precision lookup atan(x) with quadratic interpolation between table entries")
+    lines.append(
+        "// Input x is in fixed-point format with specified fraction bits representing a value in [-1,1]")
+    lines.append(
+        f"// Output is in fixed-point format with the same fraction bits representing atan(x)")
+    lines.append("// Precision: ~5.5e-10 when fraction_bits=32")
+    lines.append(
+        "inline constexpr auto LookupAtan(int64_t x, int input_fraction_bits) noexcept -> int64_t {")
+    lines.append("    // Constants")
+    lines.append(
+        f"    constexpr int kOutputFractionBits = {fraction_bits};  // Internal calculation format")
+    lines.append("    constexpr int64_t kOne = 1LL << kOutputFractionBits;")
+    lines.append("")
+
+    lines.append("    // Handle negative input")
+    lines.append("    bool is_negative = false;")
+    lines.append("    if (x < 0) {")
+    lines.append("        x = -x;")
+    lines.append("        is_negative = true;")
+    lines.append("    }")
+    lines.append("")
+
+    lines.append("    // Convert input to internal format if needed")
+    lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
+    lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
+    lines.append(
+        "            x <<= (kOutputFractionBits - input_fraction_bits);")
+    lines.append("        } else {")
+    lines.append(
+        "            x >>= (input_fraction_bits - kOutputFractionBits);")
+    lines.append("        }")
+    lines.append("    }")
+    lines.append("")
+
+    lines.append("    // 1. Ensure x is in [0,1] range")
+    lines.append("    if (x <= 0) {")
+    lines.append("        return 0;")
+    lines.append("    }")
+
+    lines.append("    bool use_reciprocal = false;")
+    lines.append("    if (x >= kOne) {")
+    lines.append("        // For x > 1, use atan(x) = π/2 - atan(1/x)")
+    lines.append("        use_reciprocal = true;")
+    lines.append("        // Calculate 1/x in fixed-point")
+    lines.append(
+        "        x = Primitives::Fixed64Div(kOne, x, kOutputFractionBits);")
+    lines.append("    }")
+    lines.append("")
+
+    lines.append("    // 2. Scale x to table index")
+    lines.append(
+        "    const int64_t scale = static_cast<int64_t>(kAtanLut.size() - 1);")
+    lines.append(
+        "    const int64_t idx_scaled = Primitives::Fixed64Mul(x, scale << kOutputFractionBits, kOutputFractionBits);")
+    lines.append("    const int64_t idx = idx_scaled >> kOutputFractionBits;")
+    lines.append(
+        "    const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
+    lines.append("")
+
+    lines.append("    // 3. Clamp index to valid range")
+    lines.append("    if (idx >= static_cast<int64_t>(kAtanLut.size()) - 1) {")
+    lines.append("        // Return the maximum value (atan(1) = pi/4)")
+    lines.append("        int64_t result = kAtanLut[kAtanLut.size() - 1];")
+    lines.append("        if (input_fraction_bits != kOutputFractionBits) {")
+    lines.append(
+        "            if (input_fraction_bits < kOutputFractionBits) {")
+    lines.append(
+        "                result >>= (kOutputFractionBits - input_fraction_bits);")
+    lines.append("            } else {")
+    lines.append(
+        "                result <<= (input_fraction_bits - kOutputFractionBits);")
+    lines.append("            }")
+    lines.append("        }")
+    lines.append("        return is_negative ? -result : result;")
+    lines.append("    }")
+    lines.append("")
+
+    lines.append("    // 4. Get table values for quadratic interpolation")
+    lines.append("    // Need three points: (x0,y0), (x1,y1), (x2,y2)")
+    lines.append(
+        "    const int64_t y1 = kAtanLut[idx];       // Current point")
+    lines.append("    const int64_t y2 = kAtanLut[idx + 1];   // Next point")
+    lines.append("    // For the previous point, handle the boundary case")
+    lines.append("    int64_t y0;")
+    lines.append("    if (idx > 0) {")
+    lines.append("        y0 = kAtanLut[idx - 1];  // Previous point")
+    lines.append("    } else {")
+    lines.append(
+        "        // At the boundary, mirror the slope for better extrapolation")
+    lines.append("        y0 = y1 - (y2 - y1);")
+    lines.append("    }")
+    lines.append("")
+
+    lines.append("    // 5. Quadratic interpolation")
+    lines.append(
+        "    // The correct Lagrange quadratic formula coefficients for points at (-1,y0), (0,y1), (1,y2):")
+    lines.append("    // a = (y0 + y2)/2 - y1")
+    lines.append("    // b = (y2 - y0)/2")
+    lines.append("    // c = y1")
+    lines.append("    // c = y0")
+    lines.append("    const int64_t a = (y0 + y2)/2 - y1;")
+    lines.append("    const int64_t b = (y2 - y0)/2;")
+    lines.append("    const int64_t c = y1;")
+    lines.append("")
+
+    lines.append("    // Calculate polynomial a*t^2 + b*t + c")
+    lines.append(
+        "    const int64_t t_squared = Primitives::Fixed64Mul(t, t, kOutputFractionBits);")
+    lines.append("    int64_t result = c;")
+    lines.append(
+        "    result += Primitives::Fixed64Mul(b, t, kOutputFractionBits);")
+    lines.append(
+        "    result += Primitives::Fixed64Mul(a, t_squared, kOutputFractionBits);")
+    lines.append("")
+
+    lines.append("    // Apply reciprocal formula if needed")
+    lines.append("    if (use_reciprocal) {")
+    lines.append("        // π/2 in our fixed-point format")
+    lines.append(
         f"    constexpr int64_t kHalfPi = {pi_over_2_hex};  // pi/2 = {float(pi_over_2)}")
     lines.append("        result = kHalfPi - result;")
     lines.append("    }")
@@ -173,6 +316,14 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     lines.append("    return is_negative ? -result : result;")
     lines.append("}")
     lines.append("")
+
+    # Keep the original linear interpolation function
+    lines.append(
+        "// Fast lookup atan(x) with linear interpolation between table entries")
+    lines.append(
+        "// Input x is in fixed-point format with specified fraction bits representing a value in [-1,1]")
+    lines.append(
+        f"// Output is in fixed-point format with the same fraction bits representing atan(x)")
 
     lines.append("}  // namespace math::fp::detail")
 

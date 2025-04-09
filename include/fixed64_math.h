@@ -492,7 +492,7 @@ class Fixed64Math {
      */
     template <int P>
     static auto Atan(Fixed64<P> x) noexcept -> Fixed64<P> {
-        return Fixed64<P>(detail::LookupAtanFast(x.value(), P), detail::nothing{});
+        return Fixed64<P>(detail::LookupAtan(x.value(), P), detail::nothing{});
     }
 
     /**

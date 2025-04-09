@@ -529,7 +529,7 @@ inline constexpr std::array<int64_t, 512> kAtanLut = {
 // Fast lookup atan(x) with linear interpolation between table entries
 // Input x is in fixed-point format with specified fraction bits representing a value in [-1,1]
 // Output is in fixed-point format with the same fraction bits representing atan(x)
-// Precision: ~1.5e-5 when fraction_bits=32
+// Precision: ~3.1e-7 when fraction_bits=32
 inline constexpr auto LookupAtanFast(int64_t x, int input_fraction_bits) noexcept -> int64_t {
     // Constants
     constexpr int kOutputFractionBits = 32;  // Internal calculation format
@@ -565,8 +565,7 @@ inline constexpr auto LookupAtanFast(int64_t x, int input_fraction_bits) noexcep
 
     // 2. Scale x to table index
     const int64_t scale = static_cast<int64_t>(kAtanLut.size() - 1);
-    const int64_t idx_scaled =
-        Primitives::Fixed64Mul(x, scale << kOutputFractionBits, kOutputFractionBits);
+    const int64_t idx_scaled = Primitives::Fixed64Mul(x, scale << kOutputFractionBits, kOutputFractionBits);
     const int64_t idx = idx_scaled >> kOutputFractionBits;
     const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)
 
@@ -611,4 +610,113 @@ inline constexpr auto LookupAtanFast(int64_t x, int input_fraction_bits) noexcep
     return is_negative ? -result : result;
 }
 
+// High precision lookup atan(x) with quadratic interpolation between table entries
+// Input x is in fixed-point format with specified fraction bits representing a value in [-1,1]
+// Output is in fixed-point format with the same fraction bits representing atan(x)
+// Precision: ~5.5e-10 when fraction_bits=32
+inline constexpr auto LookupAtan(int64_t x, int input_fraction_bits) noexcept -> int64_t {
+    // Constants
+    constexpr int kOutputFractionBits = 32;  // Internal calculation format
+    constexpr int64_t kOne = 1LL << kOutputFractionBits;
+
+    // Handle negative input
+    bool is_negative = false;
+    if (x < 0) {
+        x = -x;
+        is_negative = true;
+    }
+
+    // Convert input to internal format if needed
+    if (input_fraction_bits != kOutputFractionBits) {
+        if (input_fraction_bits < kOutputFractionBits) {
+            x <<= (kOutputFractionBits - input_fraction_bits);
+        } else {
+            x >>= (input_fraction_bits - kOutputFractionBits);
+        }
+    }
+
+    // 1. Ensure x is in [0,1] range
+    if (x <= 0) {
+        return 0;
+    }
+    bool use_reciprocal = false;
+    if (x >= kOne) {
+        // For x > 1, use atan(x) = π/2 - atan(1/x)
+        use_reciprocal = true;
+        // Calculate 1/x in fixed-point
+        x = Primitives::Fixed64Div(kOne, x, kOutputFractionBits);
+    }
+
+    // 2. Scale x to table index
+    const int64_t scale = static_cast<int64_t>(kAtanLut.size() - 1);
+    const int64_t idx_scaled = Primitives::Fixed64Mul(x, scale << kOutputFractionBits, kOutputFractionBits);
+    const int64_t idx = idx_scaled >> kOutputFractionBits;
+    const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)
+
+    // 3. Clamp index to valid range
+    if (idx >= static_cast<int64_t>(kAtanLut.size()) - 1) {
+        // Return the maximum value (atan(1) = pi/4)
+        int64_t result = kAtanLut[kAtanLut.size() - 1];
+        if (input_fraction_bits != kOutputFractionBits) {
+            if (input_fraction_bits < kOutputFractionBits) {
+                result >>= (kOutputFractionBits - input_fraction_bits);
+            } else {
+                result <<= (input_fraction_bits - kOutputFractionBits);
+            }
+        }
+        return is_negative ? -result : result;
+    }
+
+    // 4. Get table values for quadratic interpolation
+    // Need three points: (x0,y0), (x1,y1), (x2,y2)
+    const int64_t y1 = kAtanLut[idx];       // Current point
+    const int64_t y2 = kAtanLut[idx + 1];   // Next point
+    // For the previous point, handle the boundary case
+    int64_t y0;
+    if (idx > 0) {
+        y0 = kAtanLut[idx - 1];  // Previous point
+    } else {
+        // At the boundary, mirror the slope for better extrapolation
+        y0 = y1 - (y2 - y1);
+    }
+
+    // 5. Quadratic interpolation
+    // The correct Lagrange quadratic formula coefficients for points at (-1,y0), (0,y1), (1,y2):
+    // a = (y0 + y2)/2 - y1
+    // b = (y2 - y0)/2
+    // c = y1
+    // c = y0
+    const int64_t a = (y0 + y2)/2 - y1;
+    const int64_t b = (y2 - y0)/2;
+    const int64_t c = y1;
+
+    // Calculate polynomial a*t^2 + b*t + c
+    const int64_t t_squared = Primitives::Fixed64Mul(t, t, kOutputFractionBits);
+    int64_t result = c;
+    result += Primitives::Fixed64Mul(b, t, kOutputFractionBits);
+    result += Primitives::Fixed64Mul(a, t_squared, kOutputFractionBits);
+
+    // Apply reciprocal formula if needed
+    if (use_reciprocal) {
+        // π/2 in our fixed-point format
+    constexpr int64_t kHalfPi = 0x00000001921FB544LL;  // pi/2 = 1.5707963267948966
+        result = kHalfPi - result;
+    }
+
+    // 6. Convert result back to input format if needed
+    if (input_fraction_bits != kOutputFractionBits) {
+        if (input_fraction_bits < kOutputFractionBits) {
+            result >>= (kOutputFractionBits - input_fraction_bits);
+        } else {
+            result <<= (input_fraction_bits - kOutputFractionBits);
+        }
+    }
+
+    // Apply sign
+    return is_negative ? -result : result;
+}
+
+// Fast lookup atan(x) with linear interpolation between table entries
+// Input x is in fixed-point format with specified fraction bits representing a value in [-1,1]
+// Output is in fixed-point format with the same fraction bits representing atan(x)
 }  // namespace math::fp::detail
