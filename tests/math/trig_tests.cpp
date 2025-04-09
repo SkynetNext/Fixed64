@@ -97,7 +97,7 @@ TEST_F(Fixed64TrigTest, BasicTrigonometricFunctions) {
             // Test tan directly
             double expectedTan = std::tan(dblAngle);
             double actualTan = static_cast<double>(Fixed64Math::Tan(angle));
-            EXPECT_NEAR(actualTan, expectedTan, epsilonLarge)
+            EXPECT_NEAR(actualTan, expectedTan, 1e-9)
                 << "Tan failed at angle " << dblAngle << " radians";
 
             // Verify tan == sin/cos relationship
