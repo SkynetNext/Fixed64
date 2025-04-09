@@ -104,7 +104,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
         f"    constexpr int kOutputFractionBits = {fraction_bits};  // Output format: Q{int_bits}.{fraction_bits}")
     lines.append("")
 
-    lines.append("    // Convert input to Q23.40 format if needed")
+    lines.append("    // Convert input to Q{int_bits}.{fraction_bits} format if needed")
     lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
     lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
     lines.append(
@@ -206,7 +206,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
         "    constexpr int64_t kOne = 1LL << kOutputFractionBits;  // 1.0 in fixed-point")
     lines.append("")
 
-    lines.append("    // Convert input to Q23.40 format if needed")
+    lines.append("    // Convert input to Q{int_bits}.{fraction_bits} format if needed")
     lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
     lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
     lines.append(

@@ -7,11 +7,17 @@
 #include <type_traits>
 
 #include "acos_lut.h"
+#include "atan2_lut.h"
 #include "atan_lut.h"
 #include "fixed64.h"
 #include "primitives.h"
 #include "sin_lut.h"
 #include "tan_lut.h"
+
+// Configuration macros for trigonometric function precision
+#ifndef FIXED64_MATH_USE_FAST_TRIG
+#define FIXED64_MATH_USE_FAST_TRIG 1  // Default to fast implementation
+#endif
 
 namespace math::fp {
 
@@ -413,7 +419,11 @@ class Fixed64Math {
     template <int P>
         requires(P >= kTrigFractionBits)
     [[nodiscard]] static auto Sin(Fixed64<P> x) noexcept -> Fixed64<P> {
-        return Fixed64<P>(detail::LookupSin(x.value(), P), detail::nothing{});
+        if constexpr (FIXED64_MATH_USE_FAST_TRIG) {
+            return Fixed64<P>(detail::LookupSinFast(x.value(), P), detail::nothing{});
+        } else {
+            return Fixed64<P>(detail::LookupSin(x.value(), P), detail::nothing{});
+        }
     }
 
     /**
@@ -435,7 +445,11 @@ class Fixed64Math {
     template <int P>
         requires(P >= kTrigFractionBits)
     [[nodiscard]] static auto Tan(Fixed64<P> x) noexcept -> Fixed64<P> {
-        return Fixed64<P>(detail::LookupTan(x.value(), P), detail::nothing{});
+        if constexpr (FIXED64_MATH_USE_FAST_TRIG) {
+            return Fixed64<P>(detail::LookupTanFast(x.value(), P), detail::nothing{});
+        } else {
+            return Fixed64<P>(detail::LookupTan(x.value(), P), detail::nothing{});
+        }
     }
 
     /**
@@ -454,12 +468,10 @@ class Fixed64Math {
             return Fixed64<P>::Pi();
         }
 
-        if constexpr (P == kTrigFractionBits) {
-            return Fixed64<P>(detail::LookupAcos(x.value()), detail::nothing{});
+        if constexpr (FIXED64_MATH_USE_FAST_TRIG) {
+            return Fixed64<P>(detail::LookupAcosFast(x.value(), P), detail::nothing{});
         } else {
-            return Fixed64<P>(detail::LookupAcos(x.value() >> (P - kTrigFractionBits))
-                                  << (P - kTrigFractionBits),
-                              detail::nothing{});
+            return Fixed64<P>(detail::LookupAcos(x.value(), P), detail::nothing{});
         }
     }
 
@@ -492,7 +504,11 @@ class Fixed64Math {
      */
     template <int P>
     static auto Atan(Fixed64<P> x) noexcept -> Fixed64<P> {
-        return Fixed64<P>(detail::LookupAtan(x.value(), P), detail::nothing{});
+        if constexpr (FIXED64_MATH_USE_FAST_TRIG) {
+            return Fixed64<P>(detail::LookupAtanFast(x.value(), P), detail::nothing{});
+        } else {
+            return Fixed64<P>(detail::LookupAtan(x.value(), P), detail::nothing{});
+        }
     }
 
     /**
@@ -516,69 +532,47 @@ class Fixed64Math {
      */
     template <int P>
     [[nodiscard]] static auto Atan2(Fixed64<P> y, Fixed64<P> x) noexcept -> Fixed64<P> {
-        // Arc tangent polynomial approximation coefficients (optimized using least squares)
-        // Polynomial form: z * (P1*z¹⁰ + P2*z⁸ - P3*z⁶ + P4*z⁴ - P5*z² + P6)
-        // Optimization interval: z ∈ [0, 1]
-        // Reference paper keywords: "Efficient Approximations for the Arctangent Function"
-        // -0.013470836654772
-        static constexpr Fixed64<P> P1(-0x1, 0xfe46966e8f1a8004ULL, detail::nothing{});
-        // 0.057477314064364
-        static constexpr Fixed64<P> P2(0x0, 0x075b6aa8158cf56fULL, detail::nothing{});
-        // 0.121236299202148
-        static constexpr Fixed64<P> P3(0x0, 0x0f84abca14a55d8dULL, detail::nothing{});
-        // 0.195635939456039
-        static constexpr Fixed64<P> P4(0x0, 0x190a9934f165f140ULL, detail::nothing{});
-        // 0.332994954915642
-        static constexpr Fixed64<P> P5(0x0, 0x2a9f94248c3f2369ULL, detail::nothing{});
-        static constexpr Fixed64<P> P6(1);                      // +1.0
-        static constexpr Fixed64<P> P7 = Fixed64<P>::HalfPi();  // ~π/2
-        static constexpr Fixed64<P> P8 = Fixed64<P>::Pi();      // ~π
-
-        // Handle input values and compute z = min(|x|, |y|) / max(|x|, |y|)
-        auto abs_x = Abs(x);
-        auto abs_y = Abs(y);
-        auto max_val = Max(abs_x, abs_y);
-        auto min_val = Min(abs_x, abs_y);
-
-        // Early return for zero values
-        if (max_val == Fixed64<P>::Zero()) {
-            return Fixed64<P>::Zero();  // Both x and y are zero
+        // Handle special cases
+        if (x == Fixed64<P>::Zero() && y == Fixed64<P>::Zero()) {
+            return Fixed64<P>::Zero();  // Undefined case, return 0 by convention
         }
 
-        // Calculate z = min/max
-        auto z = min_val / max_val;
-        auto z2 = z * z;  // z²
-
-        // Estrin's method for polynomial evaluation:
-        // Original: P1*z¹⁰ + P2*z⁸ - P3*z⁶ + P4*z⁴ - P5*z² + P6
-        auto z4 = z2 * z2;  // z⁴
-        auto z8 = z4 * z4;  // z⁸
-
-        // Group terms to allow parallel evaluation
-        auto p56 = P6 - z2 * P5;  // P6 - P5*z²
-        auto p34 = P4 - z2 * P3;  // P4 - P3*z²
-        auto p12 = P2 + z2 * P1;  // P2 + P1*z²
-
-        // Final polynomial evaluation using z8 directly
-        auto poly = p56 + z4 * p34 + z8 * p12;
-
-        // Compute atan value
-        auto angle = z * poly;
-
-        // Quadrant adjustments
-        if (abs_y > abs_x) {
-            angle = P7 - angle;  // Adjust for y dominant case
+        if (x == Fixed64<P>::Zero()) {
+            return y > Fixed64<P>::Zero() ? Fixed64<P>::HalfPi() : -Fixed64<P>::HalfPi();
         }
 
-        if (x < Fixed64<P>::Zero()) {
-            angle = P8 - angle;  // Adjust for negative x
+        // Determine octant and compute ratio in first octant [0, π/4]
+        bool x_neg = x < Fixed64<P>::Zero();
+        bool y_neg = y < Fixed64<P>::Zero();
+        bool swapped = Abs(y) > Abs(x);
+
+        // Calculate ratio (always in [0,1] range)
+        Fixed64<P> ratio;
+        if (swapped) {
+            ratio = Abs(x) / Abs(y);
+        } else {
+            ratio = Abs(y) / Abs(x);
         }
 
-        if (y < Fixed64<P>::Zero()) {
-            angle = -angle;  // Adjust for negative y
+        // Use lookup table with linear interpolation
+        Fixed64<P> angle =
+            Fixed64<P>(detail::LookupAtan2Table(ratio.value(), P), detail::nothing{});
+
+        // Apply octant correction
+        if (swapped) {
+            angle = Fixed64<P>::HalfPi() - angle;
         }
 
-        return angle;
+        // Apply quadrant correction
+        if (x_neg && y_neg) {
+            return -Fixed64<P>::Pi() + angle;  // Third quadrant
+        } else if (x_neg) {
+            return Fixed64<P>::Pi() - angle;  // Second quadrant
+        } else if (y_neg) {
+            return -angle;  // Fourth quadrant
+        } else {
+            return angle;  // First quadrant
+        }
     }
 
     /**

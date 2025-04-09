@@ -538,7 +538,7 @@ inline constexpr auto LookupSinFast(int64_t x, int input_fraction_bits) noexcept
     constexpr int64_t kLutInterval = 0x000145500D592E39LL;  // LUT conversion factor
     constexpr int kOutputFractionBits = 40;  // Output format: Q23.40
 
-    // Convert input to Q23.40 format if needed
+    // Convert input to Q{int_bits}.{fraction_bits} format if needed
     if (input_fraction_bits != kOutputFractionBits) {
         if (input_fraction_bits < kOutputFractionBits) {
             x <<= (kOutputFractionBits - input_fraction_bits);
@@ -615,7 +615,7 @@ inline constexpr auto LookupSin(int64_t x, int input_fraction_bits) noexcept -> 
     constexpr int kOutputFractionBits = 40;  // Output format: Q23.40
     constexpr int64_t kOne = 1LL << kOutputFractionBits;  // 1.0 in fixed-point
 
-    // Convert input to Q23.40 format if needed
+    // Convert input to Q{int_bits}.{fraction_bits} format if needed
     if (input_fraction_bits != kOutputFractionBits) {
         if (input_fraction_bits < kOutputFractionBits) {
             x <<= (kOutputFractionBits - input_fraction_bits);

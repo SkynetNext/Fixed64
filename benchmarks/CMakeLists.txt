@@ -22,5 +22,8 @@ target_link_libraries(fixed64_benchmark PRIVATE
     Fixed64
 )
 
+# Use precise trigonometric functions
+add_compile_definitions(FIXED64_MATH_USE_FAST_TRIG=0)
+
 # Add compiler options for benchmarks
 target_compile_options(fixed64_benchmark PRIVATE ${COMPILER_WARNINGS})

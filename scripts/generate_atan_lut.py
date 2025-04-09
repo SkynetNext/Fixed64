@@ -8,6 +8,8 @@ mp.mp.dps = 100
 def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     """Generate a lookup table for atan in the range [0,1]"""
 
+    int_bits = 63 - fraction_bits
+
     # Prepare the output with proper headers
     lines = []
     lines.append("#pragma once")
@@ -18,7 +20,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     lines.append("")
     lines.append(f"// Atan lookup table with {entries} entries")
     lines.append(
-        f"// Covers the range [0,1] with values in Q31.{fraction_bits} format")
+        f"// Covers the range [0,1] with values in Q{int_bits}.{fraction_bits} format")
     lines.append(
         f"// Generated with mpmath library at {mp.mp.dps} digits precision")
     lines.append("")
@@ -26,7 +28,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     # Generate the table header
     lines.append("namespace math::fp::detail {")
     lines.append("// Table maps x in [0,1] to atan(x)")
-    lines.append(f"// Values stored in Q31.{fraction_bits} fixed-point format")
+    lines.append(f"// Values stored in Q{int_bits}.{fraction_bits} fixed-point format")
     lines.append(
         f"inline constexpr std::array<int64_t, {entries}> kAtanLut = {{")
 
@@ -112,9 +114,9 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
 
     lines.append("    // 2. Scale x to table index")
     lines.append(
-        "    const int64_t scale = static_cast<int64_t>(kAtanLut.size() - 1);")
+        "    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 1);")
     lines.append(
-        "    const int64_t idx_scaled = Primitives::Fixed64Mul(x, scale << kOutputFractionBits, kOutputFractionBits);")
+        "    const int64_t idx_scaled = Primitives::Fixed64Mul(x, kScale << kOutputFractionBits, kOutputFractionBits);")
     lines.append("    const int64_t idx = idx_scaled >> kOutputFractionBits;")
     lines.append(
         "    const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
@@ -227,9 +229,9 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
 
     lines.append("    // 2. Scale x to table index")
     lines.append(
-        "    const int64_t scale = static_cast<int64_t>(kAtanLut.size() - 1);")
+        "    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 1);")
     lines.append(
-        "    const int64_t idx_scaled = Primitives::Fixed64Mul(x, scale << kOutputFractionBits, kOutputFractionBits);")
+        "    const int64_t idx_scaled = Primitives::Fixed64Mul(x, kScale << kOutputFractionBits, kOutputFractionBits);")
     lines.append("    const int64_t idx = idx_scaled >> kOutputFractionBits;")
     lines.append(
         "    const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
@@ -337,7 +339,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
 
 if __name__ == "__main__":
     entries = 512  # Default number of entries
-    fraction_bits = 32  # Default fraction bits (Q31.32 format)
+    fraction_bits = 40  # Default fraction bits (Q23.40 format)
     output_file = None
 
     # Parse command line arguments if provided
