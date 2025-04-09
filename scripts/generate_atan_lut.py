@@ -32,6 +32,9 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
 
     # Generate the table entries
     scale = mp.mpf(2) ** fraction_bits
+    pi_over_2 = mp.pi / 2
+    pi_over_2_scaled = int(pi_over_2 * scale)  # Truncate
+    pi_over_2_hex = f"0x{pi_over_2_scaled & 0xFFFFFFFFFFFFFFFF:016X}LL"
     for i in range(entries):
         x = mp.mpf(i) / (entries - 1)
         atan_x = mp.atan(x)
@@ -44,7 +47,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
         # Convert to float first to avoid mpf formatting issues
         x_float = float(x)
         atan_x_float = float(atan_x)
-        comment = f"// atan({x_float:.9f}) = {atan_x_float:.18f}"
+        comment = f"// atan({x_float:.11f}) = {atan_x_float:.11f}"
 
         # Add the entry to the table
         if i < entries - 1:
@@ -96,20 +99,14 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     lines.append("    if (x <= 0) {")
     lines.append("        return 0;")
     lines.append("    }")
+
+    lines.append("    bool use_reciprocal = false;")
     lines.append("    if (x >= kOne) {")
-    lines.append("        // Return the maximum value (atan(1) = pi/4)")
-    lines.append("        int64_t result = kAtanLut[kAtanLut.size() - 1];")
-    lines.append("        if (input_fraction_bits != kOutputFractionBits) {")
+    lines.append("        // For x > 1, use atan(x) = π/2 - atan(1/x)")
+    lines.append("        use_reciprocal = true;")
+    lines.append("        // Calculate 1/x in fixed-point")
     lines.append(
-        "            if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append(
-        "                result >>= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("            } else {")
-    lines.append(
-        "                result <<= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("            }")
-    lines.append("        }")
-    lines.append("        return is_negative ? -result : result;")
+        "        x = Primitives::Fixed64Div(kOne, x, kOutputFractionBits);")
     lines.append("    }")
     lines.append("")
 
@@ -149,6 +146,15 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     lines.append("    // 5. Linear interpolation")
     lines.append(
         "    int64_t result = y0 + Primitives::Fixed64Mul(y1 - y0, t, kOutputFractionBits);")
+    lines.append("")
+
+    lines.append("    // Apply reciprocal formula if needed")
+    lines.append("    if (use_reciprocal) {")
+    lines.append("        // π/2 in our fixed-point format")
+    lines.append(
+        f"    constexpr int64_t kHalfPi = {pi_over_2_hex};  // pi/2 = {float(pi_over_2)}")
+    lines.append("        result = kHalfPi - result;")
+    lines.append("    }")
     lines.append("")
 
     lines.append("    // 6. Convert result back to input format if needed")
