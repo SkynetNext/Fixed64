@@ -413,13 +413,7 @@ class Fixed64Math {
     template <int P>
         requires(P >= kTrigFractionBits)
     [[nodiscard]] static auto Sin(Fixed64<P> x) noexcept -> Fixed64<P> {
-        if constexpr (P == kTrigFractionBits) {
-            return Fixed64<P>(detail::LookupSin(x.value()), detail::nothing{});
-        } else {
-            return Fixed64<P>(detail::LookupSin(x.value() >> (P - kTrigFractionBits))
-                                  << (P - kTrigFractionBits),
-                              detail::nothing{});
-        }
+        return Fixed64<P>(detail::LookupSin(x.value(), P), detail::nothing{});
     }
 
     /**

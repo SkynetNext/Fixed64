@@ -21,6 +21,7 @@ class Fixed64TrigTest : public ::testing::Test {
     // Follow best practices using Epsilon as error bound
     const double epsilonSmall = 1e-6;
     const double epsilonLarge = 1.5e-5;
+    const double epsilonTiny = static_cast<double>(Fixed::Epsilon()) * 2;
 
     // Special angle values (π/6, π/4, π/3)
     const Fixed pi_6 = Fixed::Pi() / Fixed(6.0);
@@ -87,9 +88,9 @@ TEST_F(Fixed64TrigTest, BasicTrigonometricFunctions) {
         double actualCos = static_cast<double>(Fixed64Math::Cos(angle));
 
         // Test basic sin/cos accuracy using absolute error
-        EXPECT_NEAR(actualSin, expectedSin, epsilonSmall)
+        EXPECT_NEAR(actualSin, expectedSin, epsilonTiny)
             << "Sin failed at angle " << dblAngle << " radians";
-        EXPECT_NEAR(actualCos, expectedCos, epsilonSmall)
+        EXPECT_NEAR(actualCos, expectedCos, epsilonTiny)
             << "Cos failed at angle " << dblAngle << " radians";
 
         // Skip near-zero cos values to avoid division problems
@@ -97,7 +98,7 @@ TEST_F(Fixed64TrigTest, BasicTrigonometricFunctions) {
             // Test tan directly
             double expectedTan = std::tan(dblAngle);
             double actualTan = static_cast<double>(Fixed64Math::Tan(angle));
-            EXPECT_NEAR(actualTan, expectedTan, 1e-9)
+            EXPECT_NEAR(actualTan, expectedTan, epsilonTiny)
                 << "Tan failed at angle " << dblAngle << " radians";
 
             // Verify tan == sin/cos relationship
