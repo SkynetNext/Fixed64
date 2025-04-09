@@ -163,7 +163,7 @@ TEST_F(Fixed64TrigTest, InverseTrigonometricFunctions) {
         // Arccos test
         double expectedAcos = std::acos(dblX);
         double actualAcos = static_cast<double>(Fixed64Math::Acos(x));
-        EXPECT_NEAR(actualAcos, expectedAcos, kEpsilonASinCos) << "Acos failed for value " << dblX;
+        EXPECT_NEAR(actualAcos, expectedAcos, epsilon) << "Acos failed for value " << dblX;
 
         // Arctan test
         double expectedAtan = std::atan(dblX);
