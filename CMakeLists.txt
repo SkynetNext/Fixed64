@@ -7,10 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Add include directory
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/math/fp)
 
 add_library(Fixed64 INTERFACE)
-target_include_directories(Fixed64 INTERFACE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(Fixed64 INTERFACE ${PROJECT_SOURCE_DIR}/math/fp)
 
 # Enable testing
 enable_testing()

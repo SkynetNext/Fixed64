@@ -6,13 +6,13 @@
 #include <concepts>
 #include <type_traits>
 
-#include "acos_lut.h"
-#include "atan2_lut.h"
-#include "atan_lut.h"
+#include "detail/acos_lut.h"
+#include "detail/atan2_lut.h"
+#include "detail/atan_lut.h"
+#include "detail/sin_lut.h"
+#include "detail/tan_lut.h"
 #include "fixed64.h"
 #include "primitives.h"
-#include "sin_lut.h"
-#include "tan_lut.h"
 
 // Configuration macros for trigonometric function precision
 #ifndef FIXED64_MATH_USE_FAST_TRIG
