@@ -302,10 +302,6 @@ class Fixed64 {
         return Max();
     }
 
-    static constexpr auto NegInfinity() noexcept -> Fixed64<P> {
-        return Fixed64<P>(INT64_MIN + 1, detail::nothing{});
-    }
-
     // ENotation constants
     static constexpr auto ENotation1() noexcept -> Fixed64<P> {
         return One() / 10;  // 0.1
@@ -350,8 +346,13 @@ class Fixed64 {
         }
 
         // Get integer and fractional parts
-        int64_t abs_value = std::abs(value_);
-        int64_t int_part = abs_value >> P;
+        uint64_t abs_value;
+        if (value_ == INT64_MIN) {
+            abs_value = static_cast<uint64_t>(INT64_MIN);  // 2^63
+        } else {
+            abs_value = value_ < 0 ? static_cast<uint64_t>(-value_) : static_cast<uint64_t>(value_);
+        }
+        int64_t int_part = static_cast<int64_t>(abs_value >> P);
         uint64_t frac_part = abs_value & ((1LL << P) - 1);
 
         // Handle integer part
@@ -790,7 +791,7 @@ template <int Q, int R>
 constexpr auto operator/=(Fixed64<Q>& a, const Fixed64<R>& b) noexcept -> Fixed64<Q>& {
     // Handle division by zero
     if (b.value_ == 0) {
-        a = (a.value_ >= 0) ? Fixed64<Q>::Infinity() : Fixed64<Q>::NegInfinity();
+        a = (a.value_ >= 0) ? Fixed64<Q>::Infinity() : -Fixed64<Q>::Infinity();
         return a;
     }
 
@@ -958,7 +959,7 @@ inline auto isnan(const ::math::fp::Fixed64<P>& x) noexcept -> bool {
 
 template <int P>
 inline auto isinf(const ::math::fp::Fixed64<P>& x) noexcept -> bool {
-    return x == ::math::fp::Fixed64<P>::Infinity() || x == ::math::fp::Fixed64<P>::NegInfinity();
+    return x == ::math::fp::Fixed64<P>::Infinity() || x == -::math::fp::Fixed64<P>::Infinity();
 }
 
 template <int P>

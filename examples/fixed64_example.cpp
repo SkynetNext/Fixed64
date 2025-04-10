@@ -66,8 +66,8 @@ int main() {
     math::fp::Fixed64<16> divisionByZero = num1 / zero;
     if (divisionByZero == math::fp::Fixed64<16>::Infinity()) {
         std::cout << "Division by zero results in Infinity" << std::endl;
-    } else if (divisionByZero == math::fp::Fixed64<16>::NegInfinity()) {
-        std::cout << "Division by zero results in NegInfinity" << std::endl;
+    } else if (divisionByZero == -math::fp::Fixed64<16>::Infinity()) {
+        std::cout << "Division by zero results in -Infinity" << std::endl;
     }
 
     // Add some math function examples

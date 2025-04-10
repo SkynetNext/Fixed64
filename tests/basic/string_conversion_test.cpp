@@ -61,11 +61,14 @@ TEST(Fixed64StringConversionTest, ToStringMethod) {
 
         // Maximum value
         Fixed16 maxValue(Fixed16::Max());
-        EXPECT_FALSE(maxValue.ToString().empty());
+        EXPECT_EQ(maxValue.ToString(), "140737488355327.999984");
 
         // Minimum value
         Fixed16 minValue(Fixed16::Min());
-        EXPECT_EQ(minValue.ToString()[0], '-');
+        EXPECT_EQ(minValue.ToString(), "-140737488355328");
+
+        Fixed16 minPlusEpsilon = Fixed16::Min() + Fixed16::Epsilon();
+        EXPECT_EQ(minPlusEpsilon.ToString(), "-140737488355327.999984");
     }
 
     // Test trailing zeros handling

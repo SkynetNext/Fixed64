@@ -68,7 +68,7 @@ Consists solely of header files, simplifying integration and eliminating the nee
 
 ### Predefined Constants and Special Values
 
-Includes commonly used constants (`Zero()`, `One()`, `Pi()`) and special values (Infinity, NegInfinity, NaN) for handling exceptional cases.
+Includes commonly used constants (`Zero()`, `One()`, `Pi()`) and special values (Infinity(), -Infinity(), NaN()) for handling exceptional cases.
 
 ## Usage Examples
 

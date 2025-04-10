@@ -252,7 +252,7 @@ TEST(Fixed64ArithmeticTest, EdgeCases) {
     EXPECT_TRUE(std::isinf(a / Fixed::Zero()));
 
     // Operations with negative infinity
-    Fixed negInf = Fixed::NegInfinity();
+    Fixed negInf = -Fixed::Infinity();
     EXPECT_TRUE(!std::isinf(negInf + a));
     EXPECT_TRUE(!std::isinf(negInf * a));
     EXPECT_TRUE(!std::isnan(negInf - negInf));

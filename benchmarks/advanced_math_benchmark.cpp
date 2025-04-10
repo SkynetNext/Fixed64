@@ -513,6 +513,38 @@ std::vector<BenchmarkResult> runAdvancedMathBenchmark(int iterations) {
     powResult.times["double"] = doublePowTime;
     results.push_back(powResult);
 
+    // Log2 benchmark
+    BenchmarkResult log2Result;
+    log2Result.operation = "Log2";
+
+    double log2Time = runBenchmark(
+        "Log2 (Fixed64)",
+        [&](int n) -> double {
+            int64_t sum = 0;
+            for (int k = 0; k < n; k++) {
+                auto result = math::fp::Fixed64Math::Log2(data.positive_values[k]);
+                sum += result.value();
+            }
+            return static_cast<double>(sum);
+        },
+        iterations);
+
+    double log2DoubleTime = runBenchmark(
+        "Log2 (double)",
+        [&](int n) -> double {
+            double sum = 0;
+            for (int k = 0; k < n; k++) {
+                double result = std::log2(data.positive_values_double[k]);
+                sum += result;
+            }
+            return sum;
+        },
+        iterations);
+
+    log2Result.times["Fixed64"] = log2Time;
+    log2Result.times["double"] = log2DoubleTime;
+    results.push_back(log2Result);
+
     return results;
 }
 

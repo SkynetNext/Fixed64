@@ -217,7 +217,7 @@ TEST(Fixed64BasicTest, SpecialValues) {
 
     // Special values
     EXPECT_TRUE(std::isinf(Fixed::Infinity()));
-    EXPECT_TRUE(std::isinf(Fixed::NegInfinity()));
+    EXPECT_TRUE(std::isinf(-Fixed::Infinity()));
     EXPECT_TRUE(std::isnan(Fixed::NaN()));
 
     // Verify that epsilon is the smallest representable positive value
@@ -301,7 +301,7 @@ TEST(Fixed64BasicTest, StdFunctions) {
     // Special value checks
     EXPECT_TRUE(std::isnan(Fixed::NaN()));
     EXPECT_TRUE(std::isinf(Fixed::Infinity()));
-    EXPECT_TRUE(std::isinf(Fixed::NegInfinity()));
+    EXPECT_TRUE(std::isinf(-Fixed::Infinity()));
     EXPECT_FALSE(std::isfinite(Fixed::Infinity()));
     EXPECT_TRUE(std::isfinite(Fixed(5.5)));
 
@@ -362,7 +362,7 @@ TEST(Fixed64BasicTest, HashSupport) {
 
     // Hash of special values
     EXPECT_NE(hasher(Fixed::NaN()), hasher(Fixed::Zero()));
-    EXPECT_NE(hasher(Fixed::Infinity()), hasher(Fixed::NegInfinity()));
+    EXPECT_NE(hasher(Fixed::Infinity()), hasher(-Fixed::Infinity()));
 }
 
 // Precision conversion tests

@@ -9,6 +9,7 @@
 #include "detail/acos_lut.h"
 #include "detail/atan2_lut.h"
 #include "detail/atan_lut.h"
+#include "detail/log2_lut.h"
 #include "detail/sin_lut.h"
 #include "detail/tan_lut.h"
 #include "fixed64.h"
@@ -132,6 +133,15 @@ class Fixed64Math {
         }
 
         return result;
+    }
+
+    template <int P>
+    [[nodiscard]] static auto Log2(Fixed64<P> x) noexcept -> Fixed64<P> {
+        if constexpr (FIXED64_MATH_USE_FAST_TRIG) {
+            return Fixed64<P>(detail::LookupLog2Fast(x.value(), P), detail::nothing{});
+        } else {
+            return Fixed64<P>(detail::LookupLog2(x.value(), P), detail::nothing{});
+        }
     }
 
     /**
