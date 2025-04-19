@@ -426,7 +426,7 @@ TEST_F(InverseTrigPrecisionTest, Atan2PrecisionTest) {
     std::uniform_real_distribution<> dis(-5.0, 5.0);
 
     for (int i = 0; i < 30; i++) {
-        testPoints.push_back({dis(gen), dis(gen)});
+        testPoints.emplace_back(dis(gen), dis(gen));
     }
 
     std::cout << "Testing Atan2 with " << testPoints.size() << " input value pairs\n\n";
