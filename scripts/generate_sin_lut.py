@@ -5,7 +5,7 @@ import sys
 mp.mp.dps = 100
 
 
-def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
+def generate_sin_lut(output_file=None, int_bits=31, fraction_bits=32):
     """Generate a lookup table for sin in the range [0,pi/2]"""
 
     # Use exactly 512 entries for the first quadrant
@@ -34,7 +34,7 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append(
         f"inline constexpr std::array<int64_t, {lut_size}> kSinLut = {{")
 
-    # Generate the table entries in Q23.40 format
+    # Generate the table entries in Q31.32 format
     scale = mp.mpf(2) ** fraction_bits
     pi_over_2 = mp.pi / 2
     angle_step = pi_over_2 / (lut_size - 1)
@@ -66,7 +66,7 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("};")
     lines.append("")
 
-    # Calculate constants in Q23.40 format with truncation
+    # Calculate constants in Q31.32 format with truncation
     pi = mp.pi
     pi_over_2 = pi / 2
     two_pi = pi * 2
@@ -144,33 +144,22 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
         "    int64_t frac = idx_scaled & ((1LL << kOutputFractionBits) - 1);")
     lines.append("")
 
-    lines.append("    // 4. Clamp index to valid range")
-    lines.append("    if (idx < 0) {")
-    lines.append("        idx = 0;")
-    lines.append("        frac = 0;")
-    lines.append(
-        "    } else if (idx >= static_cast<int>(kSinLut.size()) - 1) {")
-    lines.append("        idx = static_cast<int>(kSinLut.size()) - 2;")
-    lines.append("        frac = (1LL << kOutputFractionBits) - 1;")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // 5. Linear interpolation between table entries")
+    lines.append("    // 4. Linear interpolation between table entries")
     lines.append("    int64_t y0 = kSinLut[idx];")
     lines.append("    int64_t y1 = kSinLut[idx + 1];")
     lines.append("    int64_t diff = y1 - y0;")
     lines.append(
-        "    int64_t interpolated_value = y0 + Primitives::Fixed64Mul(diff, frac, kOutputFractionBits);")
+        "    int64_t interpolated_value = y0 + ((diff * frac) >> kOutputFractionBits);")
     lines.append("")
 
-    lines.append("    // 6. Apply sign flip if necessary")
+    lines.append("    // 5. Apply sign flip if necessary")
     lines.append("    if (flip_sign) {")
     lines.append("        interpolated_value = -interpolated_value;")
     lines.append("    }")
     lines.append("")
 
     lines.append(
-        "    // 7. Convert result back to original input format if needed")
+        "    // 6. Convert result back to original input format if needed")
     lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
     lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
     lines.append(
@@ -207,8 +196,6 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
         f"    constexpr int64_t kLutInterval = {lut_interval_hex};  // LUT conversion factor")
     lines.append(
         f"    constexpr int kOutputFractionBits = {fraction_bits};  // Output format: Q{int_bits}.{fraction_bits}")
-    lines.append(
-        "    constexpr int64_t kOne = 1LL << kOutputFractionBits;  // 1.0 in fixed-point")
     lines.append("")
 
     lines.append("    // Convert input to Q{int_bits}.{fraction_bits} format if needed")
@@ -252,18 +239,7 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
         "    int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
     lines.append("")
 
-    lines.append("    // 4. Clamp index to valid range")
-    lines.append("    if (idx < 0) {")
-    lines.append("        idx = 0;")
-    lines.append("        t = 0;")
-    lines.append(
-        "    } else if (idx >= static_cast<int>(kSinLut.size()) - 1) {")
-    lines.append("        idx = static_cast<int>(kSinLut.size()) - 2;")
-    lines.append("        t = kOne - 1;  // Just under 1.0")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // 5. Get points from table")
+    lines.append("    // 4. Get points from table")
     lines.append(
         "    int64_t p0 = kSinLut[idx];      // Point at left endpoint")
     lines.append(
@@ -271,7 +247,7 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("")
 
     lines.append(
-        "    // 6. Compute derivatives using the fact that sin'(x) = cos(x)")
+        "    // 5. Compute derivatives using the fact that sin'(x) = cos(x)")
     lines.append("    // We can use the identity cos(x) = sin(x + pi/2)")
     lines.append(
         "    // For the first quadrant, we can use cos(x) = sin(pi/2 - x) when x is in [0,pi/2]")
@@ -293,7 +269,7 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
         "    m1 = Primitives::Fixed64Mul(m1, kStepSize, kOutputFractionBits);")
     lines.append("")
 
-    lines.append("    // 7. Compute optimized Hermite coefficients")
+    lines.append("    // 6. Compute optimized Hermite coefficients")
     lines.append("    // p(t) = ((a*t + b)*t + c)*t + d  (Horner's method)")
     lines.append("    // where:")
     lines.append("    // a = 2(p₀-p₁) + m₀+m₁")
@@ -307,7 +283,7 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("    int64_t d = p0;")
     lines.append("")
 
-    lines.append("    // 8. Compute interpolation using Horner's method")
+    lines.append("    // 7. Compute interpolation using Horner's method")
     lines.append("    int64_t result =")
     lines.append("        d")
     lines.append("        + Primitives::Fixed64Mul(")
@@ -319,14 +295,14 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("            kOutputFractionBits);")
     lines.append("")
 
-    lines.append("    // 9. Apply sign flip if necessary")
+    lines.append("    // 8. Apply sign flip if necessary")
     lines.append("    if (flip_sign) {")
     lines.append("        result = -result;")
     lines.append("    }")
     lines.append("")
 
     lines.append(
-        "    // 10. Convert result back to original input format if needed")
+        "    // 9. Convert result back to original input format if needed")
     lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
     lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
     lines.append(
@@ -353,8 +329,8 @@ def generate_sin_lut(output_file=None, int_bits=23, fraction_bits=40):
 
 
 if __name__ == "__main__":
-    int_bits = 23       # 23 bits for integer part
-    fraction_bits = 40  # 40 bits for fractional part
+    int_bits = 31       # 31 bits for integer part
+    fraction_bits = 32  # 32 bits for fractional part
     output_file = None
 
     # Parse command line arguments if provided
