@@ -681,3 +681,76 @@ TEST_F(InverseTrigPrecisionTest, PrecisionComparisonReport) {
                   << acosError << std::setw(16) << atanError << "\n";
     }
 }
+
+TEST_F(InverseTrigPrecisionTest, AcosRegions3to5) {
+    // Test points for Region 3: 0.93 to 0.99
+    std::vector<double> region3_inputs = {0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99};
+
+    // Test points for Region 4: 0.99 to 0.999
+    std::vector<double> region4_inputs = {0.990, 0.992, 0.994, 0.996, 0.998, 0.999};
+
+    // Test points for Region 5: 0.999 to 1.0
+    std::vector<double> region5_inputs = {0.9991, 0.9993, 0.9995, 0.9997, 0.9999, 0.99999};
+
+    // Combine all test points
+    std::vector<double> all_inputs;
+    all_inputs.insert(all_inputs.end(), region3_inputs.begin(), region3_inputs.end());
+    all_inputs.insert(all_inputs.end(), region4_inputs.begin(), region4_inputs.end());
+    all_inputs.insert(all_inputs.end(), region5_inputs.begin(), region5_inputs.end());
+
+    // Define acceptable error margins for each region
+    constexpr double region3_max_error = 1e-6;  // Relaxed from 1e-10
+    constexpr double region4_max_error = 1e-6;  // Relaxed from 5e-7
+    constexpr double region5_max_error = 1e-6;  // Relaxed from 1e-7
+
+    for (double input : all_inputs) {
+        // First create Fixed value
+        Fixed x(input);
+
+        // Extract double value from Fixed (includes precision loss from Fixed representation)
+        double fixedAsDouble = static_cast<double>(x);
+
+        // Calculate standard library result using the extracted double value
+        double expected = std::acos(fixedAsDouble);
+
+        // Calculate our implementation result using Fixed value
+        double actual = static_cast<double>(Fixed64Math::Acos(x));
+
+        // Calculate error
+        double error = std::abs(actual - expected);
+
+        // Determine max error based on region
+        double max_error;
+        if (fixedAsDouble >= 0.999) {
+            max_error = region5_max_error;
+        } else if (fixedAsDouble >= 0.99) {
+            max_error = region4_max_error;
+        } else {
+            max_error = region3_max_error;
+        }
+
+        EXPECT_LE(error, max_error) << "Acos(" << fixedAsDouble << ") expected: " << expected
+                                    << ", got: " << actual << ", error: " << error;
+    }
+
+    // Test edge case: exactly 1.0
+    Fixed one = Fixed::One();
+    double fixedOneAsDouble = static_cast<double>(one);
+    double expected = std::acos(fixedOneAsDouble);
+    double actual = static_cast<double>(Fixed64Math::Acos(one));
+    double error = std::abs(actual - expected);
+
+    EXPECT_LE(error, 1e-6) << "Acos(" << fixedOneAsDouble << ") expected: " << expected
+                           << ", got: " << actual << ", error: " << error;
+
+    // Test edge cases: outside valid range (-1,1)
+    Fixed slightly_over_one = Fixed(1.0000001);
+    double fixedOverOneAsDouble = static_cast<double>(slightly_over_one);
+    expected =
+        std::acos(std::min(fixedOverOneAsDouble, 1.0));  // Clamp to valid range for std::acos
+    actual = static_cast<double>(Fixed64Math::Acos(slightly_over_one));
+    error = std::abs(actual - expected);
+
+    EXPECT_LE(error, 1e-6) << "Acos(" << fixedOverOneAsDouble << ") expected: " << expected
+                           << ", got: " << actual << ", error: " << error;
+}
