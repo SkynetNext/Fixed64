@@ -11,7 +11,7 @@
 namespace math::fp::detail {
 // Table maps x in [0,pi/2] to sin(x)
 // Values stored in Q31.32 fixed-point format
-inline constexpr std::array<int64_t, 512> kSinLut = {
+inline constexpr std::array<int64_t, 513> kSinLut = {
     0x0000000000000000LL, // sin(0.00000000000000) = 0.00000000000000
     0x0000000000C97480LL, // sin(0.00307396541447) = 0.00307396057336
     0x000000000192E883LL, // sin(0.00614793082894) = 0.00614789210007
@@ -523,6 +523,7 @@ inline constexpr std::array<int64_t, 512> kSinLut = {
     0x00000000FFFD369CLL, // sin(1.56157443055148) = 0.99995747861619
     0x00000000FFFEC2EFLL, // sin(1.56464839596595) = 0.99998110153279
     0x00000000FFFFB0BBLL, // sin(1.56772236138043) = 0.99999527537204
+    0x0000000100000000LL, // sin(1.57079632679490) = 1.00000000000000
     0x0000000100000000LL  // sin(1.57079632679490) = 1.00000000000000
 };
 
@@ -574,7 +575,7 @@ inline constexpr auto LookupSinFast(int64_t x, int input_fraction_bits) noexcept
     int64_t y0 = kSinLut[idx];
     int64_t y1 = kSinLut[idx + 1];
     int64_t diff = y1 - y0;
-    int64_t interpolated_value = y0 + Primitives::Fixed64Mul(diff, frac, kOutputFractionBits);
+    int64_t interpolated_value = y0 + ((diff * frac) >> kOutputFractionBits);
 
     // 5. Apply sign flip if necessary
     if (flip_sign) {
@@ -644,15 +645,14 @@ inline constexpr auto LookupSin(int64_t x, int input_fraction_bits) noexcept -> 
     // 5. Compute derivatives using the fact that sin'(x) = cos(x)
     // We can use the identity cos(x) = sin(x + pi/2)
     // For the first quadrant, we can use cos(x) = sin(pi/2 - x) when x is in [0,pi/2]
-    int cos_idx = static_cast<int>(kSinLut.size()) - 1 - idx;
+    int cos_idx = static_cast<int>(kSinLut.size()) - 2 - idx;
     int64_t m0 = kSinLut[cos_idx];  // Derivative (cos) at left endpoint
     int64_t m1 = cos_idx > 0 ? kSinLut[cos_idx - 1] : 0;  // Derivative at right endpoint
 
     // Scale derivatives by step size
-    constexpr int64_t kStepSize = Primitives::Fixed64Div(
-        kPiOver2, (kSinLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);
-    m0 = Primitives::Fixed64Mul(m0, kStepSize, kOutputFractionBits);
-    m1 = Primitives::Fixed64Mul(m1, kStepSize, kOutputFractionBits);
+    constexpr int64_t kStepSize = kPiOver2/(kSinLut.size() - 2);
+    m0 = (m0 * kStepSize) >> kOutputFractionBits;
+    m1 = (m1 * kStepSize) >> kOutputFractionBits;
 
     // 6. Compute optimized Hermite coefficients
     // p(t) = ((a*t + b)*t + c)*t + d  (Horner's method)

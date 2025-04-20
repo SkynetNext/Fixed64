@@ -32,15 +32,17 @@ def generate_sin_lut(output_file=None, int_bits=31, fraction_bits=32):
     lines.append(
         f"// Values stored in Q{int_bits}.{fraction_bits} fixed-point format")
     lines.append(
-        f"inline constexpr std::array<int64_t, {lut_size}> kSinLut = {{")
+        f"inline constexpr std::array<int64_t, {lut_size + 1}> kSinLut = {{")
 
     # Generate the table entries in Q31.32 format
     scale = mp.mpf(2) ** fraction_bits
     pi_over_2 = mp.pi / 2
     angle_step = pi_over_2 / (lut_size - 1)
 
-    for i in range(lut_size):
+    for i in range(lut_size + 1):
         angle = mp.mpf(i) * angle_step
+        if i >= lut_size:
+            angle = pi_over_2
         sin_x = mp.sin(angle)
 
         # Use truncation instead of rounding
@@ -58,7 +60,7 @@ def generate_sin_lut(output_file=None, int_bits=31, fraction_bits=32):
         comment = f"// sin({angle_float:.14f}) = {sin_x_float:.14f}"
 
         # Add the entry with comment
-        if i < lut_size - 1:
+        if i < lut_size:
             lines.append(f"    {hex_value}, {comment}")
         else:
             lines.append(f"    {hex_value}  {comment}")
@@ -252,7 +254,7 @@ def generate_sin_lut(output_file=None, int_bits=31, fraction_bits=32):
     lines.append(
         "    // For the first quadrant, we can use cos(x) = sin(pi/2 - x) when x is in [0,pi/2]")
     lines.append(
-        "    int cos_idx = static_cast<int>(kSinLut.size()) - 1 - idx;")
+        "    int cos_idx = static_cast<int>(kSinLut.size()) - 2 - idx;")
     lines.append(
         "    int64_t m0 = kSinLut[cos_idx];  // Derivative (cos) at left endpoint")
     lines.append(
@@ -260,13 +262,9 @@ def generate_sin_lut(output_file=None, int_bits=31, fraction_bits=32):
     lines.append("")
 
     lines.append("    // Scale derivatives by step size")
-    lines.append("    constexpr int64_t kStepSize = Primitives::Fixed64Div(")
-    lines.append(
-        "        kPiOver2, (kSinLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);")
-    lines.append(
-        "    m0 = Primitives::Fixed64Mul(m0, kStepSize, kOutputFractionBits);")
-    lines.append(
-        "    m1 = Primitives::Fixed64Mul(m1, kStepSize, kOutputFractionBits);")
+    lines.append("    constexpr int64_t kStepSize = kPiOver2/(kSinLut.size() - 2);")
+    lines.append("    m0 = (m0 * kStepSize) >> kOutputFractionBits;")
+    lines.append("    m1 = (m1 * kStepSize) >> kOutputFractionBits;")
     lines.append("")
 
     lines.append("    // 6. Compute optimized Hermite coefficients")
