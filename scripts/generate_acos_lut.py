@@ -10,6 +10,13 @@ def generate_acos_lut(output_file="acos_lut.h"):
     ONE = 1 << P  # 1.0 in Q32 format
     PI = int(math.pi * ONE)  # π in Q32 format
     
+    # Define region size constants early
+    kRegion1Size = 257  # 256 + 1
+    kRegion2Size = 258  # (128 + 1) * 2
+    kRegion3Size = 257  # 256 + 1
+    kRegion4Size = 257  # 256 + 1
+    kRegion5Size = 257  # 256 + 1
+    
     # Initialize arrays for storing lookup table values
     lut = []
     dydx_lut = []  # New array for derivatives in region 2
@@ -74,27 +81,79 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write(f"// Fixed-point format: Q{64-P}.{P}\n")
         f.write(f"inline constexpr std::array<int64_t, {len(lut)}> AcosLut = {{\n    ")
         
-        # Format the values in rows of 4
+        # Write the values with each entry on its own line, including region markers
         for i, val in enumerate(lut):
-            if i > 0 and i % 4 == 0:
-                f.write("\n    ")
-            f.write(f"{val}LL")
+            # Add region marker comments
+            if i == 0:
+                f.write("// Region 1: 0.0-0.8 uniform (256+1 points)\n")
+            elif i == kRegion1Size:
+                f.write("// Region 2: 0.8-0.93 Hermite interpolation (128 segments = 258 points)\n")
+            elif i == kRegion1Size + kRegion2Size:
+                f.write("// Region 3: 0.93-0.99 denser uniform (256+1 points)\n")
+            elif i == kRegion1Size + kRegion2Size + kRegion3Size:
+                f.write("// Region 4: 0.99-0.999 even denser (256+1 points)\n")
+            elif i == kRegion1Size + kRegion2Size + kRegion3Size + kRegion4Size:
+                f.write("// Region 5: 0.999-1.0 densest (256+1 points)\n")
+            
+            # For Region 1 (0.0-0.8)
+            if i <= num_points1:
+                x = 0.8 * i / num_points1
+                y = math.acos(x)
+                f.write(f"{val}LL, // acos({x:.10f}) = {y:.10f}")
+            
+            # For Region 2 (0.8-0.93 Hermite interpolation)
+            elif i < kRegion1Size + kRegion2Size:
+                # Region 2 alternates between x and y values
+                rel_i = i - kRegion1Size
+                if rel_i % 2 == 0:  # x value
+                    seg = rel_i // 2
+                    x = 0.8 + seg * step
+                    f.write(f"{val}LL, // x = {x:.10f}")
+                else:  # y value
+                    seg = (rel_i - 1) // 2
+                    x = 0.8 + seg * step
+                    y = math.acos(x)
+                    f.write(f"{val}LL, // acos({x:.10f}) = {y:.10f}")
+            
+            # For Region 3 (0.93-0.99)
+            elif i < kRegion1Size + kRegion2Size + kRegion3Size:
+                rel_i = i - (kRegion1Size + kRegion2Size)
+                x = 0.93 + 0.06 * rel_i / num_points3
+                y = math.acos(x)
+                f.write(f"{val}LL, // acos({x:.10f}) = {y:.10f}")
+            
+            # For Region 4 (0.99-0.999)
+            elif i < kRegion1Size + kRegion2Size + kRegion3Size + kRegion4Size:
+                rel_i = i - (kRegion1Size + kRegion2Size + kRegion3Size)
+                x = 0.99 + 0.009 * rel_i / num_points4
+                y = math.acos(x)
+                f.write(f"{val}LL, // acos({x:.10f}) = {y:.10f}")
+            
+            # For Region 5 (0.999-1.0)
+            else:
+                rel_i = i - (kRegion1Size + kRegion2Size + kRegion3Size + kRegion4Size)
+                x = 0.999 + 0.001 * rel_i / num_points5
+                y = math.acos(x) if x < 1.0 else 0.0
+                f.write(f"{val}LL, // acos({x:.10f}) = {y:.10f}")
+            
+            # Add a newline after each entry
             if i < len(lut) - 1:
-                f.write(", ")
+                f.write("\n")
         
         f.write("\n};\n\n")
         
-        # Write the derivatives lookup table
+        # Write the derivatives lookup table with comments
         f.write(f"// Derivatives for Region 2 (0.8-0.93)\n")
         f.write(f"inline constexpr std::array<int64_t, {len(dydx_lut)}> AcosDyDxLut = {{\n    ")
         
-        # Format the derivative values in rows of 4
+        # Write the AcosDyDxLut table with each entry on its own line
         for i, val in enumerate(dydx_lut):
-            if i > 0 and i % 4 == 0:
-                f.write("\n    ")
-            f.write(f"{val}LL")
+            x = 0.8 + i * step
+            dy_dx = -(1.0 / math.sqrt(1.0 - x*x))
+            f.write(f"{val}LL, // d(acos)/dx at x={x:.10f} = {dy_dx:.10f}")
+            
             if i < len(dydx_lut) - 1:
-                f.write(", ")
+                f.write("\n")
         
         f.write("\n};\n\n")
         
