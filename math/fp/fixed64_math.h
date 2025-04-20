@@ -468,11 +468,7 @@ class Fixed64Math {
             return Fixed64<P>::Pi();
         }
 
-        if constexpr (FIXED64_MATH_USE_FAST_TRIG) {
-            return Fixed64<P>(detail::LookupAcosFast(x.value(), P), detail::nothing{});
-        } else {
-            return Fixed64<P>(detail::LookupAcos(x.value(), P), detail::nothing{});
-        }
+        return Fixed64<P>(detail::LookupAcos(x.value(), P), detail::nothing{});
     }
 
     /**
