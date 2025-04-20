@@ -12,7 +12,7 @@ namespace math::fp::detail {
 // Region 1: 0.0-0.8 uniform (256+1 points)
 // Region 2: 0.8-0.93 Hermite interpolation (128 segments = 258 points, with derivatives in separate
 // array) Region 3: 0.93-0.99 denser uniform (256+1 points) Region 4: 0.99-0.999 even denser (256+1
-// points) Region 5: 0.999-1.0 densest (256+1 points) Fixed-point format: Q32.32
+// points) Region 5: 0.999-1.0 densest (256+1 points) Fixed-point format: Q31.32
 inline constexpr std::array<int64_t, 1286> AcosLut = {
     // Region 1: 0.0-0.8 uniform (256+1 points)
     6746518852LL,  // acos(0.0000000000) = 1.5707963268
@@ -1440,11 +1440,6 @@ inline constexpr std::array<int64_t, 129> AcosDyDxLut = {
     -11685093363LL,  // d(acos)/dx at x=0.9300000000 = -2.7206478090
 };
 
-// Fixed-point constants
-constexpr int kFractionBits = 32;
-constexpr int64_t kOne = 1LL << kFractionBits;
-constexpr int64_t kPi = 13493037704LL;  // pi in Q32.32 format (pi * 2^32)
-
 /**
  * @brief Calculate arccosine value with multi-region interpolation
  * @param x Fixed-point value in [-1,1] range with input_fraction_bits precision
@@ -1452,6 +1447,11 @@ constexpr int64_t kPi = 13493037704LL;  // pi in Q32.32 format (pi * 2^32)
  * @return Fixed-point arccosine value with input_fraction_bits precision in [0, pi] range
  */
 inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
+    // Fixed-point constants
+    constexpr int kFractionBits = 32;
+    constexpr int64_t kOne = 1LL << kFractionBits;
+    constexpr int64_t kPi = 13493037704LL;  // pi in Q32.32 format (pi * 2^32)
+
     // Region boundary constants
     constexpr int64_t kThreshold_0_8 = kOne * 4LL / 5LL;         // 0.8
     constexpr int64_t kThreshold_0_93 = kOne * 93LL / 100LL;     // 0.93
@@ -1464,6 +1464,13 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
     constexpr int kRegion2Size = 258;  // (128 + 1) * 2 (x and y values only)
     constexpr int kRegion3Size = 257;  // 256 + 1
     constexpr int kRegion4Size = 257;  // 256 + 1
+
+    // Pre-computed multipliers for optimized index calculation
+    constexpr int64_t kInvThreshold_0_8 = (1LL << (kFractionBits + 8)) / (kOne * 4LL / 5LL);
+    constexpr int64_t kInvRange_2 = (1LL << kFractionBits) * 128LL / (kOne * 13LL / 100LL);
+    constexpr int64_t kInvScale_3 = (1LL << (kFractionBits + 8)) / (kOne * 6LL / 100LL);
+    constexpr int64_t kInvScale_4 = (1LL << (kFractionBits + 8)) / (kOne * 9LL / 1000LL);
+    constexpr int64_t kInvScale_5 = (1LL << (kFractionBits + 8)) / (kOne / 1000LL);
 
     // Adjust input to internal precision
     int64_t scaled_x;
@@ -1523,8 +1530,9 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
     int64_t result;
     // Region 1: [0, 0.8], use 256-point uniform interpolation
     if (scaled_x < kThreshold_0_8) {
-        constexpr int kShift = 8;                           // log2(256)
-        int index = (scaled_x << kShift) / kThreshold_0_8;  // x * 256 / (0.8 * kOne)
+        constexpr int kShift = 8;  // log2(256)
+        // Optimized index calculation: multiply by pre-computed inverse instead of dividing
+        int index = (scaled_x * kInvThreshold_0_8) >> kFractionBits;  // x * 256 / (0.8 * kOne)
 
         // Calculate interpolation
         int64_t x0 = (index * kThreshold_0_8) >> kShift;  // index * 0.8 * kOne / 256
@@ -1534,9 +1542,9 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
     }
     // Region 2: [0.8, 0.93], use 128-segment Hermite interpolation
     else if (scaled_x < kThreshold_0_93) {
-        constexpr int kSegments = 128;
-        constexpr int64_t kRange = kOne * 13LL / 100LL;                // 0.13 * kOne
-        int seg = ((scaled_x - kThreshold_0_8) * kSegments) / kRange;  // (x - 0.8) / (0.13/128)
+        // Optimized segment calculation: multiply by pre-computed inverse instead of dividing
+        int seg =
+            ((scaled_x - kThreshold_0_8) * kInvRange_2) >> kFractionBits;  // (x - 0.8) / (0.13/128)
 
         constexpr int kPointsPerSegment =
             2;  // Only x and y in main array (derivative in separate array)
@@ -1554,8 +1562,9 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
         int64_t rel_x = scaled_x - kThreshold_0_93;     // x - 0.93
         constexpr int64_t kScale = kOne * 6LL / 100LL;  // 0.06 * kOne
 
-        constexpr int kShift = 8;                // log2(256)
-        int index = (rel_x << kShift) / kScale;  // rel_x * 256 / (0.06 * kOne)
+        constexpr int kShift = 8;  // log2(256)
+        // Optimized index calculation: multiply by pre-computed inverse instead of dividing
+        int index = (rel_x * kInvScale_3) >> kFractionBits;  // rel_x * 256 / (0.06 * kOne)
 
         int idx = base_idx + index;
         int64_t x1 = kThreshold_0_93 + ((kScale * index) >> kShift);  // 0.93 + (0.06 * index / 256)
@@ -1570,8 +1579,9 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
         int64_t rel_x = scaled_x - kThreshold_0_99;      // x - 0.99
         constexpr int64_t kScale = kOne * 9LL / 1000LL;  // 0.009 * kOne
 
-        constexpr int kShift = 8;                // log2(256)
-        int index = (rel_x << kShift) / kScale;  // rel_x * 256 / (0.009 * kOne)
+        constexpr int kShift = 8;  // log2(256)
+        // Optimized index calculation: multiply by pre-computed inverse instead of dividing
+        int index = (rel_x * kInvScale_4) >> kFractionBits;  // rel_x * 256 / (0.009 * kOne)
 
         int idx = base_idx + index;
         int64_t x1 =
@@ -1587,8 +1597,9 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
         int64_t rel_x = scaled_x - kThreshold_0_999;  // x - 0.999
         constexpr int64_t kScale = kOne / 1000LL;     // 0.001 * kOne
 
-        constexpr int kShift = 8;                // log2(256)
-        int index = (rel_x << kShift) / kScale;  // rel_x * 256 / (0.001 * kOne)
+        constexpr int kShift = 8;  // log2(256)
+        // Optimized index calculation: multiply by pre-computed inverse instead of dividing
+        int index = (rel_x * kInvScale_5) >> kFractionBits;  // rel_x * 256 / (0.001 * kOne)
 
         int idx = base_idx + index;
         int64_t x1 =

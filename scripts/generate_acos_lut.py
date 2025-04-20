@@ -78,7 +78,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write("// Region 3: 0.93-0.99 denser uniform (256+1 points)\n")
         f.write("// Region 4: 0.99-0.999 even denser (256+1 points)\n")
         f.write("// Region 5: 0.999-1.0 densest (256+1 points)\n")
-        f.write(f"// Fixed-point format: Q{64-P}.{P}\n")
+        f.write(f"// Fixed-point format: Q{63-P}.{P}\n")
         f.write(f"inline constexpr std::array<int64_t, {len(lut)}> AcosLut = {{\n    ")
         
         # Write the values with each entry on its own line, including region markers
@@ -157,12 +157,6 @@ def generate_acos_lut(output_file="acos_lut.h"):
         
         f.write("\n};\n\n")
         
-        # Write fixed-point constants
-        f.write("// Fixed-point constants\n")
-        f.write("constexpr int kFractionBits = 32;\n")
-        f.write(f"constexpr int64_t kOne = 1LL << kFractionBits;\n")
-        f.write(f"constexpr int64_t kPi = {PI}LL;  // pi in Q{64-P}.{P} format (pi * 2^{P})\n\n")
-        
         # Write the LookupAcos function directly based on the C++ example
         f.write("/**\n")
         f.write(" * @brief Calculate arccosine value with multi-region interpolation\n")
@@ -171,6 +165,12 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write(" * @return Fixed-point arccosine value with input_fraction_bits precision in [0, pi] range\n")
         f.write(" */\n")
         f.write("inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {\n")
+        f.write("    // Fixed-point constants\n")
+        f.write("    constexpr int kFractionBits = 32;\n")
+        f.write(f"    constexpr int64_t kOne = 1LL << kFractionBits;\n")
+        f.write(f"    constexpr int64_t kPi = {PI}LL;  // pi in Q{64-P}.{P} format (pi * 2^{P})\n\n")
+    
+        
         f.write("    // Region boundary constants\n")
         f.write("    constexpr int64_t kThreshold_0_8 = kOne * 4LL / 5LL;         // 0.8\n")
         f.write("    constexpr int64_t kThreshold_0_93 = kOne * 93LL / 100LL;      // 0.93\n")
@@ -183,6 +183,13 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write("    constexpr int kRegion2Size = 258;  // (128 + 1) * 2 (x and y values only)\n")
         f.write("    constexpr int kRegion3Size = 257;  // 256 + 1\n")
         f.write("    constexpr int kRegion4Size = 257;  // 256 + 1\n\n")
+
+        f.write("    // Pre-computed multipliers for optimized index calculation\n")
+        f.write("    constexpr int64_t kInvThreshold_0_8 = (1LL << (kFractionBits + 8)) / (kOne * 4LL / 5LL);\n")
+        f.write("    constexpr int64_t kInvRange_2 = (1LL << kFractionBits) * 128LL / (kOne * 13LL / 100LL);\n")
+        f.write("    constexpr int64_t kInvScale_3 = (1LL << (kFractionBits + 8)) / (kOne * 6LL / 100LL);\n")
+        f.write("    constexpr int64_t kInvScale_4 = (1LL << (kFractionBits + 8)) / (kOne * 9LL / 1000LL);\n")
+        f.write("    constexpr int64_t kInvScale_5 = (1LL << (kFractionBits + 8)) / (kOne / 1000LL);\n\n")
         
         f.write("    // Adjust input to internal precision\n")
         f.write("    int64_t scaled_x;\n")
@@ -243,7 +250,8 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write("    // Region 1: [0, 0.8], use 256-point uniform interpolation\n")
         f.write("    if (scaled_x < kThreshold_0_8) {\n")
         f.write("        constexpr int kShift = 8;  // log2(256)\n")
-        f.write("        int index = (scaled_x << kShift) / kThreshold_0_8;  // x * 256 / (0.8 * kOne)\n")
+        f.write("        // Optimized index calculation: multiply by pre-computed inverse instead of dividing\n")
+        f.write("        int index = (scaled_x * kInvThreshold_0_8) >> kFractionBits;  // x * 256 / (0.8 * kOne)\n")
         f.write("        \n")
         f.write("        // Calculate interpolation\n")
         f.write("        int64_t x0 = (index * kThreshold_0_8) >> kShift;  // index * 0.8 * kOne / 256\n")
@@ -254,9 +262,8 @@ def generate_acos_lut(output_file="acos_lut.h"):
         
         f.write("    // Region 2: [0.8, 0.93], use 128-segment Hermite interpolation\n")
         f.write("    else if (scaled_x < kThreshold_0_93) {\n")
-        f.write("        constexpr int kSegments = 128;\n")
-        f.write("        constexpr int64_t kRange = kOne * 13LL / 100LL;  // 0.13 * kOne\n")
-        f.write("        int seg = ((scaled_x - kThreshold_0_8) * kSegments) / kRange;  // (x - 0.8) / (0.13/128)\n")
+        f.write("        // Optimized segment calculation: multiply by pre-computed inverse instead of dividing\n")
+        f.write("        int seg = ((scaled_x - kThreshold_0_8) * kInvRange_2) >> kFractionBits;  // (x - 0.8) / (0.13/128)\n")
         f.write("        \n")
         f.write("        constexpr int kPointsPerSegment = 2;  // Only x and y in main array (derivative in separate array)\n")
         f.write("        int base_idx = kRegion1Size + seg * kPointsPerSegment;\n")
@@ -273,9 +280,9 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write("        constexpr int base_idx = kRegion1Size + kRegion2Size;\n")
         f.write("        int64_t rel_x = scaled_x - kThreshold_0_93;  // x - 0.93\n")
         f.write("        constexpr int64_t kScale = kOne * 6LL / 100LL;   // 0.06 * kOne\n\n")
-        
         f.write("        constexpr int kShift = 8;  // log2(256)\n")
-        f.write("        int index = (rel_x << kShift) / kScale;  // rel_x * 256 / (0.06 * kOne)\n")
+        f.write("        // Optimized index calculation: multiply by pre-computed inverse instead of dividing\n")
+        f.write("        int index = (rel_x * kInvScale_3) >> kFractionBits;  // rel_x * 256 / (0.06 * kOne)\n")
         f.write("        \n")
         f.write("        int idx = base_idx + index;\n")
         f.write("        int64_t x1 = kThreshold_0_93 + ((kScale * index) >> kShift);  // 0.93 + (0.06 * index / 256)\n")
@@ -290,9 +297,9 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write("        constexpr int base_idx = kRegion1Size + kRegion2Size + kRegion3Size;\n")
         f.write("        int64_t rel_x = scaled_x - kThreshold_0_99;  // x - 0.99\n")
         f.write("        constexpr int64_t kScale = kOne * 9LL / 1000LL;  // 0.009 * kOne\n\n")
-        
         f.write("        constexpr int kShift = 8;  // log2(256)\n")
-        f.write("        int index = (rel_x << kShift) / kScale;  // rel_x * 256 / (0.009 * kOne)\n")
+        f.write("        // Optimized index calculation: multiply by pre-computed inverse instead of dividing\n")
+        f.write("        int index = (rel_x * kInvScale_4) >> kFractionBits;  // rel_x * 256 / (0.009 * kOne)\n")
         f.write("        \n")
         f.write("        int idx = base_idx + index;\n")
         f.write("        int64_t x1 = kThreshold_0_99 + ((kScale * index) >> kShift);  // 0.99 + (0.009 * index / 256)\n")
@@ -307,9 +314,9 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write("        constexpr int base_idx = kRegion1Size + kRegion2Size + kRegion3Size + kRegion4Size;\n")
         f.write("        int64_t rel_x = scaled_x - kThreshold_0_999;  // x - 0.999\n")
         f.write("        constexpr int64_t kScale = kOne / 1000LL;           // 0.001 * kOne\n\n")
-        
         f.write("        constexpr int kShift = 8;  // log2(256)\n")
-        f.write("        int index = (rel_x << kShift) / kScale;  // rel_x * 256 / (0.001 * kOne)\n")
+        f.write("        // Optimized index calculation: multiply by pre-computed inverse instead of dividing\n")
+        f.write("        int index = (rel_x * kInvScale_5) >> kFractionBits;  // rel_x * 256 / (0.001 * kOne)\n")
         f.write("        \n")
         f.write("        int idx = base_idx + index;\n")
         f.write("        int64_t x1 = kThreshold_0_999 + ((kScale * index) >> kShift);  // 0.999 + (0.001 * index / 256)\n")
