@@ -20,8 +20,8 @@ def generate_acos_lut(output_file="acos_lut.h"):
         y = math.acos(x)
         lut.append(int(y * ONE))
     
-    # Region 2: 0.8-0.93 Hermite interpolation (64 segments)
-    num_segments = 64
+    # Region 2: 0.8-0.93 Hermite interpolation (128 segments)
+    num_segments = 128
     step = 0.13 / num_segments
     
     for seg in range(num_segments + 1):
@@ -66,7 +66,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
         # Write table as std::array
         f.write(f"// Arccosine lookup table with {len(lut)} entries using multi-region approach\n")
         f.write("// Region 1: 0.0-0.8 uniform (512+1 points)\n")
-        f.write("// Region 2: 0.8-0.93 Hermite interpolation (64 segments = 195 points)\n")
+        f.write("// Region 2: 0.8-0.93 Hermite interpolation (128 segments = 387 points)\n")
         f.write("// Region 3: 0.93-0.99 denser uniform (512+1 points)\n")
         f.write("// Region 4: 0.99-0.999 even denser (512+1 points)\n")
         f.write("// Region 5: 0.999-1.0 densest (256+1 points)\n")
@@ -172,10 +172,10 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write("        result = AcosLut[index] + ((AcosLut[index + 1] - AcosLut[index]) * dx) / delta;\n")
         f.write("    }\n")
         
-        f.write("    // Region 2: [0.8, 0.93], use 64-segment Hermite interpolation\n")
+        f.write("    // Region 2: [0.8, 0.93], use 128-segment Hermite interpolation\n")
         f.write("    else if (scaled_x < kThreshold_0_93) {\n")
-        f.write("        int seg = ((scaled_x - kThreshold_0_8) * 64LL) / (kOne * 13LL / 100LL);  // (x - 0.8) / (0.13/64)\n")
-        f.write("        seg = std::min(seg, 63);\n\n")
+        f.write("        int seg = ((scaled_x - kThreshold_0_8) * 128LL) / (kOne * 13LL / 100LL);  // (x - 0.8) / (0.13/128)\n")
+        f.write("        seg = std::min(seg, 127);\n\n")
         
         f.write("        int base_idx = 513 + seg * 3;\n")
         f.write("        int64_t x0 = AcosLut[base_idx];\n")
@@ -188,7 +188,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
         
         f.write("    // Region 3: [0.93, 0.99], use 512-point linear interpolation\n")
         f.write("    else if (scaled_x < kThreshold_0_99) {\n")
-        f.write("        int base_idx = 513 + 195;              // 512 + 1 + 65*3\n")
+        f.write("        int base_idx = 513 + 387;              // 512 + 1 + 129*3\n")
         f.write("        int64_t rel_x = scaled_x - kThreshold_0_93;  // x - 0.93\n")
         f.write("        int64_t scale = (kOne * 6LL / 100LL);   // 0.06 * kOne\n\n")
         
@@ -205,7 +205,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
         
         f.write("    // Region 4: [0.99, 0.999], use 512-point linear interpolation\n")
         f.write("    else if (scaled_x < kThreshold_0_999) {\n")
-        f.write("        int base_idx = 513 + 195 + 513;\n")
+        f.write("        int base_idx = 513 + 387 + 513;\n")
         f.write("        int64_t rel_x = scaled_x - kThreshold_0_99;  // x - 0.99\n")
         f.write("        int64_t scale = (kOne * 9LL / 1000LL);  // 0.009 * kOne\n\n")
         
@@ -222,7 +222,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
         
         f.write("    // Region 5: [0.999, 1.0), use 256-point linear interpolation\n")
         f.write("    else {\n")
-        f.write("        int base_idx = 513 + 195 + 513 + 513;\n")
+        f.write("        int base_idx = 513 + 387 + 513 + 513;\n")
         f.write("        int64_t rel_x = scaled_x - kThreshold_0_999;  // x - 0.999\n")
         f.write("        int64_t scale = kOne / 1000LL;           // 0.001 * kOne\n\n")
         
