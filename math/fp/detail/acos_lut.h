@@ -582,6 +582,13 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
     constexpr int64_t kThreshold_0_999 = kOne * 999LL / 1000LL;  // 0.999
     constexpr int64_t kThresholdSmall = kOne - (kOne >> 16);     // 0.999984741211
 
+    // Region size constants
+    constexpr int kRegion1Size = 513;  // 512 + 1
+    constexpr int kRegion2Size = 387;  // 129 * 3
+    constexpr int kRegion3Size = 513;  // 512 + 1
+    constexpr int kRegion4Size = 513;  // 512 + 1
+    constexpr int kRegion5Size = 257;  // 256 + 1
+
     // Adjust input to internal precision
     int64_t scaled_x;
     if (input_fraction_bits > kFractionBits) {
@@ -640,21 +647,27 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
     int64_t result;
     // Region 1: [0, 0.8], use 512-point uniform interpolation
     if (scaled_x < kThreshold_0_8) {
-        int index = (scaled_x << 9) / kThreshold_0_8;  // x * 512 / (0.8 * kOne)
-        index = std::min(index, 511);
+        constexpr int kShift = 9;  // log2(512)
+        int index = (scaled_x << kShift) / kThreshold_0_8;  // x * 512 / (0.8 * kOne)
+        constexpr int kMaxIndex = 511;
+        index = std::min(index, kMaxIndex);
 
         // Calculate interpolation
-        int64_t x0 = (index * kThreshold_0_8) >> 9;  // index * 0.8 * kOne / 512
+        int64_t x0 = (index * kThreshold_0_8) >> kShift;  // index * 0.8 * kOne / 512
         int64_t dx = scaled_x - x0;
-        constexpr int64_t delta = kThreshold_0_8 >> 9;  // 0.8 * kOne / 512
-        result = AcosLut[index] + ((AcosLut[index + 1] - AcosLut[index]) * dx) / delta;
+        constexpr int64_t kDelta = kThreshold_0_8 >> kShift;  // 0.8 * kOne / 512
+        result = AcosLut[index] + ((AcosLut[index + 1] - AcosLut[index]) * dx) / kDelta;
     }
     // Region 2: [0.8, 0.93], use 128-segment Hermite interpolation
     else if (scaled_x < kThreshold_0_93) {
-        int seg = ((scaled_x - kThreshold_0_8) * 128LL) / (kOne * 13LL / 100LL);  // (x - 0.8) / (0.13/128)
-        seg = std::min(seg, 127);
+        constexpr int kSegments = 128;
+        constexpr int64_t kRange = kOne * 13LL / 100LL;  // 0.13 * kOne
+        int seg = ((scaled_x - kThreshold_0_8) * kSegments) / kRange;  // (x - 0.8) / (0.13/128)
+        constexpr int kMaxSeg = kSegments - 1;
+        seg = std::min(seg, kMaxSeg);
 
-        int base_idx = 513 + seg * 3;
+        constexpr int kPointsPerSegment = 3;  // x, y, derivative
+        int base_idx = kRegion1Size + seg * kPointsPerSegment;
         int64_t x0 = AcosLut[base_idx];
         int64_t y0 = AcosLut[base_idx + 1];
         int64_t dydx = AcosLut[base_idx + 2];
@@ -664,48 +677,54 @@ inline int64_t LookupAcos(int64_t x, int input_fraction_bits) noexcept {
     }
     // Region 3: [0.93, 0.99], use 512-point linear interpolation
     else if (scaled_x < kThreshold_0_99) {
-        int base_idx = 513 + 387;              // 512 + 1 + 129*3
+        constexpr int base_idx = kRegion1Size + kRegion2Size;
         int64_t rel_x = scaled_x - kThreshold_0_93;  // x - 0.93
-        int64_t scale = (kOne * 6LL / 100LL);   // 0.06 * kOne
+        constexpr int64_t kScale = kOne * 6LL / 100LL;   // 0.06 * kOne
 
-        int index = (rel_x * 512LL) / scale;
-        index = std::min(index, 511);
+        constexpr int kPoints = 512;
+        int index = (rel_x * kPoints) / kScale;
+        constexpr int kMaxIndex = kPoints - 1;
+        index = std::min(index, kMaxIndex);
 
         int idx = base_idx + index;
-        int64_t x1 = kThreshold_0_93 + (scale * index) / 512LL;
-        int64_t x2 = kThreshold_0_93 + (scale * (index + 1)) / 512LL;
+        int64_t x1 = kThreshold_0_93 + (kScale * index) / kPoints;
+        int64_t x2 = kThreshold_0_93 + (kScale * (index + 1)) / kPoints;
 
         int64_t alpha = ((scaled_x - x1) << kFractionBits) / (x2 - x1);
         result = ((AcosLut[idx] * (kOne - alpha)) + (AcosLut[idx + 1] * alpha)) >> kFractionBits;
     }
     // Region 4: [0.99, 0.999], use 512-point linear interpolation
     else if (scaled_x < kThreshold_0_999) {
-        int base_idx = 513 + 387 + 513;
+        constexpr int base_idx = kRegion1Size + kRegion2Size + kRegion3Size;
         int64_t rel_x = scaled_x - kThreshold_0_99;  // x - 0.99
-        int64_t scale = (kOne * 9LL / 1000LL);  // 0.009 * kOne
+        constexpr int64_t kScale = kOne * 9LL / 1000LL;  // 0.009 * kOne
 
-        int index = (rel_x * 512LL) / scale;
-        index = std::min(index, 511);
+        constexpr int kPoints = 512;
+        int index = (rel_x * kPoints) / kScale;
+        constexpr int kMaxIndex = kPoints - 1;
+        index = std::min(index, kMaxIndex);
 
         int idx = base_idx + index;
-        int64_t x1 = kThreshold_0_99 + (scale * index) / 512LL;
-        int64_t x2 = kThreshold_0_99 + (scale * (index + 1)) / 512LL;
+        int64_t x1 = kThreshold_0_99 + (kScale * index) / kPoints;
+        int64_t x2 = kThreshold_0_99 + (kScale * (index + 1)) / kPoints;
 
         int64_t alpha = ((scaled_x - x1) << kFractionBits) / (x2 - x1);
         result = ((AcosLut[idx] * (kOne - alpha)) + (AcosLut[idx + 1] * alpha)) >> kFractionBits;
     }
     // Region 5: [0.999, 1.0), use 256-point linear interpolation
     else {
-        int base_idx = 513 + 387 + 513 + 513;
+        constexpr int base_idx = kRegion1Size + kRegion2Size + kRegion3Size + kRegion4Size;
         int64_t rel_x = scaled_x - kThreshold_0_999;  // x - 0.999
-        int64_t scale = kOne / 1000LL;           // 0.001 * kOne
+        constexpr int64_t kScale = kOne / 1000LL;           // 0.001 * kOne
 
-        int index = (rel_x * 256LL) / scale;
-        index = std::min(index, 255);
+        constexpr int kPoints = 256;
+        int index = (rel_x * kPoints) / kScale;
+        constexpr int kMaxIndex = kPoints - 1;
+        index = std::min(index, kMaxIndex);
 
         int idx = base_idx + index;
-        int64_t x1 = kThreshold_0_999 + (scale * index) / 256LL;
-        int64_t x2 = kThreshold_0_999 + (scale * (index + 1)) / 256LL;
+        int64_t x1 = kThreshold_0_999 + (kScale * index) / kPoints;
+        int64_t x2 = kThreshold_0_999 + (kScale * (index + 1)) / kPoints;
 
         int64_t alpha = ((scaled_x - x1) << kFractionBits) / (x2 - x1);
         result = ((AcosLut[idx] * (kOne - alpha)) + (AcosLut[idx + 1] * alpha)) >> kFractionBits;
