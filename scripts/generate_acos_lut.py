@@ -12,6 +12,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
     
     # Initialize arrays for storing lookup table values
     lut = []
+    dydx_lut = []  # New array for derivatives in region 2
     
     # Region 1: 0.0-0.8 uniform distribution (256 points)
     num_points1 = 256
@@ -31,7 +32,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
         
         lut.append(int(x0 * ONE))
         lut.append(int(y0 * ONE))
-        lut.append(int(dy_dx * ONE))
+        dydx_lut.append(int(dy_dx * ONE))  # Store derivatives in separate array
     
     # Region 3: 0.93-0.99 denser uniform distribution (256 points)
     num_points3 = 256
@@ -66,7 +67,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
         # Write table as std::array
         f.write(f"// Arccosine lookup table with {len(lut)} entries using multi-region approach\n")
         f.write("// Region 1: 0.0-0.8 uniform (256+1 points)\n")
-        f.write("// Region 2: 0.8-0.93 Hermite interpolation (128 segments = 387 points)\n")
+        f.write("// Region 2: 0.8-0.93 Hermite interpolation (128 segments = 258 points, with derivatives in separate array)\n")
         f.write("// Region 3: 0.93-0.99 denser uniform (256+1 points)\n")
         f.write("// Region 4: 0.99-0.999 even denser (256+1 points)\n")
         f.write("// Region 5: 0.999-1.0 densest (256+1 points)\n")
@@ -79,6 +80,20 @@ def generate_acos_lut(output_file="acos_lut.h"):
                 f.write("\n    ")
             f.write(f"{val}LL")
             if i < len(lut) - 1:
+                f.write(", ")
+        
+        f.write("\n};\n\n")
+        
+        # Write the derivatives lookup table
+        f.write(f"// Derivatives for Region 2 (0.8-0.93)\n")
+        f.write(f"inline constexpr std::array<int64_t, {len(dydx_lut)}> AcosDyDxLut = {{\n    ")
+        
+        # Format the derivative values in rows of 4
+        for i, val in enumerate(dydx_lut):
+            if i > 0 and i % 4 == 0:
+                f.write("\n    ")
+            f.write(f"{val}LL")
+            if i < len(dydx_lut) - 1:
                 f.write(", ")
         
         f.write("\n};\n\n")
@@ -106,7 +121,7 @@ def generate_acos_lut(output_file="acos_lut.h"):
         
         f.write("    // Region size constants\n")
         f.write("    constexpr int kRegion1Size = 257;  // 256 + 1\n")
-        f.write("    constexpr int kRegion2Size = 387;  // 129 * 3\n")
+        f.write("    constexpr int kRegion2Size = 258;  // (128 + 1) * 2 (x and y values only)\n")
         f.write("    constexpr int kRegion3Size = 257;  // 256 + 1\n")
         f.write("    constexpr int kRegion4Size = 257;  // 256 + 1\n\n")
         
@@ -184,11 +199,11 @@ def generate_acos_lut(output_file="acos_lut.h"):
         f.write("        constexpr int64_t kRange = kOne * 13LL / 100LL;  // 0.13 * kOne\n")
         f.write("        int seg = ((scaled_x - kThreshold_0_8) * kSegments) / kRange;  // (x - 0.8) / (0.13/128)\n")
         f.write("        \n")
-        f.write("        constexpr int kPointsPerSegment = 3;  // x, y, derivative\n")
+        f.write("        constexpr int kPointsPerSegment = 2;  // Only x and y in main array (derivative in separate array)\n")
         f.write("        int base_idx = kRegion1Size + seg * kPointsPerSegment;\n")
         f.write("        int64_t x0 = AcosLut[base_idx];\n")
         f.write("        int64_t y0 = AcosLut[base_idx + 1];\n")
-        f.write("        int64_t dydx = AcosLut[base_idx + 2];\n\n")
+        f.write("        int64_t dydx = AcosDyDxLut[seg];  // Use derivative from separate array\n\n")
         
         f.write("        int64_t dx = scaled_x - x0;\n")
         f.write("        result = y0 + ((dydx * dx) >> kFractionBits);\n")
