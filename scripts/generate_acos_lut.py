@@ -1,294 +1,263 @@
-import mpmath as mp
+import numpy as np
+import math
 import sys
 
-# Set very high precision
-mp.mp.dps = 100
-
-
-def generate_acos_lut(output_file=None, entries=512, fraction_bits=32):
-    """Generate a lookup table for acos in the range [0,1]"""
-
-    int_bits = 63 - fraction_bits
-
-    # Prepare the output with proper headers
-    lines = []
-    lines.append("#pragma once")
-    lines.append("")
-    lines.append("#include <stdint.h>")
-    lines.append("#include <array>")
-    lines.append("#include \"primitives.h\"")
-    lines.append("")
-    lines.append(f"// Acos lookup table with {entries} entries")
-    lines.append(f"// Covers the range [0,1] with values in Q{int_bits}.{fraction_bits} format")
-    lines.append(f"// Generated with mpmath library at {mp.mp.dps} digits precision")
-    lines.append("")
-
-    # Generate the table header
-    lines.append("namespace math::fp::detail {")
-    lines.append("// Table maps x in [0,1] to acos(x)")
-    lines.append(f"// Values stored in Q{int_bits}.{fraction_bits} fixed-point format")
-    lines.append(f"inline constexpr std::array<int64_t, {entries}> kAcosLut = {{")
-
-    # Generate the table entries
-    scale = mp.mpf(2) ** fraction_bits
-    pi = mp.pi
-    pi_scaled = int(pi * scale)  # Truncate
-    pi_hex = f"0x{pi_scaled & 0xFFFFFFFFFFFFFFFF:016X}LL"
+def generate_acos_lut(output_file="acos_lut.h"):
+    """Generate arccosine lookup table with high precision segmented approach"""
     
-    for i in range(entries):
-        x = mp.mpf(i) / (entries - 1)
-        acos_x = mp.acos(x)
-        scaled_value = int(acos_x * scale)  # Truncate instead of round
-
-        # Format the value as a hexadecimal literal with LL suffix
-        hex_value = f"0x{scaled_value & 0xFFFFFFFFFFFFFFFF:016X}LL"
-
-        # Generate a shorter comment with just the first ~20 digits of precision
-        # Convert to float first to avoid mpf formatting issues
-        x_float = float(x)
-        acos_x_float = float(acos_x)
-        comment = f"// acos({x_float:.11f}) = {acos_x_float:.11f}"
-
-        # Add the entry to the table
-        if i < entries - 1:
-            lines.append(f"    {hex_value},  {comment}")
-        else:
-            lines.append(f"    {hex_value}   {comment}")
-
-    # Close the table
-    lines.append("};")
-    lines.append("")
-
-    # Add the LookupAcosFast function (linear interpolation)
-    lines.append("// Fast lookup acos(x) with linear interpolation between table entries")
-    lines.append("// Input x is in fixed-point format with specified fraction bits representing a value in [-1,1]")
-    lines.append(f"// Output is in fixed-point format with the same fraction bits representing acos(x)")
-    lines.append("// Precision: ~6.2e-5 when fraction_bits=32")
-    lines.append("inline constexpr auto LookupAcosFast(int64_t x, int input_fraction_bits) noexcept -> int64_t {")
-    lines.append("    // Constants")
-    lines.append(f"    constexpr int kOutputFractionBits = {fraction_bits};  // Internal calculation format")
-    lines.append(f"    constexpr int64_t kPi = {pi_hex};  // pi = {float(pi)}")
-    lines.append("")
-
-    lines.append("    // Handle negative input using acos(-x) = π - acos(x)")
-    lines.append("    bool is_negative = false;")
-    lines.append("    if (x < 0) {")
-    lines.append("        x = -x;")
-    lines.append("        is_negative = true;")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Convert input to internal format if needed")
-    lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
-    lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append("            x <<= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("        } else {")
-    lines.append("            x >>= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("        }")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Scale x to table index")
-    lines.append("    constexpr int64_t kScale = static_cast<int64_t>(kAcosLut.size() - 1);")
-    lines.append("    const int64_t idx_scaled = Primitives::Fixed64Mul(x, kScale << kOutputFractionBits, kOutputFractionBits);")
-    lines.append("    const int64_t idx = idx_scaled >> kOutputFractionBits;")
-    lines.append("    const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
-    lines.append("")
-
-    lines.append("    // Clamp index to valid range")
-    lines.append("    if (idx >= static_cast<int64_t>(kAcosLut.size()) - 1) {")
-    lines.append("        // Return the minimum value (acos(1) = 0)")
-    lines.append("        int64_t result = kAcosLut[kAcosLut.size() - 1];")
-    lines.append("        if (is_negative) {")
-    lines.append("            result = kPi - result;")
-    lines.append("        }")
-    lines.append("        if (input_fraction_bits != kOutputFractionBits) {")
-    lines.append("            if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append("                result >>= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("            } else {")
-    lines.append("                result <<= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("            }")
-    lines.append("        }")
-    lines.append("        return result;")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Get table values for interpolation")
-    lines.append("    const int64_t y0 = kAcosLut[idx];")
-    lines.append("    const int64_t y1 = kAcosLut[idx + 1];")
-    lines.append("")
-
-    lines.append("    // Linear interpolation")
-    lines.append("    int64_t result = y0 + Primitives::Fixed64Mul(y1 - y0, t, kOutputFractionBits);")
-    lines.append("")
-
-    lines.append("    // Apply negative input formula if needed")
-    lines.append("    if (is_negative) {")
-    lines.append("        result = kPi - result;")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Convert result back to input format if needed")
-    lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
-    lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append("            result >>= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("        } else {")
-    lines.append("            result <<= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("        }")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    return result;")
-    lines.append("}")
-    lines.append("")
-
-    # Add the more accurate LookupAcos function (quadratic interpolation)
-    lines.append("// Accurate lookup acos(x) with quadratic interpolation between table entries")
-    lines.append("// Input x is in fixed-point format with specified fraction bits representing a value in [-1,1]")
-    lines.append(f"// Output is in fixed-point format with the same fraction bits representing acos(x)")
-    lines.append("// Precision: ~1e-5 when fraction_bits=32 (about 300x more accurate than fast version)")
-    lines.append("inline constexpr auto LookupAcos(int64_t x, int input_fraction_bits) noexcept -> int64_t {")
-    lines.append("    // Constants")
-    lines.append(f"    constexpr int kOutputFractionBits = {fraction_bits};  // Internal calculation format")
-    lines.append(f"    constexpr int64_t kPi = {pi_hex};  // pi = {float(pi)}")
-    lines.append("")
-
-    lines.append("    // Handle negative input using acos(-x) = π - acos(x)")
-    lines.append("    bool is_negative = false;")
-    lines.append("    if (x < 0) {")
-    lines.append("        x = -x;")
-    lines.append("        is_negative = true;")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Convert input to internal format if needed")
-    lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
-    lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append("            x <<= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("        } else {")
-    lines.append("            x >>= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("        }")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Scale x to table index")
-    lines.append("    constexpr int64_t kScale = static_cast<int64_t>(kAcosLut.size() - 1);")
-    lines.append("    const int64_t idx_scaled = Primitives::Fixed64Mul(x, kScale << kOutputFractionBits, kOutputFractionBits);")
-    lines.append("    const int64_t idx = idx_scaled >> kOutputFractionBits;")
-    lines.append("    const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
-    lines.append("")
-
-    lines.append("    // Clamp index to valid range")
-    lines.append("    if (idx >= static_cast<int64_t>(kAcosLut.size()) - 1) {")
-    lines.append("        // Return the minimum value (acos(1) = 0)")
-    lines.append("        int64_t result = kAcosLut[kAcosLut.size() - 1];")
-    lines.append("        if (is_negative) {")
-    lines.append("            result = kPi - result;")
-    lines.append("        }")
-    lines.append("        if (input_fraction_bits != kOutputFractionBits) {")
-    lines.append("            if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append("                result >>= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("            } else {")
-    lines.append("                result <<= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("            }")
-    lines.append("        }")
-    lines.append("        return result;")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Get table values for quadratic interpolation")
-    lines.append("    // Need three points: (x0,y0), (x1,y1), (x2,y2)")
-    lines.append("    const int64_t y1 = kAcosLut[idx];       // Current point")
-    lines.append("    const int64_t y2 = kAcosLut[idx + 1];   // Next point")
-    lines.append("    // For the previous point, handle the boundary case")
-    lines.append("    int64_t y0;")
-    lines.append("    if (idx > 0) {")
-    lines.append("        y0 = kAcosLut[idx - 1];  // Previous point")
-    lines.append("    } else {")
-    lines.append("        // At the boundary, mirror the slope for better extrapolation")
-    lines.append("        y0 = y1 + (y1 - y2);")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Compute derivatives using the fact that acos'(x) = -1/sqrt(1-x²)")
-    lines.append("    // We'll approximate this using the table values for better stability")
-    lines.append("    // The derivative is negative and gets steeper as x approaches 1")
-    lines.append("    // For quadratic interpolation, we'll use the finite difference approximation")
-    lines.append("")
-
-    lines.append("    // Quadratic interpolation")
-    lines.append("    // The correct Lagrange quadratic formula coefficients for points at (-1,y0), (0,y1), (1,y2):")
-    lines.append("    // a = (y0 + y2)/2 - y1")
-    lines.append("    // b = (y2 - y0)/2")
-    lines.append("    // c = y1")
-    lines.append("    const int64_t a = (y0 + y2)/2 - y1;")
-    lines.append("    const int64_t b = (y2 - y0)/2;")
-    lines.append("    const int64_t c = y1;")
-    lines.append("")
-
-    lines.append("    // Calculate polynomial a*t^2 + b*t + c")
-    lines.append("    const int64_t t_squared = Primitives::Fixed64Mul(t, t, kOutputFractionBits);")
-    lines.append("    int64_t result = c;")
-    lines.append("    result += Primitives::Fixed64Mul(b, t, kOutputFractionBits);")
-    lines.append("    result += Primitives::Fixed64Mul(a, t_squared, kOutputFractionBits);")
-    lines.append("")
-
-    lines.append("    // Apply negative input formula if needed")
-    lines.append("    if (is_negative) {")
-    lines.append("        result = kPi - result;")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // Convert result back to input format if needed")
-    lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
-    lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append("            result >>= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("        } else {")
-    lines.append("            result <<= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("        }")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    return result;")
-    lines.append("}")
-    lines.append("")
-
-    lines.append("}  // namespace math::fp::detail")
-
-    # Write to file or stdout
-    if output_file:
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
-    else:
-        print("\n".join(lines))
-
+    # Fixed-point precision constants
+    P = 32  # 32 fractional bits
+    ONE = 1 << P  # 1.0 in Q32 format
+    PI = int(math.pi * ONE)  # π in Q32 format
+    
+    # Initialize arrays for storing lookup table values
+    lut = []
+    
+    # Region 1: 0.0-0.8 uniform distribution (512 points)
+    num_points1 = 512
+    for i in range(num_points1 + 1):
+        x = 0.8 * i / num_points1
+        y = math.acos(x)
+        lut.append(int(y * ONE))
+    
+    # Region 2: 0.8-0.95 Hermite interpolation (64 segments)
+    num_segments = 64
+    step = 0.15 / num_segments
+    
+    for seg in range(num_segments + 1):
+        x0 = 0.8 + seg * step
+        y0 = math.acos(x0)
+        dy_dx = -(1.0 / math.sqrt(1.0 - x0*x0))
+        
+        lut.append(int(x0 * ONE))
+        lut.append(int(y0 * ONE))
+        lut.append(int(dy_dx * ONE))
+    
+    # Region 3: 0.95-0.99 denser uniform distribution (512 points)
+    num_points3 = 512
+    for i in range(num_points3 + 1):
+        x = 0.95 + 0.04 * i / num_points3
+        y = math.acos(x)
+        lut.append(int(y * ONE))
+    
+    # Region 4: 0.99-0.999 even denser (512 points)
+    num_points4 = 512
+    for i in range(num_points4 + 1):
+        x = 0.99 + 0.009 * i / num_points4
+        y = math.acos(x)
+        lut.append(int(y * ONE))
+    
+    # Region 5: 0.999-1.0 densest (256 points)
+    num_points5 = 256
+    for i in range(num_points5 + 1):
+        x = 0.999 + 0.001 * i / num_points5
+        y = math.acos(x) if x < 1.0 else 0.0
+        lut.append(int(y * ONE))
+    
+    # Write to header file
+    with open(output_file, "w") as f:
+        f.write("#pragma once\n\n")
+        f.write("#include <array>\n")
+        f.write("#include <cstdint>\n")
+        f.write("#include <algorithm>\n")
+        f.write("#include \"primitives.h\"\n\n")
+        f.write("namespace math::fp::detail {\n\n")
+        
+        # Write table as std::array
+        f.write(f"// Arccosine lookup table with {len(lut)} entries using multi-region approach\n")
+        f.write("// Region 1: 0.0-0.8 uniform (512+1 points)\n")
+        f.write("// Region 2: 0.8-0.95 Hermite interpolation (64 segments = 195 points)\n")
+        f.write("// Region 3: 0.95-0.99 denser uniform (512+1 points)\n")
+        f.write("// Region 4: 0.99-0.999 even denser (512+1 points)\n")
+        f.write("// Region 5: 0.999-1.0 densest (256+1 points)\n")
+        f.write(f"// Fixed-point format: Q{64-P}.{P}\n")
+        f.write(f"inline constexpr std::array<int64_t, {len(lut)}> AcosLut = {{\n    ")
+        
+        # Format the values in rows of 4
+        for i, val in enumerate(lut):
+            if i > 0 and i % 4 == 0:
+                f.write("\n    ")
+            f.write(f"{val}LL")
+            if i < len(lut) - 1:
+                f.write(", ")
+        
+        f.write("\n};\n\n")
+        
+        # Write fixed-point constants
+        f.write("// Fixed-point constants\n")
+        f.write("constexpr int FRACTION_BITS = 32;\n")
+        f.write(f"constexpr int64_t ONE = 1LL << FRACTION_BITS;\n")
+        f.write(f"constexpr int64_t PI = {PI}LL;  // π in Q{64-P}.{P} format (π × 2^{P})\n\n")
+        
+        # Write the LookupAcos function directly based on the C++ example
+        f.write("/**\n")
+        f.write(" * @brief Calculate arccosine value with multi-region interpolation\n")
+        f.write(" * @param x Fixed-point value in [-1,1] range with input_fraction_bits precision\n")
+        f.write(" * @param input_fraction_bits Precision (fractional bits) of the input value\n")
+        f.write(" * @return Fixed-point arccosine value with input_fraction_bits precision in [0, π] range\n")
+        f.write(" */\n")
+        f.write("inline int64_t constexpr LookupAcos(int64_t x, int input_fraction_bits) noexcept {\n")
+        f.write("    // Region boundary constants\n")
+        f.write("    constexpr int64_t THRESHOLD_0_8 = ONE * 4LL / 5LL;         // 0.8\n")
+        f.write("    constexpr int64_t THRESHOLD_0_95 = ONE * 19LL / 20LL;      // 0.95\n")
+        f.write("    constexpr int64_t THRESHOLD_0_99 = ONE * 99LL / 100LL;     // 0.99\n")
+        f.write("    constexpr int64_t THRESHOLD_0_999 = ONE * 999LL / 1000LL;  // 0.999\n")
+        f.write("    constexpr int64_t THRESHOLD_SMALL = ONE - (ONE >> 16);     // 0.999984741211\n\n")
+        
+        f.write("    // Adjust input to internal precision\n")
+        f.write("    int64_t scaled_x;\n")
+        f.write("    if (input_fraction_bits > FRACTION_BITS) {\n")
+        f.write("        scaled_x = x >> (input_fraction_bits - FRACTION_BITS);\n")
+        f.write("    } else if (input_fraction_bits < FRACTION_BITS) {\n")
+        f.write("        scaled_x = x << (FRACTION_BITS - input_fraction_bits);\n")
+        f.write("    } else {\n")
+        f.write("        scaled_x = x;\n")
+        f.write("    }\n\n")
+        
+        f.write("    // Boundary check: ensure input is in [-ONE, ONE] range\n")
+        f.write("    if (scaled_x >= ONE) {\n")
+        f.write("        int64_t result = 0;\n")
+        f.write("        // Adjust output precision\n")
+        f.write("        if (input_fraction_bits > FRACTION_BITS) {\n")
+        f.write("            result = result << (input_fraction_bits - FRACTION_BITS);\n")
+        f.write("        } else if (input_fraction_bits < FRACTION_BITS) {\n")
+        f.write("            result = result >> (FRACTION_BITS - input_fraction_bits);\n")
+        f.write("        }\n")
+        f.write("        return result;\n")
+        f.write("    }\n")
+        f.write("    if (scaled_x <= -ONE) {\n")
+        f.write("        int64_t result = PI;\n")
+        f.write("        // Adjust output precision\n")
+        f.write("        if (input_fraction_bits > FRACTION_BITS) {\n")
+        f.write("            result = result << (input_fraction_bits - FRACTION_BITS);\n")
+        f.write("        } else if (input_fraction_bits < FRACTION_BITS) {\n")
+        f.write("            result = result >> (FRACTION_BITS - input_fraction_bits);\n")
+        f.write("        }\n")
+        f.write("        return result;\n")
+        f.write("    }\n\n")
+        
+        f.write("    bool is_negative = scaled_x < 0;\n")
+        f.write("    scaled_x = is_negative ? -scaled_x : scaled_x;\n\n")
+        
+        f.write("    // Handle extremely small angles: x > 0.999984741211, use sqrt(2(1-x)) approximation\n")
+        f.write("    if (scaled_x > THRESHOLD_SMALL) {\n")
+        f.write("        int64_t epsilon = ONE - scaled_x;\n")
+        f.write("        int64_t sqrt_input = (epsilon << 1);\n")
+        f.write("        int64_t result = Primitives::Fixed64SqrtFast(sqrt_input, FRACTION_BITS);\n")
+        f.write("        \n")
+        f.write("        // Adjust for negative input\n")
+        f.write("        if (is_negative) {\n")
+        f.write("            result = PI - result;\n")
+        f.write("        }\n")
+        f.write("        \n")
+        f.write("        // Adjust output precision\n")
+        f.write("        if (input_fraction_bits > FRACTION_BITS) {\n")
+        f.write("            result = result << (input_fraction_bits - FRACTION_BITS);\n")
+        f.write("        } else if (input_fraction_bits < FRACTION_BITS) {\n")
+        f.write("            result = result >> (FRACTION_BITS - input_fraction_bits);\n")
+        f.write("        }\n")
+        f.write("        return result;\n")
+        f.write("    }\n\n")
+        
+        f.write("    int64_t result;\n")
+        f.write("    // Region 1: [0, 0.8], use 512-point uniform interpolation\n")
+        f.write("    if (scaled_x < THRESHOLD_0_8) {\n")
+        f.write("        int index = (scaled_x << 9) / THRESHOLD_0_8;  // x * 512 / (0.8 * ONE)\n")
+        f.write("        index = std::min(index, 511);\n\n")
+        
+        f.write("        // Calculate interpolation\n")
+        f.write("        int64_t x0 = (index * THRESHOLD_0_8) >> 9;  // index * 0.8 * ONE / 512\n")
+        f.write("        int64_t dx = scaled_x - x0;\n")
+        f.write("        constexpr int64_t delta = THRESHOLD_0_8 >> 9;  // 0.8 * ONE / 512\n")
+        f.write("        result = AcosLut[index] + ((AcosLut[index + 1] - AcosLut[index]) * dx) / delta;\n")
+        f.write("    }\n")
+        
+        f.write("    // Region 2: [0.8, 0.95], use 64-segment Hermite interpolation\n")
+        f.write("    else if (scaled_x < THRESHOLD_0_95) {\n")
+        f.write("        int seg = ((scaled_x - THRESHOLD_0_8) * 64LL) / (ONE * 3LL / 20LL);  // (x - 0.8) / (0.15/64)\n")
+        f.write("        seg = std::min(seg, 63);\n\n")
+        
+        f.write("        int base_idx = 513 + seg * 3;\n")
+        f.write("        int64_t x0 = AcosLut[base_idx];\n")
+        f.write("        int64_t y0 = AcosLut[base_idx + 1];\n")
+        f.write("        int64_t dydx = AcosLut[base_idx + 2];\n\n")
+        
+        f.write("        int64_t dx = scaled_x - x0;\n")
+        f.write("        result = y0 + ((dydx * dx) >> FRACTION_BITS);\n")
+        f.write("    }\n")
+        
+        f.write("    // Region 3: [0.95, 0.99], use 512-point linear interpolation\n")
+        f.write("    else if (scaled_x < THRESHOLD_0_99) {\n")
+        f.write("        int base_idx = 513 + 195;              // 512 + 1 + 65*3\n")
+        f.write("        int64_t rel_x = scaled_x - THRESHOLD_0_95;  // x - 0.95\n")
+        f.write("        int64_t scale = (ONE * 4LL / 100LL);   // 0.04 * ONE\n\n")
+        
+        f.write("        int index = (rel_x * 512LL) / scale;\n")
+        f.write("        index = std::min(index, 511);\n\n")
+        
+        f.write("        int idx = base_idx + index;\n")
+        f.write("        int64_t x1 = THRESHOLD_0_95 + (scale * index) / 512LL;\n")
+        f.write("        int64_t x2 = THRESHOLD_0_95 + (scale * (index + 1)) / 512LL;\n\n")
+        
+        f.write("        int64_t alpha = ((scaled_x - x1) << FRACTION_BITS) / (x2 - x1);\n")
+        f.write("        result = ((AcosLut[idx] * (ONE - alpha)) + (AcosLut[idx + 1] * alpha)) >> FRACTION_BITS;\n")
+        f.write("    }\n")
+        
+        f.write("    // Region 4: [0.99, 0.999], use 512-point linear interpolation\n")
+        f.write("    else if (scaled_x < THRESHOLD_0_999) {\n")
+        f.write("        int base_idx = 513 + 195 + 513;\n")
+        f.write("        int64_t rel_x = scaled_x - THRESHOLD_0_99;  // x - 0.99\n")
+        f.write("        int64_t scale = (ONE * 9LL / 1000LL);  // 0.009 * ONE\n\n")
+        
+        f.write("        int index = (rel_x * 512LL) / scale;\n")
+        f.write("        index = std::min(index, 511);\n\n")
+        
+        f.write("        int idx = base_idx + index;\n")
+        f.write("        int64_t x1 = THRESHOLD_0_99 + (scale * index) / 512LL;\n")
+        f.write("        int64_t x2 = THRESHOLD_0_99 + (scale * (index + 1)) / 512LL;\n\n")
+        
+        f.write("        int64_t alpha = ((scaled_x - x1) << FRACTION_BITS) / (x2 - x1);\n")
+        f.write("        result = ((AcosLut[idx] * (ONE - alpha)) + (AcosLut[idx + 1] * alpha)) >> FRACTION_BITS;\n")
+        f.write("    }\n")
+        
+        f.write("    // Region 5: [0.999, 1.0), use 256-point linear interpolation\n")
+        f.write("    else {\n")
+        f.write("        int base_idx = 513 + 195 + 513 + 513;\n")
+        f.write("        int64_t rel_x = scaled_x - THRESHOLD_0_999;  // x - 0.999\n")
+        f.write("        int64_t scale = ONE / 1000LL;           // 0.001 * ONE\n\n")
+        
+        f.write("        int index = (rel_x * 256LL) / scale;\n")
+        f.write("        index = std::min(index, 255);\n\n")
+        
+        f.write("        int idx = base_idx + index;\n")
+        f.write("        int64_t x1 = THRESHOLD_0_999 + (scale * index) / 256LL;\n")
+        f.write("        int64_t x2 = THRESHOLD_0_999 + (scale * (index + 1)) / 256LL;\n\n")
+        
+        f.write("        int64_t alpha = ((scaled_x - x1) << FRACTION_BITS) / (x2 - x1);\n")
+        f.write("        result = ((AcosLut[idx] * (ONE - alpha)) + (AcosLut[idx + 1] * alpha)) >> FRACTION_BITS;\n")
+        f.write("    }\n\n")
+        
+        f.write("    // Adjust for negative input\n")
+        f.write("    if (is_negative) {\n")
+        f.write("        result = PI - result;\n")
+        f.write("    }\n\n")
+        
+        f.write("    // Adjust output precision\n")
+        f.write("    if (input_fraction_bits > FRACTION_BITS) {\n")
+        f.write("        result = result << (input_fraction_bits - FRACTION_BITS);\n")
+        f.write("    } else if (input_fraction_bits < FRACTION_BITS) {\n")
+        f.write("        result = result >> (FRACTION_BITS - input_fraction_bits);\n")
+        f.write("    }\n\n")
+        
+        f.write("    return result;\n")
+        f.write("}\n\n")
+        
+        f.write("} // namespace math::fp::detail\n")
+    
+    print(f"Generated acos lookup table with {len(lut)} entries in {output_file}")
 
 if __name__ == "__main__":
-    entries = 512  # Default number of entries
-    fraction_bits = 40  # Default fraction bits (Q23.40 format)
-    output_file = None
-
-    # Parse command line arguments if provided
     if len(sys.argv) > 1:
-        try:
-            entries = int(sys.argv[1])
-        except ValueError:
-            # Not a number, assume it's a filename
-            output_file = sys.argv[1]
-
-    if len(sys.argv) > 2:
-        try:
-            entries = int(sys.argv[2])
-        except ValueError:
-            print(f"Error: Invalid number of entries: {sys.argv[2]}")
-            sys.exit(1)
-
-    if len(sys.argv) > 3:
-        try:
-            fraction_bits = int(sys.argv[3])
-        except ValueError:
-            print(f"Error: Invalid fraction bits: {sys.argv[3]}")
-            sys.exit(1)
-
-    # Generate the acos lookup table
-    generate_acos_lut(output_file, entries, fraction_bits)
+        generate_acos_lut(sys.argv[1])
+    else:
+        generate_acos_lut()
