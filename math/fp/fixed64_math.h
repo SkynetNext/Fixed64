@@ -542,8 +542,7 @@ class Fixed64Math {
         }
 
         // Use lookup table with linear interpolation
-        Fixed64<P> angle =
-            Fixed64<P>(detail::LookupAtan2Table(ratio.value(), P), detail::nothing{});
+        Fixed64<P> angle = Fixed64<P>(detail::LookupAtan2(ratio.value(), P), detail::nothing{});
 
         // Apply octant correction
         if (swapped) {
