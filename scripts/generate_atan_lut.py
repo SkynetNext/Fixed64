@@ -131,7 +131,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
 
     lines.append("    // 5. Linear interpolation")
     lines.append(
-        "    int64_t result = y0 + Primitives::Fixed64Mul(y1 - y0, t, kOutputFractionBits);")
+        "    int64_t result = y0 + (((y1 - y0) * t) >> kOutputFractionBits);")
     lines.append("")
 
     lines.append("    // Apply reciprocal formula if needed")
@@ -305,7 +305,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
 
 if __name__ == "__main__":
     entries = 512  # Default number of entries
-    fraction_bits = 40  # Default fraction bits (Q23.40 format)
+    fraction_bits = 32  # Default fraction bits (Q31.32 format)
     output_file = None
 
     # Parse command line arguments if provided
