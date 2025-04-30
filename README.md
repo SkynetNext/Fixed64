@@ -197,13 +197,13 @@ Comprehensive benchmarks comparing Fixed64 with [soft_double](https://github.com
 
 ### Basic Arithmetic Operations
 
-| Operation      | Fixed64 (ms) | SoftDouble(ms) | Speedup vs SoftDouble | double (ms) | Speedup vs double | int64 (ms) | Speedup vs int64 |
-|----------------|--------------|----------------|-----------------------|-------------|-------------------|------------|------------------|
-| Addition       | 7.52         | 104.17         | 13.84x                | 16.64       | 2.21x             | 3.79       | 0.50x            |
-| Subtraction    | 4.16         | 101.51         | 24.39x                | 16.02       | 3.85x             | 4.00       | 0.96x            |
-| Multiplication | 20.40        | 173.04         | 8.48x                 | 12.67       | 0.62x             | 10.73      | 0.53x            |
-| Division       | 212.34       | 299.60         | 1.41x                 | 14.83       | 0.07x             | 84.49      | 0.40x            |
-| Square Root    | 202.36       | 229.31         | 1.13x                 | 20.57       | 0.10x             | N/A        | N/A              |
+| Operation      | Fixed64 (ms) | SoftDouble(ms) | Speedup vs SoftDouble | double (ms) | Speedup vs double |
+|----------------|--------------|----------------|-----------------------|-------------|-------------------|
+| Addition       | 7.52         | 104.17         | 13.84x                | 16.64       | 2.21x             |
+| Subtraction    | 4.16         | 101.51         | 24.39x                | 16.02       | 3.85x             |
+| Multiplication | 20.40        | 173.04         | 8.48x                 | 12.67       | 0.62x             |
+| Division       | 212.34       | 299.60         | 1.41x                 | 14.83       | 0.07x             |
+| Square Root    | 202.36       | 229.31         | 1.13x                 | 20.57       | 0.10x             |
 
 These benchmarks show that:
 
@@ -217,30 +217,30 @@ These benchmarks show that:
 
 | Function | Fixed64 (ms) | SoftDouble (ms) | Speedup vs SoftDouble | double (ms) | Speedup vs double |
 |----------|--------------|-----------------|------------------------|-------------|-------------------|
-| Pow2     | 163.31       | 3341.61         | 20.46x                 | 537.44      | 3.29x             |
-| Exp      | 327.96       | 2068.18         | 6.31x                  | 55.38       | 0.17x             |
-| Log      | 463.26       | 2439.76         | 5.27x                  | 59.23       | 0.13x             |
-| Pow      | 879.24       | 4739.61         | 5.39x                  | 327.86      | 0.37x             |
-| Atan2    | 322.15       | N/A             | N/A                    | 302.75      | 0.94x            |
+| Pow2     | 131.40       | 2677.72         | 20.38x                 | 542.61      | 4.13x             |
+| Exp      | 264.60       | 1634.88         | 6.18x                  | 45.73       | 0.17x             |
+| Log      | 338.02       | 1934.12         | 5.72x                  | 53.30       | 0.16x             |
+| Pow      | 667.56       | 3711.60         | 5.56x                  | 242.55      | 0.36x             |
+| Atan2    | 299.25       | N/A             | N/A                    | 416.03      | 1.39x             |
 
 ### Trigonometric Functions (Standard vs Fast Implementation)
 
 | Function | Implementation | Fixed64 (ms) | SoftDouble (ms) | Speedup vs SoftDouble | double (ms) | Speedup vs double |
 |----------|---------------|--------------|-----------------|------------------------|-------------|-------------------|
-| Sin      | Standard      | 284.61       | 2376.13         | 8.35x                  | 115.00      | 0.40x             |
-|          | Fast          | 156.91       | 2538.54         | 16.18x                 | 121.75      | 0.78x             |
-| Tan      | Standard      | 319.60       | 4854.96         | 15.19x                 | 157.15      | 0.49x             |
-|          | Fast          | 131.60       | 4972.78         | 37.79x                 | 141.64      | 1.08x             |
-| Acos     | Standard      | 86.12       | 2878.22       | 33.42x                 | 146.98    | 1.71x             |     |
-| Atan     | Standard      | 85.25        | 2525.56         | 29.62x                 | 186.05      | 2.18x             |
-|          | Fast          | 53.34        | 2852.51         | 53.47x                 | 215.26      | 4.04x             |
+| Sin      | Standard      | 127.32       | 1879.43         | 14.76x                 | 88.99       | 0.70x             |
+|          | Fast          | 49.30        | 1897.93         | 38.49x                 | 91.08       | 1.85x             |
+| Tan      | Standard      | 237.73       | 3860.05         | 16.24x                 | 110.80      | 0.47x             |
+|          | Fast          | 88.20        | 3962.70         | 44.93x                 | 113.34      | 1.28x             |
+| Acos     | Standard      | 70.46        | 2237.73         | 31.76x                 | 187.48      | 2.66x             |
+| Atan     | Standard      | 130.52       | 1894.74         | 14.52x                 | 180.56      | 1.38x             |
+|          | Fast          | 89.62        | 1948.46         | 21.74x                 | 181.59      | 2.03x             |
 
 For advanced functions, Fixed64 demonstrates remarkable performance:
 
-1. Fixed64 is dramatically faster than SoftDouble, with speedups ranging from 5.3x to 53.5x
-2. Fixed64 outperforms even hardware double precision for several functions:
-   - Pow2 is 3.3x faster than hardware double
-   - Fast implementations of Acos, Atan, and Tan are faster than hardware doubles
+1. Fixed64 is dramatically faster than SoftDouble, with speedups ranging from 5.56x to 44.93x
+2. Fixed64 outperforms hardware double precision for several functions:
+   - Fast implementations of Sin, Tan, Acos, and Atan are faster than hardware doubles
+   - Pow2 is 4.13x faster than hardware double
    - These advantages stem from optimized algorithms specifically designed for the fixed-point representation
 3. For Exp, Log, and Pow, hardware floating-point remains faster, as expected for these complex functions
 4. The fast implementations of trigonometric functions provide significant performance improvements over the standard versions

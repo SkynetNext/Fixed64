@@ -4,14 +4,14 @@
 #include <array>
 #include "primitives.h"
 
-// Atan lookup table with 512 entries
+// Atan lookup table with 513 entries
 // Covers the range [0,1] with values in Q23.40 format
 // Generated with mpmath library at 100 digits precision
 
 namespace math::fp::detail {
 // Table maps x in [0,1] to atan(x)
 // Values stored in Q23.40 fixed-point format
-inline constexpr std::array<int64_t, 512> kAtanLut = {
+inline constexpr std::array<int64_t, 513> kAtanLut = {
     0x0000000000000000LL,  // atan(0.00000000000) = 0.00000000000
     0x0000000080401555LL,  // atan(0.00195694716) = 0.00195694466
     0x00000001007FEA4ALL,  // atan(0.00391389432) = 0.00391387434
@@ -523,6 +523,7 @@ inline constexpr std::array<int64_t, 512> kAtanLut = {
     0x000000C84EE99930LL,  // atan(0.99412915851) = 0.78245410910
     0x000000C88F5A2C6BLL,  // atan(0.99608610568) = 0.78343738160
     0x000000C8CFAA7F5ELL,  // atan(0.99804305284) = 0.78441873178
+    0x000000C90FDAA221LL,  // atan(1.00000000000) = 0.78539816340
     0x000000C90FDAA221LL   // atan(1.00000000000) = 0.78539816340
 };
 
@@ -564,24 +565,10 @@ inline constexpr auto LookupAtanFast(int64_t x, int input_fraction_bits) noexcep
     }
 
     // 2. Scale x to table index
-    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 1);
+    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 2);
     const int64_t idx_scaled = Primitives::Fixed64Mul(x, kScale << kOutputFractionBits, kOutputFractionBits);
     const int64_t idx = idx_scaled >> kOutputFractionBits;
     const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)
-
-    // 3. Clamp index to valid range
-    if (idx >= static_cast<int64_t>(kAtanLut.size()) - 1) {
-        // Return the maximum value (atan(1) = pi/4)
-        int64_t result = kAtanLut[kAtanLut.size() - 1];
-        if (input_fraction_bits != kOutputFractionBits) {
-            if (input_fraction_bits < kOutputFractionBits) {
-                result >>= (kOutputFractionBits - input_fraction_bits);
-            } else {
-                result <<= (input_fraction_bits - kOutputFractionBits);
-            }
-        }
-        return is_negative ? -result : result;
-    }
 
     // 4. Get table values for interpolation
     const int64_t y0 = kAtanLut[idx];
@@ -648,24 +635,10 @@ inline constexpr auto LookupAtan(int64_t x, int input_fraction_bits) noexcept ->
     }
 
     // 2. Scale x to table index
-    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 1);
+    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 2);
     const int64_t idx_scaled = Primitives::Fixed64Mul(x, kScale << kOutputFractionBits, kOutputFractionBits);
     const int64_t idx = idx_scaled >> kOutputFractionBits;
     const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)
-
-    // 3. Clamp index to valid range
-    if (idx >= static_cast<int64_t>(kAtanLut.size()) - 1) {
-        // Return the maximum value (atan(1) = pi/4)
-        int64_t result = kAtanLut[kAtanLut.size() - 1];
-        if (input_fraction_bits != kOutputFractionBits) {
-            if (input_fraction_bits < kOutputFractionBits) {
-                result >>= (kOutputFractionBits - input_fraction_bits);
-            } else {
-                result <<= (input_fraction_bits - kOutputFractionBits);
-            }
-        }
-        return is_negative ? -result : result;
-    }
 
     // 4. Get table values for quadratic interpolation
     // Need three points: (x0,y0), (x1,y1), (x2,y2)

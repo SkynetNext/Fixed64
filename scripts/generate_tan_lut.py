@@ -19,7 +19,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("#include <array>")
     lines.append("#include \"primitives.h\"")
     lines.append("")
-    lines.append(f"// Tan lookup table with {lut_size} entries")
+    lines.append(f"// Tan lookup table with {lut_size + 1} entries")
     lines.append(
         f"// Covers the range [0,pi/2] with values in Q{int_bits}.{fraction_bits} format")
     lines.append(
@@ -32,7 +32,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append(
         f"// Values stored in Q{int_bits}.{fraction_bits} fixed-point format")
     lines.append(
-        f"inline constexpr std::array<int64_t, {lut_size}> kTanLut = {{")
+        f"inline constexpr std::array<int64_t, {lut_size + 1}> kTanLut = {{")
 
     # Generate the table entries in Q23.40 format
     scale = mp.mpf(2) ** fraction_bits
@@ -68,6 +68,8 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
         if i < lut_size - 1:
             lines.append(f"    {hex_value}, {comment}")
         else:
+            # For the last entry, add it twice to avoid index out of bounds
+            lines.append(f"    {hex_value}, {comment}")
             lines.append(f"    {hex_value}  {comment}")
 
     lines.append("};")
@@ -144,18 +146,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
         "    int64_t frac = idx_scaled & ((1LL << kOutputFractionBits) - 1);")
     lines.append("")
 
-    lines.append("    // 5. Clamp index to valid range")
-    lines.append("    if (idx < 0) {")
-    lines.append("        idx = 0;")
-    lines.append("        frac = 0;")
-    lines.append(
-        "    } else if (idx >= static_cast<int>(kTanLut.size()) - 1) {")
-    lines.append("        idx = static_cast<int>(kTanLut.size()) - 2;")
-    lines.append("        frac = (1LL << kOutputFractionBits) - 1;")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // 6. Linear interpolation between table entries")
+    lines.append("    // 5. Linear interpolation between table entries")
     lines.append("    int64_t y0 = kTanLut[idx];")
     lines.append("    int64_t y1 = kTanLut[idx + 1];")
     lines.append("    int64_t diff = y1 - y0;")
@@ -163,13 +154,13 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
         "    int64_t interpolated_value = y0 + Primitives::Fixed64Mul(diff, frac, kOutputFractionBits);")
     lines.append("")
 
-    lines.append("    // 7. Apply sign flip if necessary")
+    lines.append("    // 6. Apply sign flip if necessary")
     lines.append(
         "    int64_t result = flip ? -interpolated_value : interpolated_value;")
     lines.append("")
 
     lines.append(
-        "    // 8. Convert result back to original input format if needed")
+        "    // 7. Convert result back to original input format if needed")
     lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
     lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
     lines.append(
@@ -246,18 +237,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
         "    int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
     lines.append("")
 
-    lines.append("    // 5. Clamp index to valid range")
-    lines.append("    if (idx < 0) {")
-    lines.append("        idx = 0;")
-    lines.append("        t = 0;")
-    lines.append(
-        "    } else if (idx >= static_cast<int>(kTanLut.size()) - 1) {")
-    lines.append("        idx = static_cast<int>(kTanLut.size()) - 2;")
-    lines.append("        t = kOne - 1;  // Just under 1.0")
-    lines.append("    }")
-    lines.append("")
-
-    lines.append("    // 6. Get points from table")
+    lines.append("    // 5. Get points from table")
     lines.append(
         "    int64_t p0 = kTanLut[idx];      // Point at left endpoint")
     lines.append(
@@ -265,7 +245,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("")
 
     lines.append(
-        "    // 7. Compute derivatives using the fact that tan'(x) = 1 + tan²(x)")
+        "    // 6. Compute derivatives using the fact that tan'(x) = 1 + tan²(x)")
     lines.append(
         "    int64_t p0_squared = Primitives::Fixed64Mul(p0, p0, kOutputFractionBits);")
     lines.append(
@@ -279,14 +259,14 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("    // Scale derivatives by step size")
     lines.append("    constexpr int64_t kStepSize = Primitives::Fixed64Div(")
     lines.append(
-        "        kPiOver2, (kTanLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);")
+        "        kPiOver2, static_cast<int64_t>(kTanLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);")
     lines.append(
         "    m0 = Primitives::Fixed64Mul(m0, kStepSize, kOutputFractionBits);")
     lines.append(
         "    m1 = Primitives::Fixed64Mul(m1, kStepSize, kOutputFractionBits);")
     lines.append("")
 
-    lines.append("    // 8. Compute optimized Hermite coefficients")
+    lines.append("    // 7. Compute optimized Hermite coefficients")
     lines.append("    // p(t) = ((a*t + b)*t + c)*t + d  (Horner's method)")
     lines.append("    // where:")
     lines.append("    // a = 2(p₀-p₁) + m₀+m₁")
@@ -300,7 +280,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("    int64_t d = p0;")
     lines.append("")
 
-    lines.append("    // 9. Compute interpolation using Horner's method")
+    lines.append("    // 8. Compute interpolation using Horner's method")
     lines.append("    int64_t result =")
     lines.append("        d")
     lines.append("        + Primitives::Fixed64Mul(")
@@ -312,14 +292,14 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("            kOutputFractionBits);")
     lines.append("")
 
-    lines.append("    // 10. Apply sign flip if necessary")
+    lines.append("    // 9. Apply sign flip if necessary")
     lines.append("    if (flip) {")
     lines.append("        result = -result;")
     lines.append("    }")
     lines.append("")
 
     lines.append(
-        "    // 11. Convert result back to original input format if needed")
+        "    // 10. Convert result back to original input format if needed")
     lines.append("    if (input_fraction_bits != kOutputFractionBits) {")
     lines.append("        if (input_fraction_bits < kOutputFractionBits) {")
     lines.append(

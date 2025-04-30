@@ -4,14 +4,14 @@
 #include <array>
 #include "primitives.h"
 
-// Tan lookup table with 512 entries
+// Tan lookup table with 513 entries
 // Covers the range [0,pi/2] with values in Q23.40 format
 // Generated with mpmath library at 100 digits precision
 
 namespace math::fp::detail {
 // Table maps x in [0,pi/2] to tan(x)
 // Values stored in Q23.40 fixed-point format
-inline constexpr std::array<int64_t, 512> kTanLut = {
+inline constexpr std::array<int64_t, 513> kTanLut = {
     0x0000000000000000LL, // tan(0.00000000000000) = 0.00000000000000
     0x00000000C974BE82LL, // tan(0.00307396541447) = 0.00307397509674
     0x0000000192EA7688LL, // tan(0.00614793082894) = 0.00614800828800
@@ -523,6 +523,7 @@ inline constexpr std::array<int64_t, 512> kTanLut = {
     0x00006C6F3AFE2FA1LL, // tan(1.56157443055148) = 108.43449391043538
     0x0000A2A7805EC851LL, // tan(1.56464839596595) = 162.65430252447683
     0x0001454FCA324F25LL, // tan(1.56772236138043) = 325.31167902405042
+    0x7FFFFFFFFFFFFFFFLL, // tan(1.57079632679490) = 8388608.00000000000000
     0x7FFFFFFFFFFFFFFFLL  // tan(1.57079632679490) = 8388608.00000000000000
 };
 
@@ -566,25 +567,16 @@ inline constexpr auto LookupTanFast(int64_t x, int input_fraction_bits) noexcept
     int idx = static_cast<int>(idx_scaled >> kOutputFractionBits);
     int64_t frac = idx_scaled & ((1LL << kOutputFractionBits) - 1);
 
-    // 5. Clamp index to valid range
-    if (idx < 0) {
-        idx = 0;
-        frac = 0;
-    } else if (idx >= static_cast<int>(kTanLut.size()) - 1) {
-        idx = static_cast<int>(kTanLut.size()) - 2;
-        frac = (1LL << kOutputFractionBits) - 1;
-    }
-
-    // 6. Linear interpolation between table entries
+    // 5. Linear interpolation between table entries
     int64_t y0 = kTanLut[idx];
     int64_t y1 = kTanLut[idx + 1];
     int64_t diff = y1 - y0;
     int64_t interpolated_value = y0 + Primitives::Fixed64Mul(diff, frac, kOutputFractionBits);
 
-    // 7. Apply sign flip if necessary
+    // 6. Apply sign flip if necessary
     int64_t result = flip ? -interpolated_value : interpolated_value;
 
-    // 8. Convert result back to original input format if needed
+    // 7. Convert result back to original input format if needed
     if (input_fraction_bits != kOutputFractionBits) {
         if (input_fraction_bits < kOutputFractionBits) {
             result >>= (kOutputFractionBits - input_fraction_bits);
@@ -637,20 +629,11 @@ inline constexpr auto LookupTan(int64_t x, int input_fraction_bits) noexcept -> 
     int idx = static_cast<int>(idx_scaled >> kOutputFractionBits);
     int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)
 
-    // 5. Clamp index to valid range
-    if (idx < 0) {
-        idx = 0;
-        t = 0;
-    } else if (idx >= static_cast<int>(kTanLut.size()) - 1) {
-        idx = static_cast<int>(kTanLut.size()) - 2;
-        t = kOne - 1;  // Just under 1.0
-    }
-
-    // 6. Get points from table
+    // 5. Get points from table
     int64_t p0 = kTanLut[idx];      // Point at left endpoint
     int64_t p1 = kTanLut[idx + 1];  // Point at right endpoint
 
-    // 7. Compute derivatives using the fact that tan'(x) = 1 + tan²(x)
+    // 6. Compute derivatives using the fact that tan'(x) = 1 + tan²(x)
     int64_t p0_squared = Primitives::Fixed64Mul(p0, p0, kOutputFractionBits);
     int64_t p1_squared = Primitives::Fixed64Mul(p1, p1, kOutputFractionBits);
     int64_t m0 = kOne + p0_squared;  // Derivative at left endpoint
@@ -658,11 +641,11 @@ inline constexpr auto LookupTan(int64_t x, int input_fraction_bits) noexcept -> 
 
     // Scale derivatives by step size
     constexpr int64_t kStepSize = Primitives::Fixed64Div(
-        kPiOver2, (kTanLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);
+        kPiOver2, static_cast<int64_t>(kTanLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);
     m0 = Primitives::Fixed64Mul(m0, kStepSize, kOutputFractionBits);
     m1 = Primitives::Fixed64Mul(m1, kStepSize, kOutputFractionBits);
 
-    // 8. Compute optimized Hermite coefficients
+    // 7. Compute optimized Hermite coefficients
     // p(t) = ((a*t + b)*t + c)*t + d  (Horner's method)
     // where:
     // a = 2(p₀-p₁) + m₀+m₁
@@ -675,7 +658,7 @@ inline constexpr auto LookupTan(int64_t x, int input_fraction_bits) noexcept -> 
     int64_t c = m0;
     int64_t d = p0;
 
-    // 9. Compute interpolation using Horner's method
+    // 8. Compute interpolation using Horner's method
     int64_t result =
         d
         + Primitives::Fixed64Mul(
@@ -685,12 +668,12 @@ inline constexpr auto LookupTan(int64_t x, int input_fraction_bits) noexcept -> 
                     t, b + Primitives::Fixed64Mul(t, a, kOutputFractionBits), kOutputFractionBits),
             kOutputFractionBits);
 
-    // 10. Apply sign flip if necessary
+    // 9. Apply sign flip if necessary
     if (flip) {
         result = -result;
     }
 
-    // 11. Convert result back to original input format if needed
+    // 10. Convert result back to original input format if needed
     if (input_fraction_bits != kOutputFractionBits) {
         if (input_fraction_bits < kOutputFractionBits) {
             result >>= (kOutputFractionBits - input_fraction_bits);

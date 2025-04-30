@@ -18,7 +18,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     lines.append("#include <array>")
     lines.append("#include \"primitives.h\"")
     lines.append("")
-    lines.append(f"// Atan lookup table with {entries} entries")
+    lines.append(f"// Atan lookup table with {entries + 1} entries")
     lines.append(
         f"// Covers the range [0,1] with values in Q{int_bits}.{fraction_bits} format")
     lines.append(
@@ -30,7 +30,7 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
     lines.append("// Table maps x in [0,1] to atan(x)")
     lines.append(f"// Values stored in Q{int_bits}.{fraction_bits} fixed-point format")
     lines.append(
-        f"inline constexpr std::array<int64_t, {entries}> kAtanLut = {{")
+        f"inline constexpr std::array<int64_t, {entries + 1}> kAtanLut = {{")
 
     # Generate the table entries
     scale = mp.mpf(2) ** fraction_bits
@@ -55,6 +55,8 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
         if i < entries - 1:
             lines.append(f"    {hex_value},  {comment}")
         else:
+            # For the last entry, add it twice to avoid index out of bounds
+            lines.append(f"    {hex_value},  {comment}")
             lines.append(f"    {hex_value}   {comment}")
 
     # Close the table
@@ -114,30 +116,12 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
 
     lines.append("    // 2. Scale x to table index")
     lines.append(
-        "    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 1);")
+        "    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 2);")
     lines.append(
         "    const int64_t idx_scaled = Primitives::Fixed64Mul(x, kScale << kOutputFractionBits, kOutputFractionBits);")
     lines.append("    const int64_t idx = idx_scaled >> kOutputFractionBits;")
     lines.append(
         "    const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
-    lines.append("")
-
-    lines.append("    // 3. Clamp index to valid range")
-    lines.append("    if (idx >= static_cast<int64_t>(kAtanLut.size()) - 1) {")
-    lines.append("        // Return the maximum value (atan(1) = pi/4)")
-    lines.append("        int64_t result = kAtanLut[kAtanLut.size() - 1];")
-    lines.append("        if (input_fraction_bits != kOutputFractionBits) {")
-    lines.append(
-        "            if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append(
-        "                result >>= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("            } else {")
-    lines.append(
-        "                result <<= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("            }")
-    lines.append("        }")
-    lines.append("        return is_negative ? -result : result;")
-    lines.append("    }")
     lines.append("")
 
     lines.append("    // 4. Get table values for interpolation")
@@ -229,30 +213,12 @@ def generate_atan_lut(output_file=None, entries=512, fraction_bits=32):
 
     lines.append("    // 2. Scale x to table index")
     lines.append(
-        "    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 1);")
+        "    constexpr int64_t kScale = static_cast<int64_t>(kAtanLut.size() - 2);")
     lines.append(
         "    const int64_t idx_scaled = Primitives::Fixed64Mul(x, kScale << kOutputFractionBits, kOutputFractionBits);")
     lines.append("    const int64_t idx = idx_scaled >> kOutputFractionBits;")
     lines.append(
         "    const int64_t t = idx_scaled & ((1LL << kOutputFractionBits) - 1);  // Fractional part [0,1)")
-    lines.append("")
-
-    lines.append("    // 3. Clamp index to valid range")
-    lines.append("    if (idx >= static_cast<int64_t>(kAtanLut.size()) - 1) {")
-    lines.append("        // Return the maximum value (atan(1) = pi/4)")
-    lines.append("        int64_t result = kAtanLut[kAtanLut.size() - 1];")
-    lines.append("        if (input_fraction_bits != kOutputFractionBits) {")
-    lines.append(
-        "            if (input_fraction_bits < kOutputFractionBits) {")
-    lines.append(
-        "                result >>= (kOutputFractionBits - input_fraction_bits);")
-    lines.append("            } else {")
-    lines.append(
-        "                result <<= (input_fraction_bits - kOutputFractionBits);")
-    lines.append("            }")
-    lines.append("        }")
-    lines.append("        return is_negative ? -result : result;")
-    lines.append("    }")
     lines.append("")
 
     lines.append("    // 4. Get table values for quadratic interpolation")
