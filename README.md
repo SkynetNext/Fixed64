@@ -233,7 +233,7 @@ These benchmarks show that:
 |          | Fast          | 88.20        | 3962.70         | 44.93x                 | 113.34      | 1.28x             |
 | Acos     | Standard      | 70.46        | 2237.73         | 31.76x                 | 187.48      | 2.66x             |
 | Atan     | Standard      | 130.52       | 1894.74         | 14.52x                 | 180.56      | 1.38x             |
-|          | Fast          | 89.62        | 1948.46         | 21.74x                 | 181.59      | 2.03x             |
+|          | Fast          | 51.39        | 1951.46         | 37.98x                 | 184.54      | 3.59x             |
 
 For advanced functions, Fixed64 demonstrates remarkable performance:
 
