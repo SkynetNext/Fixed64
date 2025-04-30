@@ -21,7 +21,7 @@ class Fixed64TrigTest : public ::testing::Test {
 #if FIXED64_MATH_USE_FAST_TRIG == 1
     const double epsilon = 1.5e-5;
 #else
-    const double epsilon = 1e-9;
+    const double epsilon = 2e-9;
 #endif
 
     static constexpr double kEpsilonAtan2 = 1e-6;

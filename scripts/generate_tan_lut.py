@@ -182,7 +182,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append(
         "// Input x is in fixed-point format with specified fraction bits representing angle in radians")
     lines.append(
-        "// Precision: ~1.0e-9 when input_fraction_bits=32 (about 1500x more accurate than fast version)")
+        "// Precision: ~2.0e-9 when input_fraction_bits=32 (about 1500x more accurate than fast version)")
     lines.append(
         "inline constexpr auto LookupTan(int64_t x, int input_fraction_bits) noexcept -> int64_t {")
     lines.append("    // Constants")
@@ -326,8 +326,8 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
 
 
 if __name__ == "__main__":
-    int_bits = 23       # 23 bits for integer part
-    fraction_bits = 40  # 40 bits for fractional part
+    int_bits = 31       # 31 bits for integer part
+    fraction_bits = 32  # 32 bits for fractional part
     output_file = None
 
     # Parse command line arguments if provided
