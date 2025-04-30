@@ -259,7 +259,7 @@ def generate_tan_lut(output_file=None, int_bits=23, fraction_bits=40):
     lines.append("    // Scale derivatives by step size")
     lines.append("    constexpr int64_t kStepSize = Primitives::Fixed64Div(")
     lines.append(
-        "        kPiOver2, static_cast<int64_t>(kTanLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);")
+        "        kPiOver2, static_cast<int64_t>(kTanLut.size() - 2) << kOutputFractionBits, kOutputFractionBits);")
     lines.append(
         "    m0 = Primitives::Fixed64Mul(m0, kStepSize, kOutputFractionBits);")
     lines.append(

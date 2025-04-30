@@ -641,7 +641,7 @@ inline constexpr auto LookupTan(int64_t x, int input_fraction_bits) noexcept -> 
 
     // Scale derivatives by step size
     constexpr int64_t kStepSize = Primitives::Fixed64Div(
-        kPiOver2, static_cast<int64_t>(kTanLut.size() - 1) << kOutputFractionBits, kOutputFractionBits);
+        kPiOver2, static_cast<int64_t>(kTanLut.size() - 2) << kOutputFractionBits, kOutputFractionBits);
     m0 = Primitives::Fixed64Mul(m0, kStepSize, kOutputFractionBits);
     m1 = Primitives::Fixed64Mul(m1, kStepSize, kOutputFractionBits);
 
